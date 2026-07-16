@@ -8,7 +8,20 @@ const mocks = vi.hoisted(() => ({
   generateImage: vi.fn(),
 }));
 
-vi.mock('../../src/features/generation/api/generationClient.js', () => mocks);
+vi.mock('../../src/features/generation/api/generationClient.js', () => ({
+  fetchConfig: mocks.fetchConfig,
+  generateImage: mocks.generateImage,
+}));
+
+vi.mock('../../src/features/templates/api/templatesClient.js', () => ({
+  fetchTemplates: mocks.fetchTemplates,
+  createTemplate: vi.fn(),
+  updateTemplate: vi.fn(),
+  replaceTemplateImage: vi.fn(),
+  duplicateTemplate: vi.fn(),
+  setTemplateActive: vi.fn(),
+  deleteTemplate: vi.fn(),
+}));
 
 import App from '../../src/app/App.jsx';
 import { createJpegFile, mockImageBitmap } from './testImages.js';
@@ -28,8 +41,8 @@ beforeEach(() => {
     clothingScope: 'Roupas superiores',
   });
   mocks.fetchTemplates.mockResolvedValue([
-    { id: 'model-01', label: 'Modelo base 01', publicUrl: '/templates/model-01.jpeg', valid: true, mimeType: 'image/jpeg', realFormat: 'jpeg', width: 773, height: 1024 },
-    { id: 'model-02', label: 'Modelo base 02', publicUrl: '/templates/model-02.jpeg', valid: true, mimeType: 'image/jpeg', realFormat: 'jpeg', width: 773, height: 1024 },
+    { id: 'model-01', label: 'Modelo base 01', publicUrl: '/templates/model-01.jpeg', valid: true, active: true, mimeType: 'image/jpeg', realFormat: 'jpeg', width: 773, height: 1024 },
+    { id: 'model-02', label: 'Modelo base 02', publicUrl: '/templates/model-02.jpeg', valid: true, active: true, mimeType: 'image/jpeg', realFormat: 'jpeg', width: 773, height: 1024 },
   ]);
   mocks.generateImage.mockReset();
   globalThis.URL.createObjectURL = vi.fn()

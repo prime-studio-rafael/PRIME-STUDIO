@@ -1,22 +1,19 @@
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
 import { generationConfig } from '../config/generationConfig.js';
 import { getModelById } from '../catalogs/models.js';
-import { getTemplateById } from '../catalogs/templates.js';
 import { buildUpperGarmentPrompt, UPPER_GARMENT_PROMPT_VERSION } from '../prompts/upperGarmentPrompt.js';
 import { AppError } from '../utils/errors.js';
 import { bufferToDataUrl } from '../utils/imageEncoding.js';
-import { validateImageBuffer, validateUploadedImage } from '../utils/fileValidation.js';
+import { validateUploadedImage } from '../utils/fileValidation.js';
 import { parseOpenRouterImageResponse } from '../providers/openrouter/openrouterResponse.js';
 import { createGenerationProfile, dimensionsOrNull, imageValidationMetadata } from '../utils/generationMetadata.js';
 
 export function createGenerationService({
   openRouterClient,
   resultStorage,
-  templateCatalog = { getTemplateById },
+  templateService,
   config = generationConfig,
   logger = console,
-  readFileImpl = readFile,
   now = () => Date.now(),
   uuid = randomUUID,
 } = {}) {
@@ -30,6 +27,9 @@ export function createGenerationService({
     async generate({ templateId, modelId, confirmPaid, garmentFile }) {
       if (active) {
         throw new AppError('GENERATION_IN_PROGRESS', 'Já existe uma geração em andamento.', { status: 409 });
+      }
+      if (templateService?.isBusy?.()) {
+        throw new AppError('TEMPLATE_MUTATION_IN_PROGRESS', 'Aguarde a alteração do template terminar antes de gerar.', { status: 409 });
       }
 
       active = true;
@@ -46,21 +46,11 @@ export function createGenerationService({
           throw new AppError('INVALID_MODEL', 'O modelo selecionado não está disponível.', { status: 400 });
         }
 
-        const template = templateCatalog.getTemplateById(templateId);
-        if (!template) {
-          throw new AppError('INVALID_TEMPLATE', 'O template selecionado não existe.', { status: 400 });
-        }
-
         const garment = validateUploadedImage(garmentFile, config);
-        const templateBuffer = await readFileImpl(template.filePath);
-        const templateImage = validateImageBuffer(templateBuffer, {
-          fieldLabel: 'Template',
-          fileName: template.filename,
-          expectedMimeType: template.expectedMimeType,
-          role: 'template',
-          declaredAspectRatio: template.declaredAspectRatio,
-          policy: config.imagePolicy,
-        });
+        if (!templateService?.getForGeneration) {
+          throw new AppError('TEMPLATE_SERVICE_UNAVAILABLE', 'O catálogo local de templates não está disponível.', { status: 500 });
+        }
+        const { publicTemplate: template, image: templateImage } = await templateService.getForGeneration(templateId);
         const prompt = buildUpperGarmentPrompt();
         const generationProfile = createGenerationProfile({
           promptVersion: UPPER_GARMENT_PROMPT_VERSION,

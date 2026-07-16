@@ -12,8 +12,9 @@ export default function TemplatePicker({ templates, selectedTemplateId, disabled
         {templates.map((template) => {
           const selected = template.id === selectedTemplateId;
           const metadataInvalid = template.valid === false;
+          const inactive = template.active === false;
           const imageInvalid = Boolean(templateImageErrors[template.id]);
-          const invalid = metadataInvalid || imageInvalid;
+          const invalid = metadataInvalid || imageInvalid || inactive;
           const validationMessage = template.validationError || templateImageErrors[template.id] || 'Não foi possível carregar a imagem local deste template.';
           return (
             <button
@@ -28,8 +29,8 @@ export default function TemplatePicker({ templates, selectedTemplateId, disabled
                 {invalid ? (
                   <div role="img" aria-label={`${template.label} indisponível`} className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center text-slate-500">
                     <ImageOff size={22} />
-                    <span className="text-xs font-semibold">Template indisponível</span>
-                    <span className="text-[10px] leading-4">{validationMessage}</span>
+                    <span className="text-xs font-semibold">{inactive ? 'Template inativo' : 'Template indisponível'}</span>
+                    <span className="text-[10px] leading-4">{inactive ? 'Ative este template na tela Templates para usá-lo.' : validationMessage}</span>
                   </div>
                 ) : (
                   <img
@@ -45,7 +46,7 @@ export default function TemplatePicker({ templates, selectedTemplateId, disabled
                 <div className="min-w-0">
                   <span className="block text-xs font-semibold text-slate-800">{template.label}</span>
                   {invalid ? (
-                    <span className="mt-1 block text-[10px] font-medium text-rose-600">Corrija o arquivo local para continuar.</span>
+                    <span className={`mt-1 block text-[10px] font-medium ${inactive ? 'text-slate-500' : 'text-rose-600'}`}>{inactive ? 'Inativo para geração.' : 'Corrija o arquivo local para continuar.'}</span>
                   ) : (
                     <>
                       <span className="mt-1 block text-[10px] text-slate-500">{formatTemplateMeta(template)}</span>

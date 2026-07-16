@@ -109,9 +109,8 @@ describe('local template inspection', () => {
     const app = createApp({
       generateImage: vi.fn(),
       keyResolver: { getStatus: vi.fn(async () => ({ configured: false, source: 'none' })), getOpenRouterApiKey: vi.fn(async () => null) },
-      templateCatalog: {
-        listTemplates: () => [],
-        inspectTemplates: async () => [{
+      templateService: {
+        list: async () => [{
           id: 'model-01',
           label: 'Modelo base 01',
           filename: 'model-01.webp',

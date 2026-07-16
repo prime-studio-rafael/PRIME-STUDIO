@@ -1,7 +1,6 @@
 import express from 'express';
 import multer from 'multer';
 import { generationConfig } from './config/generationConfig.js';
-import { listTemplates, getTemplateById, inspectTemplates } from './catalogs/templates.js';
 import { createConfigRouter } from './routes/config.js';
 import { createGenerationsRouter } from './routes/generations.js';
 import { createHealthRouter } from './routes/health.js';
@@ -9,6 +8,8 @@ import { createTemplatesRouter } from './routes/templates.js';
 import { createOpenRouterSecretsRouter } from './routes/openrouterSecrets.js';
 import { createGenerationService } from './services/generateImage.js';
 import { createLocalResultStorage } from './storage/localResultStorage.js';
+import { createLocalTemplateRepository } from './repositories/localTemplateRepository.js';
+import { createTemplateService } from './services/templateService.js';
 import { createOpenRouterClient } from './providers/openrouter/openrouterClient.js';
 import { createOpenRouterKeyValidator } from './providers/openrouter/openrouterKeyValidator.js';
 import { createOpenRouterKeyStore } from './secrets/openrouterKeyStore.js';
@@ -31,14 +32,21 @@ export function createApp({
     baseUrl: generationConfig.openRouterBaseUrl,
   }),
   resultStorage = createLocalResultStorage(),
+  templateRepository,
+  templateService,
   generationService,
   generateImage,
-  templateCatalog = { listTemplates, getTemplateById, inspectTemplates },
 } = {}) {
-  const resolvedGenerationService = generationService || (generateImage ? { generate: generateImage } : createGenerationService({
+  let resolvedGenerationService;
+  const resolvedTemplateRepository = templateRepository || createLocalTemplateRepository();
+  const resolvedTemplateService = templateService || createTemplateService({
+    repository: resolvedTemplateRepository,
+    isGenerationActive: () => Boolean(resolvedGenerationService?.isBusy?.()),
+  });
+  resolvedGenerationService = generationService || (generateImage ? { generate: generateImage, isBusy: () => false } : createGenerationService({
     openRouterClient,
     resultStorage,
-    templateCatalog,
+    templateService: resolvedTemplateService,
   }));
   const app = express();
   app.disable('x-powered-by');
@@ -46,7 +54,7 @@ export function createApp({
   app.use('/api/health', createHealthRouter({ keyResolver }));
   app.use('/api/config', createConfigRouter({ keyResolver }));
   app.use('/api/secrets/openrouter', createOpenRouterSecretsRouter({ keyStore, keyResolver, keyValidator }));
-  app.use('/api/templates', createTemplatesRouter({ templateCatalog }));
+  app.use('/api/templates', createTemplatesRouter({ templateService: resolvedTemplateService }));
   app.use('/api/generations', createGenerationsRouter({ generationService: resolvedGenerationService }));
 
   app.use((error, _request, response, _next) => {

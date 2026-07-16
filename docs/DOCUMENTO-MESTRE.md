@@ -1,8 +1,8 @@
 # PRIME STUDIO — Documento Mestre
 
-Versão: 1.1  
+Versão: 1.2
 Estado: referência oficial do projeto  
-Última consolidação: 16 de julho de 2026 — encerramento oficial da Fase 2
+Última consolidação: 16 de julho de 2026 — conclusão técnica da Fase 3
 
 ## 1. Autoridade e controle de escopo
 
@@ -39,7 +39,7 @@ O projeto preserva a proposta visual e funcional aprovada no PRIME IA STUDIO do 
 - Vite;
 - Tailwind CSS;
 - JavaScript;
-- uma única tela operacional;
+- uma SPA local com as views Nova geração e Templates, sem React Router;
 - estado mantido em memória durante a sessão.
 
 ### Backend local
@@ -48,7 +48,8 @@ O projeto preserva a proposta visual e funcional aprovada no PRIME IA STUDIO do 
 - Express;
 - upload multipart em memória;
 - serviço de geração separado do cliente OpenRouter;
-- catálogo local de templates;
+- serviço e repositório local de templates;
+- catálogo versionado em JSON com escrita atômica e backup;
 - validação compartilhada de imagens;
 - salvamento em filesystem local.
 
@@ -69,7 +70,8 @@ O projeto preserva a proposta visual e funcional aprovada no PRIME IA STUDIO do 
 - imagem final em `storage/results/`;
 - metadata JSON da geração em `storage/results/`;
 - roupa somente em memória;
-- template lido do catálogo local.
+- template lido do catálogo local;
+- catálogo e imagens de templates em `storage/templates/`.
 
 ### Infraestrutura deliberadamente ausente
 
@@ -208,11 +210,52 @@ Resultado consolidado:
 
 O registro oficial está em [FASE-02-ENCERRAMENTO.md](./FASE-02-ENCERRAMENTO.md).
 
-### Fase 3
+### Fase 3 — Templates Locais
 
-Estado: planejamento autorizado; implementação não autorizada.
+Estado: **FASE 3 TECNICAMENTE CONCLUÍDA em 16 de julho de 2026; aguardando somente autorização separada para commit e push**.
 
-Esta versão do Documento Mestre ainda não atribui funcionalidades definitivas à Fase 3. A auditoria, o escopo proposto, as prioridades e o cronograma devem ser submetidos à aprovação antes de qualquer alteração de código. A Fase 3 não pode ser implementada enquanto seu plano não for aprovado e incorporado a este documento.
+Escopo aprovado e implementado:
+
+- view Templates acessível pela sidebar, sem React Router;
+- listagem com imagem, nome, descrição, dados técnicos, validade, avisos e status;
+- criação, edição e substituição de imagem;
+- duplicação com novo ID e novo arquivo;
+- ativação e desativação;
+- exclusão com confirmação e proteção do último template válido e ativo;
+- preview com `object-contain` e inspeção antes do upload;
+- armazenamento local em `storage/templates/` por adaptador de repositório;
+- `catalog.json`, `catalog.json.bak` e imagens com nomes gerados pelo backend;
+- bootstrap dos templates `model-01` e `model-02` quando o catálogo ainda não existe;
+- escrita atômica, mutex de mutações, recuperação por backup, compensação e limpeza de órfãos;
+- proteção contra path traversal, schema versionado e limite operacional;
+- bloqueio frontend e backend das mutações durante geração ativa;
+- reconciliação da seleção quando um template deixa de ser válido e ativo;
+- geração desacoplada de caminhos físicos e integrada ao `TemplateService`;
+- compatibilidade integral com modelo, prompt, 1K, 1:1, snapshot, metadata, chamada única e zero retry da Fase 2.
+
+Continuam fora do escopo:
+
+- banco remoto, Supabase, autenticação ou sincronização;
+- histórico de templates;
+- busca, filtros ou paginação;
+- campos avançados por template;
+- ativação de 4:5;
+- qualquer funcionalidade da Fase 4.
+
+Detalhes e evidências: [FASE-03-IMPLEMENTACAO.md](./FASE-03-IMPLEMENTACAO.md).
+
+Validação final aprovada:
+
+- CRUD completo e proteção do último template válido e ativo;
+- persistência de registros, IDs, estados e imagens após reinício;
+- exclusões persistentes, sem reaparecimento de registros;
+- catálogos principal e backup válidos, sem Base64 ou caminhos físicos;
+- integração simulada com a geração preservando bytes, MIME, dimensões, `templateId` e metadata;
+- interface validada em desktop e móvel, sem crop, distorção ou overflow horizontal;
+- 23 arquivos e 95 testes aprovados;
+- build aprovado com 1.801 módulos transformados;
+- nenhuma geração real, chamada ao OpenRouter ou consumo de créditos;
+- Fase 4 não iniciada.
 
 ## 7. Critérios cumpridos para passagem da Fase 2
 
@@ -240,5 +283,6 @@ A declaração `FASE 2 CONCLUÍDA` foi registrada depois da confirmação de tod
 - [Encerramento da Fase 2](./FASE-02-ENCERRAMENTO.md)
 - [Rubrica oficial](./FASE-02-RUBRICA-QUALIDADE.md)
 - [Histórico do projeto](./HISTORICO.md)
+- [Fase 3 — Templates Locais](./FASE-03-IMPLEMENTACAO.md)
 
 Em caso de conflito de escopo, este Documento Mestre prevalece.

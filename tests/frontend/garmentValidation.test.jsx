@@ -8,7 +8,20 @@ const mocks = vi.hoisted(() => ({
   generateImage: vi.fn(),
 }));
 
-vi.mock('../../src/features/generation/api/generationClient.js', () => mocks);
+vi.mock('../../src/features/generation/api/generationClient.js', () => ({
+  fetchConfig: mocks.fetchConfig,
+  generateImage: mocks.generateImage,
+}));
+
+vi.mock('../../src/features/templates/api/templatesClient.js', () => ({
+  fetchTemplates: mocks.fetchTemplates,
+  createTemplate: vi.fn(),
+  updateTemplate: vi.fn(),
+  replaceTemplateImage: vi.fn(),
+  duplicateTemplate: vi.fn(),
+  setTemplateActive: vi.fn(),
+  deleteTemplate: vi.fn(),
+}));
 
 import App from '../../src/app/App.jsx';
 import ComparisonGrid from '../../src/features/generation/components/ComparisonGrid.jsx';
@@ -37,6 +50,7 @@ const templates = [{
   height: 1024,
   sizeBytes: 77966,
   fourByFiveReady: false,
+  active: true,
 }];
 
 beforeEach(() => {

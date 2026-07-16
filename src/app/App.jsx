@@ -9,11 +9,13 @@ import GenerationProgress from '../features/generation/components/GenerationProg
 import ComparisonGrid from '../features/generation/components/ComparisonGrid.jsx';
 import ResultActions from '../features/generation/components/ResultActions.jsx';
 import OpenRouterSettingsModal from '../features/settings/components/OpenRouterSettingsModal.jsx';
-import { fetchConfig, fetchTemplates } from '../features/generation/api/generationClient.js';
+import { fetchConfig } from '../features/generation/api/generationClient.js';
 import useGeneration from '../features/generation/hooks/useGeneration.js';
 import { useObjectUrl } from '../features/generation/utils/imagePreview.js';
 import { inspectGarmentFile, withBlockingError } from '../features/generation/utils/inspectUpload.js';
 import { imagePolicy } from '../../shared/imagePolicy.js';
+import TemplatesPage from '../features/templates/components/TemplatesPage.jsx';
+import useTemplates from '../features/templates/hooks/useTemplates.js';
 
 const initialConfig = {
   keyConfigured: false,
@@ -25,7 +27,6 @@ const initialConfig = {
 
 export default function App() {
   const [config, setConfig] = useState(initialConfig);
-  const [templates, setTemplates] = useState([]);
   const [bootstrapState, setBootstrapState] = useState('loading');
   const [bootstrapError, setBootstrapError] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
@@ -36,18 +37,19 @@ export default function App() {
   const [garmentError, setGarmentError] = useState('');
   const [confirmPaid, setConfirmPaid] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [activeView, setActiveView] = useState('generation');
+  const templateCatalog = useTemplates();
+  const templates = templateCatalog.templates;
   const garmentPreviewUrl = useObjectUrl(garmentFile);
   const inspectionSequenceRef = useRef(0);
   const { status, result, error, referenceSnapshot, generate, reset } = useGeneration();
 
   useEffect(() => {
     let ignore = false;
-    Promise.all([fetchConfig(), fetchTemplates()])
-      .then(([nextConfig, nextTemplates]) => {
+    fetchConfig()
+      .then((nextConfig) => {
         if (ignore) return;
         setConfig(nextConfig);
-        setTemplates(nextTemplates);
-        setSelectedTemplateId(nextTemplates[0]?.id || '');
         setBootstrapState('ready');
       })
       .catch((nextError) => {
@@ -60,6 +62,16 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (templateCatalog.status !== 'ready') return;
+    setSelectedTemplateId((current) => {
+      const selected = templates.find((template) => template.id === current);
+      if (selected?.valid && selected.active !== false) return current;
+      return templates.find((template) => template.valid && template.active !== false)?.id || '';
+    });
+    setTemplateImageErrors((current) => Object.fromEntries(Object.entries(current).filter(([id]) => templates.some((template) => template.id === id))));
+  }, [templateCatalog.status, templates]);
+
   useEffect(() => () => {
     inspectionSequenceRef.current += 1;
   }, []);
@@ -68,7 +80,7 @@ export default function App() {
     () => templates.find((template) => template.id === selectedTemplateId) || null,
     [selectedTemplateId, templates],
   );
-  const selectedTemplateValid = Boolean(selectedTemplate && selectedTemplate.valid !== false && !templateImageErrors[selectedTemplateId]);
+  const selectedTemplateValid = Boolean(selectedTemplate && selectedTemplate.valid !== false && selectedTemplate.active !== false && !templateImageErrors[selectedTemplateId]);
   const isBusy = status === 'preparing' || status === 'generating';
   const canGenerate = Boolean(
     config.keyConfigured
@@ -79,7 +91,9 @@ export default function App() {
     && !garmentInspecting
     && confirmPaid
     && !isBusy
-    && bootstrapState === 'ready',
+    && !templateCatalog.mutationPending
+    && bootstrapState === 'ready'
+    && templateCatalog.status === 'ready'
   );
 
   async function handleGarmentChange(file) {
@@ -146,7 +160,11 @@ export default function App() {
   }, []);
 
   return (
-    <AppShell keyConfigured={config.keyConfigured} onOpenSettings={() => setSettingsOpen(true)}>
+    <AppShell keyConfigured={config.keyConfigured} activeView={activeView} onNavigate={setActiveView} onOpenSettings={() => setSettingsOpen(true)}>
+      {activeView === 'templates' ? (
+        <TemplatesPage catalog={templateCatalog} policy={config.imagePolicy || imagePolicy} generationBusy={isBusy} />
+      ) : (
+        <>
       <header className="mb-8 flex flex-col gap-4 border-b border-slate-200/80 pb-6 md:flex-row md:items-end md:justify-between">
         <div>
           <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -164,23 +182,23 @@ export default function App() {
         </div>
       </header>
 
-      {bootstrapState === 'loading' && (
+      {(bootstrapState === 'loading' || templateCatalog.status === 'loading') && (
         <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-slate-200 bg-white">
           <Loader2 className="animate-spin text-slate-500" size={24} />
         </div>
       )}
 
-      {bootstrapState === 'error' && (
+      {(bootstrapState === 'error' || templateCatalog.status === 'error') && (
         <div className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-800">
           <AlertCircle size={18} className="mt-0.5 shrink-0" />
           <div>
             <p className="font-semibold">A configuração local não carregou.</p>
-            <p className="mt-1 text-rose-700">{bootstrapError}</p>
+            <p className="mt-1 text-rose-700">{bootstrapError || templateCatalog.error}</p>
           </div>
         </div>
       )}
 
-      {bootstrapState === 'ready' && (
+      {bootstrapState === 'ready' && templateCatalog.status === 'ready' && (
         <div className="space-y-6">
           <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.92fr)]">
             <div className="space-y-6">
@@ -274,6 +292,8 @@ export default function App() {
             </section>
           )}
         </div>
+      )}
+        </>
       )}
       <OpenRouterSettingsModal
         open={settingsOpen}

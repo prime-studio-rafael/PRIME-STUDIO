@@ -1,6 +1,6 @@
-import { CheckCircle2, ImagePlus, Settings2, ShieldAlert, Sparkles } from 'lucide-react';
+import { CheckCircle2, ImagePlus, LayoutGrid, Settings2, ShieldAlert, Sparkles } from 'lucide-react';
 
-export default function Sidebar({ keyConfigured, onOpenSettings }) {
+export default function Sidebar({ keyConfigured, activeView = 'generation', onNavigate, onOpenSettings }) {
   return (
     <aside className="flex w-full shrink-0 flex-col bg-[#0c0c0e] p-5 text-white sm:min-h-screen sm:w-[260px] sm:p-6">
       <div className="flex items-center gap-3">
@@ -14,10 +14,14 @@ export default function Sidebar({ keyConfigured, onOpenSettings }) {
       </div>
 
       <nav className="mt-7 space-y-1 sm:mt-10" aria-label="Navegação principal">
-        <div className="flex items-center gap-3 rounded-xl bg-white/[0.09] px-3 py-2.5 text-sm font-medium text-white">
+        <button type="button" onClick={() => onNavigate?.('generation')} aria-current={activeView === 'generation' ? 'page' : undefined} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${activeView === 'generation' ? 'bg-white/[0.09] text-white' : 'text-slate-400 hover:bg-white/[0.07] hover:text-white'}`}>
           <ImagePlus size={17} className="text-slate-300" />
           Nova geração
-        </div>
+        </button>
+        <button type="button" onClick={() => onNavigate?.('templates')} aria-current={activeView === 'templates' ? 'page' : undefined} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${activeView === 'templates' ? 'bg-white/[0.09] text-white' : 'text-slate-400 hover:bg-white/[0.07] hover:text-white'}`}>
+          <LayoutGrid size={17} />
+          Templates
+        </button>
         <button type="button" onClick={onOpenSettings} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-400 transition hover:bg-white/[0.07] hover:text-white">
           <Settings2 size={17} />
           Configurações

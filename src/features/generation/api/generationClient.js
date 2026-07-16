@@ -14,11 +14,6 @@ export async function fetchConfig() {
   return requestJson('/api/config');
 }
 
-export async function fetchTemplates() {
-  const body = await requestJson('/api/templates');
-  return body.templates || [];
-}
-
 export async function generateImage({ templateId, modelId, garmentFile, confirmPaid }) {
   const formData = new FormData();
   formData.append('templateId', templateId);

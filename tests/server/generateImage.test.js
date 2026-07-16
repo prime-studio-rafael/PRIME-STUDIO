@@ -4,7 +4,10 @@ import path from 'node:path';
 import { createGenerationService } from '../../server/services/generateImage.js';
 import { createLocalResultStorage } from '../../server/storage/localResultStorage.js';
 import { AppError } from '../../server/utils/errors.js';
+import { validateImageBuffer } from '../../server/utils/fileValidation.js';
 import { generationConfig } from '../../server/config/generationConfig.js';
+import { createLocalTemplateRepository } from '../../server/repositories/localTemplateRepository.js';
+import { createTemplateService } from '../../server/services/templateService.js';
 
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
 const responseBase64 = png.toString('base64');
@@ -22,7 +25,20 @@ function createService({ templatePath, openRouterClient, resultStorage, now = ()
     openRouterClient,
     resultStorage,
     now,
-    templateCatalog: { getTemplateById: () => ({ id: 'model-01', filePath: templatePath }) },
+    templateService: {
+      getForGeneration: vi.fn(async () => {
+        const buffer = await readFile(templatePath);
+        const image = validateImageBuffer(buffer, {
+          maxBytes: generationConfig.maxFileSizeBytes,
+          fieldLabel: 'Modelo base 01',
+          fileName: 'model-01.jpeg',
+          expectedMimeType: 'image/jpeg',
+          role: 'template',
+          policy: generationConfig.imagePolicy,
+        });
+        return { publicTemplate: { id: 'model-01', label: 'Modelo base 01', valid: true, active: true }, image };
+      }),
+    },
   });
 }
 
@@ -78,6 +94,46 @@ describe('generation service', () => {
     expect(JSON.stringify(metadata)).not.toContain('base64');
   });
 
+  it('uses a newly created local template and preserves its id, bytes and metadata contract', async () => {
+    const repository = createLocalTemplateRepository({ templatesDirectory: path.join(fixture.directory, 'templates') });
+    const templateService = createTemplateService({ repository });
+    const created = await templateService.create({
+      label: 'Template criado no teste',
+      description: 'Integração simulada',
+      file: garmentFile,
+    });
+    const provider = {
+      generate: vi.fn(async () => ({
+        body: { data: [{ b64_json: responseBase64, media_type: 'image/png' }], usage: { cost: 0.034 } },
+        requestId: 'created-template-request',
+      })),
+    };
+    const storage = { save: vi.fn(async () => ({ saved: true, metadataSaved: true, imageFilename: 'mock.png', metadataFilename: 'mock.json' })) };
+    const service = createGenerationService({ openRouterClient: provider, resultStorage: storage, templateService });
+
+    await service.generate({ templateId: created.id, modelId: generationConfig.modelId, confirmPaid: true, garmentFile });
+
+    const resolved = await templateService.getForGeneration(created.id);
+    expect(resolved.publicTemplate).toMatchObject({ id: created.id, active: true, valid: true, mimeType: 'image/jpeg', width: 773, height: 1024 });
+    expect(resolved.image.buffer.equals(garmentFile.buffer)).toBe(true);
+    expect(provider.generate).toHaveBeenCalledTimes(1);
+    expect(provider.generate.mock.calls[0][0]).toMatchObject({
+      model: 'google/gemini-3.1-flash-lite-image',
+      resolution: '1K',
+      aspectRatio: '1:1',
+      inputReferences: [expect.stringMatching(/^data:image\/jpeg;base64,/), expect.stringMatching(/^data:image\/jpeg;base64,/)],
+    });
+    expect(storage.save.mock.calls[0][0].metadata).toMatchObject({
+      promptVersion: 'upper-garment-v2',
+      model: 'google/gemini-3.1-flash-lite-image',
+      resolution: '1K',
+      effectiveAspectRatio: '1:1',
+      inputTemplateId: created.id,
+      inputTemplateMime: 'image/jpeg',
+      inputTemplateDimensions: { width: 773, height: 1024 },
+    });
+  });
+
   it('requires paid confirmation', async () => {
     const provider = { generate: vi.fn() };
     const service = createService({ templatePath: fixture.templatePath, openRouterClient: provider, resultStorage: { save: vi.fn() } });
@@ -86,9 +142,29 @@ describe('generation service', () => {
     expect(provider.generate).not.toHaveBeenCalled();
   });
 
+  it('does not start while a template mutation is active', async () => {
+    const provider = { generate: vi.fn() };
+    const service = createGenerationService({
+      openRouterClient: provider,
+      resultStorage: { save: vi.fn() },
+      templateService: { isBusy: () => true, getForGeneration: vi.fn() },
+    });
+
+    await expect(service.generate({ templateId: 'model-01', modelId: generationConfig.modelId, confirmPaid: true, garmentFile })).rejects.toMatchObject({ code: 'TEMPLATE_MUTATION_IN_PROGRESS', status: 409 });
+    expect(provider.generate).not.toHaveBeenCalled();
+  });
+
   it('rejects an invalid template without calling the provider', async () => {
     const provider = { generate: vi.fn() };
-    const service = createGenerationService({ openRouterClient: provider, resultStorage: { save: vi.fn() }, templateCatalog: { getTemplateById: () => null } });
+    const service = createGenerationService({
+      openRouterClient: provider,
+      resultStorage: { save: vi.fn() },
+      templateService: {
+        getForGeneration: vi.fn(async () => {
+          throw new AppError('INVALID_TEMPLATE', 'O template selecionado não existe.', { status: 400 });
+        }),
+      },
+    });
 
     await expect(service.generate({ templateId: 'missing', modelId: generationConfig.modelId, confirmPaid: true, garmentFile })).rejects.toMatchObject({ code: 'INVALID_TEMPLATE' });
     expect(provider.generate).not.toHaveBeenCalled();

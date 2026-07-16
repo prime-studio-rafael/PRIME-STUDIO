@@ -10,7 +10,8 @@ O escopo e a ordem das fases são definidos pelo [Documento Mestre](docs/DOCUMEN
 - Fase 02A: concluída;
 - Fase 02B: concluída;
 - Fase 2: **concluída oficialmente em 16 de julho de 2026**;
-- Fase 3: planejamento autorizado; implementação ainda não autorizada.
+- Fase 3: **tecnicamente concluída em 16 de julho de 2026**; aguardando somente autorização separada para commit e push.
+- Fase 4: não iniciada.
 
 O encerramento está registrado em [FASE-02-ENCERRAMENTO.md](docs/FASE-02-ENCERRAMENTO.md) e a evolução consolidada do projeto em [HISTORICO.md](docs/HISTORICO.md).
 
@@ -24,7 +25,7 @@ O encerramento está registrado em [FASE-02-ENCERRAMENTO.md](docs/FASE-02-ENCERR
 Entre na pasta do projeto:
 
 ```bash
-cd /Users/macbook/Projetos/PRIME-STUDIO
+cd PRIME-STUDIO
 ```
 
 ```bash
@@ -55,10 +56,10 @@ Depois de salvar, o campo é limpo e a chave nunca é devolvida ao navegador. Us
 
 ### Fallback opcional por `.env`
 
-Para desenvolvimento local, o backend ainda aceita a chave em `.env`. O arquivo carregado é exatamente:
+Para desenvolvimento local, o backend ainda aceita a chave no `.env` da raiz do projeto:
 
 ```text
-/Users/macbook/Projetos/PRIME-STUDIO/.env
+PRIME-STUDIO/.env
 ```
 
 Use a linha abaixo, sem o prefixo `VITE_`:
@@ -71,20 +72,27 @@ O Keychain tem prioridade. Se uma chave estiver salva no Chaves do macOS, ela se
 
 ## Templates locais
 
-Os arquivos usados pelo catálogo são exatamente:
+Abra **Templates** na sidebar para criar, editar, substituir, duplicar, ativar, desativar ou excluir modelos-base sem editar arquivos manualmente.
+
+No primeiro uso, o sistema importa automaticamente os dois templates versionados:
 
 - `public/templates/model-01.jpeg`
 - `public/templates/model-02.jpeg`
 
-Substitua os dois arquivos pelas fotografias aprovadas, mantendo os mesmos nomes e bytes JPEG. A Fase 2 foi validada com os templates atuais e geração em 1:1. Fotografias verticais em 4:5 ficam como recomendação para uma melhoria futura. Cada template deve ter pelo menos 0,75 MP, sem rotação EXIF pendente, e pode ter até 10 MB.
+Os IDs `model-01` e `model-02` são preservados e os bytes são copiados para:
 
-O catálogo confere extensão, MIME, bytes, integridade, dimensões, proporção e orientação. Se quiser usar PNG ou WebP, altere também os nomes, `expectedMimeType` e URLs em `server/catalogs/templates.js`; não salve JPEG com extensão `.webp`.
+```text
+storage/templates/
+├── catalog.json
+├── catalog.json.bak
+└── images/
+```
 
-Se você mantiver os nomes, não é necessário reiniciar o servidor Node: basta recarregar a página. Um hard refresh do navegador pode ser necessário por cache.
+Depois do bootstrap, o catálogo persistido é a autoridade: templates excluídos não reaparecem ao reiniciar. Se `storage/templates/` for apagado por completo, os dois arquivos versionados são importados novamente como sementes.
 
-Se alterar nomes, extensões ou IDs, atualize `server/catalogs/templates.js` e reinicie `npm run dev`.
+Novos templates aceitam JPEG, PNG ou WebP, até 10 MB, com mínimo de 768×960 e 0,75 MP, em orientação vertical e sem rotação EXIF pendente. A interface mostra preview, formato real, dimensões, proporção, tamanho, erros e avisos antes de salvar. Nenhuma imagem é convertida, recortada, redimensionada ou recomprimida.
 
-Os arquivos `model-01-legacy-q70.jpeg` e `model-02-legacy-q70.jpeg` preservam as versões JPEG anteriores de menor qualidade e não são usados pelo catálogo. Os SVGs e `00model-*.webp` são placeholders legados e também não são usados. Não há imagens remotas.
+O catálogo e as imagens são locais e ignorados pelo Git. A arquitetura, os endpoints e as regras de recuperação estão registrados em [FASE-03-IMPLEMENTACAO.md](docs/FASE-03-IMPLEMENTACAO.md).
 
 ## Salvamento
 
@@ -128,11 +136,11 @@ npm test
 npm run build
 ```
 
-Os testes usam respostas simuladas e não acessam o OpenRouter.
+Os testes usam respostas simuladas e não acessam o OpenRouter. Estado atual: 23 arquivos e 95 testes aprovados, incluindo os 63 testes anteriores.
 
 ## Limitações intencionais
 
-- somente uma tela;
+- uma aplicação local com as views Nova geração e Templates, sem React Router;
 - somente Nano Banana 2 Lite;
 - somente roupas superiores;
 - proporção efetiva validada em 1:1 na Fase 2; 4:5 é melhoria futura;
@@ -140,5 +148,5 @@ Os testes usam respostas simuladas e não acessam o OpenRouter.
 - sem histórico navegável;
 - sem banco, autenticação, fila ou infraestrutura em nuvem;
 - sem retry automático;
-- templates atuais são fotografias locais JPEG válidas para a geração 1:1; a futura adoção de 4:5 exigirá templates compatíveis.
+- templates atuais são fotografias locais JPEG válidas para a geração 1:1; a futura adoção de 4:5 exigirá templates compatíveis;
 - chave persistida apenas no Chaves do macOS; o `.env` é somente fallback local.
