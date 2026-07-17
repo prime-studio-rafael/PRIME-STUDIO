@@ -5,4 +5,7 @@ dist/
 /storage/
 coverage/
 .DS_Store
-.claude/
+.claude/*
+!.claude/skills/
+!.claude/skills/prime-studio/
+!.claude/skills/prime-studio/SKILL.md
