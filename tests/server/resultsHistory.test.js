@@ -89,6 +89,19 @@ describe('local results history', () => {
     expect(JSON.parse(await readFile(path.join(directory, 'legacy.json'), 'utf8'))).toMatchObject({ id: 'legacy-id' });
   });
 
+  it('lists only approved assets with original bytes, and rejects when none are approved', async () => {
+    const { storage } = await fixture();
+    const service = createResultService({ storage });
+    await expect(service.listApprovedAssets()).rejects.toMatchObject({ code: 'NO_APPROVED_RESULTS', status: 404 });
+    await service.setReviewStatus('new-id', 'approved');
+    const assets = await service.listApprovedAssets();
+    expect(assets).toHaveLength(1);
+    expect(assets[0]).toMatchObject({ id: 'new-id', mimeType: 'image/webp' });
+    expect(assets[0].buffer).toEqual(image);
+    await service.setReviewStatus('legacy-id', 'rejected');
+    expect(await service.listApprovedAssets()).toHaveLength(1);
+  });
+
   it('stores result, template, garment and metadata without Base64', async () => {
     const { directory } = await fixture();
     const files = await readdir(path.join(directory, 'new-id'));

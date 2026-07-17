@@ -13,7 +13,12 @@ export function createResultService({ storage, templateService } = {}) {
     return normalize(await storage.updateMetadata(id, (metadata) => ({ ...metadata, reviewStatus })), templateService);
   }
   async function remove(id) { await storage.delete(id); return { deleted: true, id }; }
-  return Object.freeze({ list, get, readAsset: storage.readAsset, setReviewStatus, delete: remove });
+  async function listApprovedAssets() {
+    const approved = (await list()).filter((result) => result.reviewStatus === 'approved');
+    if (!approved.length) throw new AppError('NO_APPROVED_RESULTS', 'Nenhum resultado aprovado para baixar.', { status: 404 });
+    return Promise.all(approved.map(async (result) => ({ id: result.id, ...(await storage.readAsset(result.id, 'result')) })));
+  }
+  return Object.freeze({ list, get, readAsset: storage.readAsset, setReviewStatus, delete: remove, listApprovedAssets });
 }
 
 async function normalize(entry, templateService) {

@@ -12,3 +12,4 @@ export function fetchResults() { return requestJson('/api/results'); }
 export function fetchResult(id) { return requestJson(`/api/results/${encodeURIComponent(id)}`); }
 export function updateResultStatus(id, reviewStatus) { return requestJson(`/api/results/${encodeURIComponent(id)}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reviewStatus }) }); }
 export function deleteResult(id) { return requestJson(`/api/results/${encodeURIComponent(id)}`, { method: 'DELETE' }); }
+export const APPROVED_ZIP_DOWNLOAD_URL = '/api/results/download/approved';
