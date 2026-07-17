@@ -1,8 +1,8 @@
 # PRIME STUDIO — Documento Mestre
 
-Versão: 1.3
+Versão: 1.4
 Estado: referência oficial do projeto  
-Última consolidação: 16 de julho de 2026 — implementação da Fase 5 aguardando validação final
+Última consolidação: 17 de julho de 2026 — Fase 5 concluída oficialmente; Fase 6 ainda não iniciada
 
 ## 1. Autoridade e controle de escopo
 
@@ -294,16 +294,31 @@ Detalhes: [FASE-04-IMPLEMENTACAO.md](./FASE-04-IMPLEMENTACAO.md).
 
 ### Fase 5 — Produção em Lotes
 
-Estado: implementação concluída, **aguardando validação final**.
+Estado: **FASE 5 OFICIALMENTE CONCLUÍDA em 17 de julho de 2026**.
 
 - lotes locais persistidos com snapshot de template e roupas;
 - fila sequencial, concorrência global 1 com geração individual e zero retry;
 - estados, pausa, retomada explícita, cancelamento e recuperação segura após reinício;
 - resultados da Fase 4 vinculados por `batchId` e `batchItemId`;
 - sem banco, autenticação, agendamento ou processamento paralelo;
-- nenhuma geração real foi executada durante a implementação.
+- validação real com lote de 8 roupas: **8/8 itens concluídos**, custo estimado US$ 0,272 e custo real US$ 0,27618 (≈ US$ 0,28), processamento sequencial, uma chamada por item, zero retry automático, resultados persistidos corretamente;
+- correção do botão "Abrir resultado", que agora abre diretamente o resultado correto vindo da fila de lotes;
+- fluxo Aprovar/Reprovar com avanço automático para o próximo resultado pendente e fechamento com mensagem de conclusão quando a fila termina;
+- download em lote (ZIP) dos resultados aprovados, preservando bytes e extensões originais;
+- 124 testes aprovados em 28 arquivos e build aprovado;
+- nenhuma geração real fora da validação autorizada, nenhuma chamada ao OpenRouter fora dela e nenhum crédito consumido além do registrado na validação.
 
 Detalhes: [FASE-05-IMPLEMENTACAO.md](./FASE-05-IMPLEMENTACAO.md).
+
+Fase 6 ainda não foi iniciada.
+
+#### Próximas melhorias aprovadas, ainda não iniciadas
+
+- **Fase 5.1 — UX Enterprise da Fila de Produção**, inspirada na referência visual Base44;
+- **Branding/Logo**: upload e validação de logo transparente, aprovação explícita do usuário e aplicação automática por overlay tradicional, sem uso de IA para redesenhar a logo, mantendo sempre disponível a versão original sem logo;
+- **download em massa das imagens finais**, ampliando o download em lote já validado na Fase 5.
+
+Nenhuma dessas melhorias foi iniciada; permanecem fora do escopo até aprovação explícita de início.
 
 ## 7. Critérios cumpridos para passagem da Fase 2
 

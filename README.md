@@ -12,7 +12,7 @@ O escopo e a ordem das fases são definidos pelo [Documento Mestre](docs/DOCUMEN
 - Fase 2: **concluída oficialmente em 16 de julho de 2026**;
 - Fase 3: **concluída oficialmente e publicada em 16 de julho de 2026**.
 - Fase 4: **concluída oficialmente em 16 de julho de 2026**.
-- Fase 5: implementação concluída, aguardando validação final.
+- Fase 5: **concluída oficialmente em 17 de julho de 2026**.
 
 O encerramento está registrado em [FASE-02-ENCERRAMENTO.md](docs/FASE-02-ENCERRAMENTO.md) e a evolução consolidada do projeto em [HISTORICO.md](docs/HISTORICO.md).
 
@@ -117,11 +117,13 @@ storage/results/<generation-id>/
 
 Resultados anteriores no formato imagem + JSON continuam compatíveis. Abra **Resultados** na sidebar para filtrar, comparar, aprovar, reprovar, baixar ou excluir gerações locais. Referências históricas que nunca foram salvas aparecem como indisponíveis.
 
+Ao aprovar ou reprovar um resultado, o modal avança automaticamente para o próximo resultado com revisão pendente, na mesma ordem da lista (mais recente para o mais antigo). Quando não há mais pendentes, o modal fecha e uma mensagem discreta confirma o fim da revisão. Com o filtro **Aprovados** ativo, o botão **Baixar todas as aprovadas** gera um único ZIP local com os arquivos finais já persistidos, bytes e extensões originais.
+
 O diretório ainda não existe enquanto nenhuma geração for concluída; ele será criado automaticamente no primeiro sucesso.
 
 ## Produção em Lotes
 
-Abra **Produção em Lotes** na sidebar para criar um lote com um template local válido e várias roupas. Os arquivos são validados e copiados para `storage/batches/`; o lote não inicia automaticamente. Depois da confirmação explícita de créditos, a fila processa estritamente um item por vez e compartilha a mesma trava global da geração individual. Pausa, retomada explícita e cancelamento preservam o estado local. Consulte [FASE-05-IMPLEMENTACAO.md](docs/FASE-05-IMPLEMENTACAO.md) para os estados e limitações.
+Abra **Produção em Lotes** na sidebar para criar um lote com um template local válido e várias roupas. Os arquivos são validados e copiados para `storage/batches/`; o lote não inicia automaticamente. Depois da confirmação explícita de créditos, a fila processa estritamente um item por vez e compartilha a mesma trava global da geração individual. Pausa, retomada explícita e cancelamento preservam o estado local. O botão "Abrir resultado" de cada item leva diretamente ao resultado correspondente na tela Resultados. Consulte [FASE-05-IMPLEMENTACAO.md](docs/FASE-05-IMPLEMENTACAO.md) para os estados, a validação real e as limitações.
 
 ## Parar os servidores
 
@@ -153,7 +155,7 @@ npm test
 npm run build
 ```
 
-Os testes usam respostas simuladas e não acessam o OpenRouter. Estado atual: 26 arquivos e 108 testes aprovados, incluindo os 95 testes anteriores à Fase 4.
+Os testes usam respostas simuladas e não acessam o OpenRouter. Estado atual: 28 arquivos e 124 testes aprovados, incluindo os 108 testes anteriores ao encerramento da Fase 5.
 
 ## Limitações intencionais
 

@@ -2,7 +2,7 @@
 
 Documento subordinado ao [Documento Mestre](./DOCUMENTO-MESTRE.md).
 
-Estado: **implementada e aguardando validação final do usuário**. Não conclui oficialmente a Fase 5.
+Estado: **FASE 5 OFICIALMENTE CONCLUÍDA em 17 de julho de 2026**, validada com lote real e correções de fluxo de revisão aplicadas.
 
 ## Arquitetura
 
@@ -34,8 +34,41 @@ A fila persiste `preparing`, então `generating` e `attempts: 1` imediatamente a
 
 A view **Produção em Lotes** permite selecionar template local válido, arrastar ou escolher várias roupas, remover itens antes de criar, revisar formato/tamanho, confirmar créditos, ver estimativa e acompanhar itens por polling moderado. Mostra ações iniciar/pausar/retomar/cancelar e links para resultados concluídos.
 
+## Correções pós-implementação
+
+Depois da validação real, dois pontos de UX foram corrigidos e já estão incluídos no encerramento desta fase:
+
+- **Botão "Abrir resultado"**: o clique navegava para a tela Resultados mas descartava o `resultId` do item, deixando a lista aberta sem selecionar nada. Corrigido para abrir diretamente o `ResultDetailModal` do resultado correspondente, tanto entrando pela tela Resultados quanto pelo botão do item de lote.
+- **Aprovar/Reprovar com avanço automático**: ao aprovar ou reprovar um resultado, o modal agora localiza automaticamente o próximo resultado com `reviewStatus = pending` (seguindo a mesma ordem da lista, do mais recente para o mais antigo) e o abre no lugar. Quando não há mais pendentes, o modal fecha e uma mensagem discreta é exibida ("Revisão concluída. Não há mais resultados pendentes."). Erro de persistência mantém o modal atual, sem avanço nem atualização otimista incorreta.
+- **Download em lote das aprovadas**: a tela Resultados, com o filtro Aprovados ativo, oferece "Baixar todas as aprovadas", que gera um único ZIP no backend (`GET /api/results/download/approved`) com os arquivos finais já persistidos, bytes e extensões originais, sem Base64, sem template/roupa/metadata, com nomes únicos e sem exposição de caminho físico. O download individual por resultado continua disponível.
+
+## Validação real do lote
+
+Lote executado com 8 roupas reais sobre o template `model-01`:
+
+- **8/8 itens concluídos** (`status: completed`, sem falhas, cancelamentos ou interrupções);
+- processamento estritamente sequencial, concorrência global igual a 1;
+- **uma chamada por item**, **zero retry automático**;
+- custo estimado: **US$ 0,272**; custo real: **US$ 0,27618** (≈ US$ 0,28);
+- todos os resultados persistidos em `storage/results/<generation-id>/`, com `resultId`, `batchId` e `batchItemId` corretos em cada item de `batch.json`;
+- botão "Abrir resultado" validado para os 8 itens, abrindo o modal correto em cada caso;
+- fluxo de aprovação/reprovação com avanço automático validado com dados reais até o fechamento do modal e a mensagem de conclusão;
+- download do ZIP de aprovadas validado com os arquivos reais, bytes idênticos aos originais.
+
+## Testes e build
+
+- **124 testes aprovados** em 28 arquivos (`npm test`);
+- **build aprovado** (`npm run build`);
+- nenhuma geração real, chamada ao OpenRouter ou consumo de créditos durante os testes, o build ou as correções de UX.
+
 ## Limitações intencionais
 
-Não há processamento paralelo, retry, banco, agendamento, WebSocket, remoção pós-criação ou recuperação automática. A validação final manual e testes completos ainda são necessários antes do encerramento e de qualquer commit/push.
+Não há processamento paralelo, retry, banco, agendamento, WebSocket, remoção pós-criação ou recuperação automática.
 
-Nenhuma chamada ao OpenRouter foi executada durante esta implementação.
+## Próximas melhorias aprovadas, ainda não iniciadas
+
+- **Fase 5.1 — UX Enterprise da Fila de Produção**, inspirada na referência visual Base44;
+- **Branding/Logo**: upload e validação de logo transparente, aprovação explícita do usuário e aplicação automática por overlay tradicional (sem uso de IA para redesenhar a logo), mantendo sempre a versão original sem logo disponível;
+- **download em massa das imagens finais** (ampliação do download em lote já validado nesta fase).
+
+Nenhuma dessas melhorias foi iniciada. A Fase 6 também não foi iniciada.
