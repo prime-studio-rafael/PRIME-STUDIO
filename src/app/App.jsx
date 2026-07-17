@@ -172,7 +172,7 @@ export default function App() {
       ) : activeView === 'results' ? (
         <ResultsPage history={resultHistory} />
       ) : activeView === 'batches' ? (
-        <BatchesPage batchesState={batchesState} templates={templates} keyConfigured={config.keyConfigured} onOpenResult={() => setActiveView('results')} />
+        <BatchesPage batchesState={batchesState} templates={templates} keyConfigured={config.keyConfigured} onOpenResult={(resultId) => { setActiveView('results'); resultHistory.open(resultId).catch(() => {}); }} />
       ) : (
         <>
       <header className="mb-8 flex flex-col gap-4 border-b border-slate-200/80 pb-6 md:flex-row md:items-end md:justify-between">
