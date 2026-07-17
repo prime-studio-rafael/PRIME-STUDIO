@@ -6,6 +6,7 @@ import {
   saveOpenRouterKey,
   testOpenRouterKey,
 } from '../api/openRouterSettingsClient.js';
+import BrandingPage from '../../branding/components/BrandingPage.jsx';
 
 const initialStatus = { configured: false, source: 'none' };
 
@@ -15,6 +16,7 @@ export default function OpenRouterSettingsModal({ open, onClose, onStatusChange 
   const [showKey, setShowKey] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [tab, setTab] = useState('openrouter');
   const onStatusChangeRef = useRef(onStatusChange);
   onStatusChangeRef.current = onStatusChange;
 
@@ -107,46 +109,59 @@ export default function OpenRouterSettingsModal({ open, onClose, onStatusChange 
           <button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-950" aria-label="Fechar configurações"><X size={18} /></button>
         </header>
 
-        <div className="space-y-5 p-5 sm:p-6">
-          <StatusBanner status={visualStatus} />
-
-          <form onSubmit={handleSave} className="rounded-xl border border-slate-200 bg-white p-4">
-            <label htmlFor="openrouter-api-key" className="text-sm font-semibold text-slate-900">API Key do OpenRouter</label>
-            <p className="mt-1 text-xs leading-5 text-slate-500">Cole a chave apenas para salvá-la. Depois disso, o campo fica vazio e a chave não é exibida novamente.</p>
-            <div className="mt-3 flex gap-2">
-              <input
-                id="openrouter-api-key"
-                type={showKey && !keyAlreadySaved ? 'text' : 'password'}
-                autoComplete="off"
-                value={apiKey}
-                onChange={(event) => setApiKey(event.target.value)}
-                placeholder={keyAlreadySaved ? 'Digite uma nova chave para substituir a atual' : 'Cole a chave do OpenRouter'}
-                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 font-mono text-xs text-slate-900 outline-none transition placeholder:font-sans placeholder:text-slate-400 focus:border-slate-950 focus:ring-2 focus:ring-slate-950/10"
-              />
-              {!keyAlreadySaved && (
-                <button type="button" onClick={() => setShowKey((current) => !current)} className="rounded-xl border border-slate-200 px-3 text-slate-600 transition hover:border-slate-400 hover:text-slate-950" aria-label={showKey ? 'Ocultar chave' : 'Mostrar chave'}>
-                  {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              )}
-            </div>
-            <button type="submit" disabled={loading || !apiKey.trim()} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">
-              {loading ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
-              Salvar chave
-            </button>
-          </form>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <button type="button" disabled={loading || !status.configured} onClick={handleTest} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-950 disabled:cursor-not-allowed disabled:border-slate-100 disabled:text-slate-400">
-              {loading ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-              Testar conexão
-            </button>
-            <button type="button" disabled={loading || !keyAlreadySaved} onClick={handleDelete} className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:border-slate-100 disabled:text-slate-400">
-              <Trash2 size={16} /> Remover chave
-            </button>
-          </div>
-
-          {feedback && <FeedbackMessage feedback={feedback} />}
+        <div className="flex gap-1 border-b border-slate-200 bg-white px-5 pt-3 sm:px-6" role="tablist" aria-label="Seções de configurações">
+          <button type="button" role="tab" aria-selected={tab === 'openrouter'} onClick={() => setTab('openrouter')} className={`rounded-t-lg px-3 py-2 text-xs font-semibold ${tab === 'openrouter' ? 'border-b-2 border-slate-950 text-slate-950' : 'text-slate-500'}`}>OpenRouter</button>
+          <button type="button" role="tab" aria-selected={tab === 'branding'} onClick={() => setTab('branding')} className={`rounded-t-lg px-3 py-2 text-xs font-semibold ${tab === 'branding' ? 'border-b-2 border-slate-950 text-slate-950' : 'text-slate-500'}`}>Branding</button>
         </div>
+
+        {tab === 'openrouter' && (
+          <div className="space-y-5 p-5 sm:p-6">
+            <StatusBanner status={visualStatus} />
+
+            <form onSubmit={handleSave} className="rounded-xl border border-slate-200 bg-white p-4">
+              <label htmlFor="openrouter-api-key" className="text-sm font-semibold text-slate-900">API Key do OpenRouter</label>
+              <p className="mt-1 text-xs leading-5 text-slate-500">Cole a chave apenas para salvá-la. Depois disso, o campo fica vazio e a chave não é exibida novamente.</p>
+              <div className="mt-3 flex gap-2">
+                <input
+                  id="openrouter-api-key"
+                  type={showKey && !keyAlreadySaved ? 'text' : 'password'}
+                  autoComplete="off"
+                  value={apiKey}
+                  onChange={(event) => setApiKey(event.target.value)}
+                  placeholder={keyAlreadySaved ? 'Digite uma nova chave para substituir a atual' : 'Cole a chave do OpenRouter'}
+                  className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 font-mono text-xs text-slate-900 outline-none transition placeholder:font-sans placeholder:text-slate-400 focus:border-slate-950 focus:ring-2 focus:ring-slate-950/10"
+                />
+                {!keyAlreadySaved && (
+                  <button type="button" onClick={() => setShowKey((current) => !current)} className="rounded-xl border border-slate-200 px-3 text-slate-600 transition hover:border-slate-400 hover:text-slate-950" aria-label={showKey ? 'Ocultar chave' : 'Mostrar chave'}>
+                    {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                )}
+              </div>
+              <button type="submit" disabled={loading || !apiKey.trim()} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400">
+                {loading ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
+                Salvar chave
+              </button>
+            </form>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button type="button" disabled={loading || !status.configured} onClick={handleTest} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-950 disabled:cursor-not-allowed disabled:border-slate-100 disabled:text-slate-400">
+                {loading ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                Testar conexão
+              </button>
+              <button type="button" disabled={loading || !keyAlreadySaved} onClick={handleDelete} className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:border-slate-100 disabled:text-slate-400">
+                <Trash2 size={16} /> Remover chave
+              </button>
+            </div>
+
+            {feedback && <FeedbackMessage feedback={feedback} />}
+          </div>
+        )}
+
+        {tab === 'branding' && (
+          <div className="p-5 sm:p-6">
+            <BrandingPage open={open} />
+          </div>
+        )}
       </section>
     </div>
   );

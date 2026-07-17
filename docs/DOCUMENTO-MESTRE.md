@@ -1,8 +1,8 @@
 # PRIME STUDIO — Documento Mestre
 
-Versão: 1.4
+Versão: 1.6
 Estado: referência oficial do projeto  
-Última consolidação: 17 de julho de 2026 — Fase 5 concluída oficialmente; Fase 6 ainda não iniciada
+Última consolidação: 17 de julho de 2026 — Branding/Logo concluído oficialmente (MVP); Fase 6 ainda não iniciada
 
 ## 1. Autoridade e controle de escopo
 
@@ -330,9 +330,25 @@ Detalhes: [FASE-05-IMPLEMENTACAO.md](./FASE-05-IMPLEMENTACAO.md).
 
 Fase 6 ainda não foi iniciada.
 
+### Branding/Logo — Aplicação Automática de Marca
+
+Estado: **BRANDING/LOGO OFICIALMENTE CONCLUÍDO (MVP) em 17 de julho de 2026**.
+
+- upload de uma única logo PNG com transparência real, validada tecnicamente (assinatura, MIME, extensão, integridade, canal alfa, dimensão mínima, transparência e opacidade reais, ocupação do canvas, proporção), com decodificação de pixels via `sharp` (nova dependência) — nunca apenas o cabeçalho do arquivo;
+- classificação adequate / acceptable_with_warning / inadequate; logo inadequada não pode ser aprovada;
+- aprovação explícita obrigatória antes de qualquer aplicação automática; substituição sempre atômica, preservando a logo anterior até a nova ser gravada com sucesso;
+- overlay tradicional (sem IA), posição fixa no canto inferior direito, **escala fixa de 9% e margem fixa de 3%** da menor dimensão da imagem final — padrão definitivo, validado visualmente pelo usuário com um resultado real e a logo aprovada da PRIME STORE, sem distorcer, sem cortar, sem ampliar a logo além da resolução original;
+- posição, escala e margem **não são configuráveis nesta fase** — sem editor, slider ou seleção de posição; tornam-se ajustáveis apenas na Fase 6;
+- toggle global "Aplicar logo nas imagens", válido tanto para a geração individual quanto para a Produção em Lotes, sem duplicar pipeline — o hook está no `GenerationExecutor` compartilhado;
+- resultado original e resultado com logo sempre preservados separadamente (`result.<ext>` e `branded.<ext>`); falha no overlay nunca invalida a geração paga nem gera retry ou nova chamada ao OpenRouter;
+- tela Resultados com seletor Original/Com logo e downloads separados; ZIP das aprovadas usa a versão com logo quando o Branding está ativo e o resultado a possui, e a versão original nos demais casos;
+- 196 testes aprovados em 34 arquivos e build aprovado;
+- nenhuma geração real, nenhuma chamada ao OpenRouter e nenhum crédito consumido durante a implementação e a validação.
+
+Detalhes: [FASE-BRANDING-IMPLEMENTACAO.md](./FASE-BRANDING-IMPLEMENTACAO.md).
+
 #### Próximas melhorias aprovadas, ainda não iniciadas
 
-- **Branding/Logo**: upload e validação de logo transparente, aprovação explícita do usuário e aplicação automática por overlay tradicional, sem uso de IA para redesenhar a logo, mantendo sempre disponível a versão original sem logo;
 - **download em massa das imagens finais**, ampliando o download em lote já validado na Fase 5.
 
 Nenhuma dessas melhorias foi iniciada; permanecem fora do escopo até aprovação explícita de início.
@@ -366,5 +382,6 @@ A declaração `FASE 2 CONCLUÍDA` foi registrada depois da confirmação de tod
 - [Fase 3 — Templates Locais](./FASE-03-IMPLEMENTACAO.md)
 - [Fase 4 — Resultados e Histórico Local](./FASE-04-IMPLEMENTACAO.md)
 - [Fase 5 — Produção em Lotes](./FASE-05-IMPLEMENTACAO.md)
+- [Branding/Logo — Aplicação Automática de Marca](./FASE-BRANDING-IMPLEMENTACAO.md)
 
 Em caso de conflito de escopo, este Documento Mestre prevalece.

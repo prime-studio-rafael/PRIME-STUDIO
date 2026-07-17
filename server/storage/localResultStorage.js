@@ -21,7 +21,7 @@ export function createLocalResultStorage({
 } = {}) {
   const root = resultsDirectory || resultsDir;
 
-  async function save({ generationId = uuid(), buffer, mimeType, metadata, fileName, imageBuffer, template, garment }) {
+  async function save({ generationId = uuid(), buffer, mimeType, metadata, fileName, imageBuffer, template, garment, branded }) {
     const resultBuffer = buffer || imageBuffer;
     const resultMime = mimeType || mimeFromFilename(fileName);
     assertImage(resultBuffer, resultMime);
@@ -31,18 +31,21 @@ export function createLocalResultStorage({
     assertSafeId(generationId);
     assertReference(template, 'template');
     assertReference(garment, 'garment');
+    if (branded) assertImage(branded.buffer, branded.mimeType);
     const directoryName = String(generationId);
     const finalDirectory = resolveChild(directoryName);
     const temporaryDirectory = resolveChild(`.${directoryName}.${uuid()}.tmp`);
     const resultFilename = `result.${EXTENSIONS[resultMime]}`;
     const templateFilename = `template.${EXTENSIONS[template.mimeType]}`;
     const garmentFilename = `garment.${EXTENSIONS[garment.mimeType]}`;
-    const persistedMetadata = { ...metadata, reviewStatus: metadata?.reviewStatus || 'pending', localAssets: { result: resultFilename, template: templateFilename, garment: garmentFilename } };
+    const brandedFilename = branded ? `branded.${EXTENSIONS[branded.mimeType]}` : null;
+    const persistedMetadata = { ...metadata, reviewStatus: metadata?.reviewStatus || 'pending', localAssets: { result: resultFilename, template: templateFilename, garment: garmentFilename, ...(brandedFilename ? { branded: brandedFilename } : {}) } };
     try {
       await fsImpl.mkdir(temporaryDirectory, { recursive: false });
       await fsImpl.writeFile(path.join(temporaryDirectory, resultFilename), resultBuffer);
       await fsImpl.writeFile(path.join(temporaryDirectory, templateFilename), template.buffer);
       await fsImpl.writeFile(path.join(temporaryDirectory, garmentFilename), garment.buffer);
+      if (brandedFilename) await fsImpl.writeFile(path.join(temporaryDirectory, brandedFilename), branded.buffer);
       await fsImpl.writeFile(path.join(temporaryDirectory, 'metadata.json'), serializeJson(persistedMetadata));
       await fsImpl.rename(temporaryDirectory, finalDirectory);
     } catch (error) {
@@ -84,7 +87,7 @@ export function createLocalResultStorage({
     if (!metadata?.id) return null;
     const files = await fsImpl.readdir(directory, { withFileTypes: true });
     const names = files.filter((entry) => entry.isFile()).map((entry) => entry.name);
-    const assets = { result: findAsset(names, 'result'), template: findAsset(names, 'template'), garment: findAsset(names, 'garment') };
+    const assets = { result: findAsset(names, 'result'), template: findAsset(names, 'template'), garment: findAsset(names, 'garment'), branded: findAsset(names, 'branded') };
     if (!assets.result) return null;
     return { format: 'directory', key: directoryName, metadata, metadataPath: path.join(directory, 'metadata.json'), assets };
   }
@@ -94,7 +97,7 @@ export function createLocalResultStorage({
     const metadataPath = resolveChild(`${key}.json`);
     const metadata = await readJson(metadataPath);
     if (!metadata?.id) return null;
-    return { format: 'legacy', key, metadata, metadataPath, assets: { result: imageFilename, template: null, garment: null } };
+    return { format: 'legacy', key, metadata, metadataPath, assets: { result: imageFilename, template: null, garment: null, branded: null } };
   }
 
   async function findById(id) {
@@ -105,7 +108,7 @@ export function createLocalResultStorage({
   }
 
   async function readAsset(id, type) {
-    if (!['result', 'template', 'garment'].includes(type)) throw new AppError('INVALID_RESULT_ASSET', 'O tipo de arquivo solicitado é inválido.', { status: 400 });
+    if (!['result', 'template', 'garment', 'branded'].includes(type)) throw new AppError('INVALID_RESULT_ASSET', 'O tipo de arquivo solicitado é inválido.', { status: 400 });
     const entry = await findById(id);
     const filename = entry.assets[type];
     if (!filename) throw new AppError('RESULT_ASSET_NOT_FOUND', 'Referência não disponível para esta geração anterior.', { status: 404 });
@@ -113,7 +116,10 @@ export function createLocalResultStorage({
     const buffer = await fsImpl.readFile(filePath).catch((error) => { throw new AppError('RESULT_ASSET_NOT_FOUND', 'O arquivo local deste resultado não foi encontrado.', { status: 404, cause: error }); });
     const realMimeType = detectImageMime(buffer);
     if (!realMimeType) throw new AppError('RESULT_ASSET_INVALID', 'O arquivo local deste resultado é inválido.', { status: 500 });
-    return { buffer, mimeType: realMimeType, filename: type === 'result' ? `prime-studio-${entry.metadata.id}.${EXTENSIONS[realMimeType]}` : filename };
+    const downloadFilename = type === 'result' ? `prime-studio-${entry.metadata.id}.${EXTENSIONS[realMimeType]}`
+      : type === 'branded' ? `prime-studio-${entry.metadata.id}-com-logo.${EXTENSIONS[realMimeType]}`
+        : filename;
+    return { buffer, mimeType: realMimeType, filename: downloadFilename };
   }
 
   async function updateMetadata(id, updater) {

@@ -1,8 +1,11 @@
 import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import sharp from 'sharp';
 import { createGenerationService } from '../../server/services/generateImage.js';
 import { createLocalResultStorage } from '../../server/storage/localResultStorage.js';
+import { createLocalBrandingStorage } from '../../server/storage/localBrandingStorage.js';
+import { createBrandingService } from '../../server/services/brandingService.js';
 import { AppError } from '../../server/utils/errors.js';
 import { validateImageBuffer } from '../../server/utils/fileValidation.js';
 import { generationConfig } from '../../server/config/generationConfig.js';
@@ -213,5 +216,134 @@ describe('generation service', () => {
 
     await expect(service.generate({ templateId: 'model-01', modelId: generationConfig.modelId, confirmPaid: true, garmentFile })).rejects.toMatchObject({ code: 'OPENROUTER_INVALID_BASE64' });
     expect(provider.generate).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('generation service — Branding integration', () => {
+  let fixture;
+  let generatedImageBase64;
+
+  beforeEach(async () => {
+    fixture = await createFixture();
+    const buffer = await readFile(templateSource);
+    garmentFile = { buffer, mimetype: 'image/jpeg', size: buffer.length, originalname: 'garment.jpeg' };
+    const generatedImage = await sharp({ create: { width: 300, height: 300, channels: 3, background: { r: 20, g: 40, b: 60 } } }).jpeg().toBuffer();
+    generatedImageBase64 = generatedImage.toString('base64');
+  });
+
+  afterEach(async () => {
+    await rm(fixture.directory, { recursive: true, force: true });
+  });
+
+  async function logoPngBuffer() {
+    return sharp({ create: { width: 400, height: 400, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+      .composite([{ input: await sharp({ create: { width: 240, height: 240, channels: 4, background: { r: 220, g: 20, b: 20, alpha: 1 } } }).png().toBuffer(), gravity: 'center' }])
+      .png()
+      .toBuffer();
+  }
+
+  async function brandingFixture({ enabled }) {
+    const brandingDirectory = path.join(fixture.directory, 'branding');
+    const brandingStorage = createLocalBrandingStorage({ brandingDirectory });
+    const brandingService = createBrandingService({ storage: brandingStorage });
+    if (enabled) {
+      await brandingService.uploadLogo({ buffer: await logoPngBuffer(), mimetype: 'image/png', originalname: 'logo.png' });
+      await brandingService.approveLogo();
+      await brandingService.setConfig({ enabled: true });
+    }
+    return brandingService;
+  }
+
+  it('keeps the existing behaviour unchanged when Branding is disabled, without calling sharp for overlay', async () => {
+    const provider = { generate: vi.fn(async () => ({ body: { data: [{ b64_json: generatedImageBase64, media_type: 'image/jpeg' }], usage: { cost: 0.034 } }, requestId: 'req-1' })) };
+    const resultsDir = path.join(fixture.directory, 'results');
+    const storage = createLocalResultStorage({ resultsDir });
+    const brandingService = await brandingFixture({ enabled: false });
+    const service = createGenerationService({
+      openRouterClient: provider,
+      resultStorage: storage,
+      brandingService,
+      templateService: {
+        getForGeneration: vi.fn(async () => {
+          const buffer = await readFile(fixture.templatePath);
+          const image = validateImageBuffer(buffer, { maxBytes: generationConfig.maxFileSizeBytes, fieldLabel: 'Modelo base 01', fileName: 'model-01.jpeg', expectedMimeType: 'image/jpeg', role: 'template', policy: generationConfig.imagePolicy });
+          return { publicTemplate: { id: 'model-01', label: 'Modelo base 01', valid: true, active: true }, image };
+        }),
+      },
+    });
+
+    const result = await service.generate({ templateId: 'model-01', modelId: generationConfig.modelId, confirmPaid: true, garmentFile });
+    expect(result.metadata.logoApplied).toBe(false);
+    expect(result.metadata.brandingStatus).toBe('disabled');
+    const savedDirectory = path.join(resultsDir, result.generationId);
+    expect((await readdir(savedDirectory)).sort()).toEqual(['garment.jpg', 'metadata.json', 'result.jpg', 'template.jpg']);
+  });
+
+  it('applies the logo overlay and saves both variants when Branding is enabled and approved', async () => {
+    const provider = { generate: vi.fn(async () => ({ body: { data: [{ b64_json: generatedImageBase64, media_type: 'image/jpeg' }], usage: { cost: 0.034 } }, requestId: 'req-2' })) };
+    const resultsDir = path.join(fixture.directory, 'results');
+    const storage = createLocalResultStorage({ resultsDir });
+    const brandingService = await brandingFixture({ enabled: true });
+    const service = createGenerationService({
+      openRouterClient: provider,
+      resultStorage: storage,
+      brandingService,
+      templateService: {
+        getForGeneration: vi.fn(async () => {
+          const buffer = await readFile(fixture.templatePath);
+          const image = validateImageBuffer(buffer, { maxBytes: generationConfig.maxFileSizeBytes, fieldLabel: 'Modelo base 01', fileName: 'model-01.jpeg', expectedMimeType: 'image/jpeg', role: 'template', policy: generationConfig.imagePolicy });
+          return { publicTemplate: { id: 'model-01', label: 'Modelo base 01', valid: true, active: true }, image };
+        }),
+      },
+    });
+
+    const result = await service.generate({ templateId: 'model-01', modelId: generationConfig.modelId, confirmPaid: true, garmentFile });
+
+    expect(provider.generate).toHaveBeenCalledTimes(1); // uma chamada, independentemente do branding
+    expect(result.metadata.logoApplied).toBe(true);
+    expect(result.metadata.brandingStatus).toBe('applied');
+    expect(result.metadata.logoPosition).toBe('bottom-right');
+    expect(result.metadata.originalResultAsset).toBe('result');
+    expect(result.metadata.brandedResultAsset).toBe('branded');
+
+    const savedDirectory = path.join(resultsDir, result.generationId);
+    const files = await readdir(savedDirectory);
+    expect(files.sort()).toEqual(['branded.jpg', 'garment.jpg', 'metadata.json', 'result.jpg', 'template.jpg']);
+    const originalBuffer = await readFile(path.join(savedDirectory, 'result.jpg'));
+    const brandedBuffer = await readFile(path.join(savedDirectory, 'branded.jpg'));
+    expect(originalBuffer.equals(brandedBuffer)).toBe(false); // a versão branded difere da original
+    expect(originalBuffer.length).toBeGreaterThan(0);
+  });
+
+  it('preserves the original result and records a safe branding error when the overlay fails, without retrying or losing the paid generation', async () => {
+    const provider = { generate: vi.fn(async () => ({ body: { data: [{ b64_json: generatedImageBase64, media_type: 'image/jpeg' }], usage: { cost: 0.034 } }, requestId: 'req-3' })) };
+    const resultsDir = path.join(fixture.directory, 'results');
+    const storage = createLocalResultStorage({ resultsDir });
+    const approvedBrandingService = await brandingFixture({ enabled: true });
+    // Simula uma logo aprovada cujo arquivo em disco foi corrompido depois da aprovação.
+    const brandingService = { ...approvedBrandingService, getActiveBranding: async () => ({ buffer: Buffer.from('corrupted-not-a-real-png'), mimeType: 'image/png', fileName: 'logo.png' }) };
+
+    const service = createGenerationService({
+      openRouterClient: provider,
+      resultStorage: storage,
+      brandingService,
+      templateService: {
+        getForGeneration: vi.fn(async () => {
+          const buffer = await readFile(fixture.templatePath);
+          const image = validateImageBuffer(buffer, { maxBytes: generationConfig.maxFileSizeBytes, fieldLabel: 'Modelo base 01', fileName: 'model-01.jpeg', expectedMimeType: 'image/jpeg', role: 'template', policy: generationConfig.imagePolicy });
+          return { publicTemplate: { id: 'model-01', label: 'Modelo base 01', valid: true, active: true }, image };
+        }),
+      },
+    });
+
+    const result = await service.generate({ templateId: 'model-01', modelId: generationConfig.modelId, confirmPaid: true, garmentFile });
+
+    expect(provider.generate).toHaveBeenCalledTimes(1); // zero retry mesmo com falha no branding
+    expect(result.localSave.saved).toBe(true); // a geração paga não é perdida
+    expect(result.metadata.logoApplied).toBe(false);
+    expect(result.metadata.brandingStatus).toBe('failed');
+    expect(result.metadata.brandingError).toMatchObject({ code: expect.any(String), message: expect.any(String) });
+    const savedDirectory = path.join(resultsDir, result.generationId);
+    expect((await readdir(savedDirectory)).sort()).toEqual(['garment.jpg', 'metadata.json', 'result.jpg', 'template.jpg']); // sem branded.*
   });
 });

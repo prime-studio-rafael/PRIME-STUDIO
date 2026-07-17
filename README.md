@@ -13,6 +13,7 @@ O escopo e a ordem das fases são definidos pelo [Documento Mestre](docs/DOCUMEN
 - Fase 3: **concluída oficialmente e publicada em 16 de julho de 2026**.
 - Fase 4: **concluída oficialmente em 16 de julho de 2026**.
 - Fase 5: **concluída oficialmente em 17 de julho de 2026**.
+- Branding/Logo: **concluído oficialmente (MVP) em 17 de julho de 2026** — ver [FASE-BRANDING-IMPLEMENTACAO.md](docs/FASE-BRANDING-IMPLEMENTACAO.md).
 
 O encerramento está registrado em [FASE-02-ENCERRAMENTO.md](docs/FASE-02-ENCERRAMENTO.md) e a evolução consolidada do projeto em [HISTORICO.md](docs/HISTORICO.md).
 
@@ -127,6 +128,10 @@ Abra **Produção em Lotes** na sidebar para criar um lote com um template local
 
 A tela mostra a contagem de lotes e um indicador discreto quando há lote em execução; o formulário "Novo lote" é um painel colapsável, priorizando a consulta aos lotes existentes. O lote selecionado exibe cards de resumo (Total, Concluídos, Processando, Aguardando, Erros) e uma barra de progresso, sempre calculados a partir dos estados reais dos itens — nunca fictícios. Cada item mostra a thumbnail da roupa, badge de status, duração e custo; cancelar um lote exige confirmação inline. Consulte [FASE-05-IMPLEMENTACAO.md](docs/FASE-05-IMPLEMENTACAO.md) para os estados, a validação real, a Fase 5.1 e as limitações.
 
+## Branding/Logo
+
+Em **Configurações**, aba **Branding**, é possível enviar uma logo PNG com transparência real, revisar a validação técnica (dimensões, transparência, área útil da arte) e aprová-la explicitamente. Uma vez aprovada, o toggle **"Aplicar logo nas imagens"** passa a valer tanto para a geração individual quanto para a Produção em Lotes: a logo é aplicada por composição tradicional (sem IA), em **9% da menor dimensão** e **3% de margem** no canto inferior direito — padrão definitivo validado visualmente e fixo nesta fase (configurável apenas na Fase 6) — preservando sempre a versão original sem logo. Consulte [FASE-BRANDING-IMPLEMENTACAO.md](docs/FASE-BRANDING-IMPLEMENTACAO.md) para a validação, o storage e as limitações desta primeira versão.
+
 ## Parar os servidores
 
 No terminal onde `npm run dev` estiver rodando, pressione:
@@ -157,7 +162,7 @@ npm test
 npm run build
 ```
 
-Os testes usam respostas simuladas e não acessam o OpenRouter. Estado atual: 29 arquivos e 136 testes aprovados, incluindo os 124 testes anteriores à Fase 5.1.
+Os testes usam respostas simuladas e não acessam o OpenRouter. Estado atual: 34 arquivos e 196 testes aprovados, incluindo os 136 testes anteriores à fase Branding/Logo.
 
 ## Limitações intencionais
 

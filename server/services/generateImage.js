@@ -3,8 +3,8 @@ import { createGenerationExecutor } from './generationExecutor.js';
 import { createGenerationCoordinator } from './generationCoordinator.js';
 
 // Adaptador da geração individual sobre o mesmo executor usado pela fila local.
-export function createGenerationService({ executor, coordinator, openRouterClient, resultStorage, templateService, config, logger, now, uuid } = {}) {
-  const resolvedExecutor = executor || createGenerationExecutor({ openRouterClient, resultStorage, templateService, config, logger, now, uuid });
+export function createGenerationService({ executor, coordinator, openRouterClient, resultStorage, templateService, brandingService, config, logger, now, uuid } = {}) {
+  const resolvedExecutor = executor || createGenerationExecutor({ openRouterClient, resultStorage, templateService, brandingService, config, logger, now, uuid });
   const resolvedCoordinator = coordinator || createGenerationCoordinator();
 
   async function generate({ templateId, modelId, confirmPaid, garmentFile }) {

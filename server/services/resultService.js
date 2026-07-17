@@ -2,7 +2,7 @@ import { AppError } from '../utils/errors.js';
 
 const REVIEW_STATUSES = new Set(['pending', 'approved', 'rejected']);
 
-export function createResultService({ storage, templateService } = {}) {
+export function createResultService({ storage, templateService, brandingService } = {}) {
   async function list() {
     const results = await Promise.all((await storage.listEntries()).map((entry) => normalize(entry, templateService)));
     return results.sort((a, b) => timestamp(b.createdAt) - timestamp(a.createdAt));
@@ -16,7 +16,14 @@ export function createResultService({ storage, templateService } = {}) {
   async function listApprovedAssets() {
     const approved = (await list()).filter((result) => result.reviewStatus === 'approved');
     if (!approved.length) throw new AppError('NO_APPROVED_RESULTS', 'Nenhum resultado aprovado para baixar.', { status: 404 });
-    return Promise.all(approved.map(async (result) => ({ id: result.id, ...(await storage.readAsset(result.id, 'result')) })));
+    let brandingEnabled = false;
+    if (brandingService) {
+      try { brandingEnabled = Boolean((await brandingService.getState()).config.enabled); } catch { brandingEnabled = false; }
+    }
+    return Promise.all(approved.map(async (result) => {
+      const assetType = brandingEnabled && result.assets.branded ? 'branded' : 'result';
+      return { id: result.id, ...(await storage.readAsset(result.id, assetType)) };
+    }));
   }
   return Object.freeze({ list, get, readAsset: storage.readAsset, setReviewStatus, delete: remove, listApprovedAssets });
 }
@@ -43,8 +50,18 @@ async function normalize(entry, templateService) {
     resolution: metadata.resolution ?? null, outputMime: metadata.outputMime ?? metadata.resultMime ?? null,
     outputDimensions: metadata.outputDimensions ?? null, durationMs: finiteOrNull(metadata.durationMs),
     costUsd: finiteOrNull(metadata.costUsd), providerRequestId: metadata.providerRequestId ?? metadata.requestId ?? null,
+    logoApplied: Boolean(metadata.logoApplied),
+    logoFileName: metadata.logoFileName ?? null,
+    logoMime: metadata.logoMime ?? null,
+    logoDimensions: metadata.logoDimensions ?? null,
+    logoPosition: metadata.logoPosition ?? null,
+    logoScale: finiteOrNull(metadata.logoScale),
+    logoMargin: finiteOrNull(metadata.logoMargin),
+    brandingStatus: metadata.brandingStatus ?? 'disabled',
+    brandingError: metadata.brandingError ?? null,
     assets: {
       result: `/api/results/${encodeURIComponent(metadata.id)}/assets/result`,
+      branded: entry.assets.branded ? `/api/results/${encodeURIComponent(metadata.id)}/assets/branded` : null,
       template: entry.assets.template ? `/api/results/${encodeURIComponent(metadata.id)}/assets/template` : null,
       garment: entry.assets.garment ? `/api/results/${encodeURIComponent(metadata.id)}/assets/garment` : null,
       currentTemplate: currentTemplate?.publicUrl ?? null,

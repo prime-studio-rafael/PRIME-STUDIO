@@ -110,4 +110,74 @@ describe('local results history', () => {
     expect(raw).not.toMatch(/base64|data:image/i);
     expect(JSON.parse(raw)).toMatchObject({ reviewStatus: 'pending', localAssets: { result: 'result.webp', template: 'template.webp', garment: 'garment.webp' } });
   });
+
+  it('normalizes legacy results without a branding metadata field as logoApplied: false with assets.branded null', async () => {
+    const { storage } = await fixture();
+    const service = createResultService({ storage });
+    const legacy = await service.get('legacy-id');
+    expect(legacy.logoApplied).toBe(false);
+    expect(legacy.assets.branded).toBeNull();
+    expect(legacy.brandingError).toBeNull();
+  });
+
+  it('persists and serves a branded variant alongside the original, never overwriting result', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'prime-results-branded-'));
+    directories.push(directory);
+    const storage = createLocalResultStorage({ resultsDirectory: directory });
+    const brandedImage = validWebpBuffer();
+    await storage({
+      generationId: 'branded-id',
+      buffer: image,
+      mimeType: 'image/webp',
+      metadata: metadata('branded-id', '2026-01-03T10:00:00.000Z', { logoApplied: true, brandedResultAsset: 'branded', originalResultAsset: 'result' }),
+      template: { buffer: image, mimeType: 'image/webp' },
+      garment: { buffer: image, mimeType: 'image/webp' },
+      branded: { buffer: brandedImage, mimeType: 'image/webp' },
+    });
+    const service = createResultService({ storage });
+    const result = await service.get('branded-id');
+    expect(result.logoApplied).toBe(true);
+    expect(result.assets.branded).toEqual(expect.any(String));
+    const originalAsset = await storage.readAsset('branded-id', 'result');
+    const brandedAsset = await storage.readAsset('branded-id', 'branded');
+    expect(originalAsset.buffer).toEqual(image);
+    expect(brandedAsset.buffer).toEqual(brandedImage);
+  });
+
+  it('selects the branded asset for the approved ZIP only when branding is enabled and the branded asset exists', async () => {
+    const directory = await mkdtemp(path.join(tmpdir(), 'prime-results-branded-zip-'));
+    directories.push(directory);
+    const storage = createLocalResultStorage({ resultsDirectory: directory });
+    const brandedImage = validWebpBuffer();
+    await storage({
+      generationId: 'branded-zip-id',
+      buffer: image,
+      mimeType: 'image/webp',
+      metadata: metadata('branded-zip-id', '2026-01-04T10:00:00.000Z', { logoApplied: true }),
+      template: { buffer: image, mimeType: 'image/webp' },
+      garment: { buffer: image, mimeType: 'image/webp' },
+      branded: { buffer: brandedImage, mimeType: 'image/webp' },
+    });
+
+    const disabledBrandingService = { getState: async () => ({ config: { enabled: false } }) };
+    const enabledBrandingService = { getState: async () => ({ config: { enabled: true } }) };
+
+    const serviceDisabled = createResultService({ storage, brandingService: disabledBrandingService });
+    await serviceDisabled.setReviewStatus('branded-zip-id', 'approved');
+    const assetsWhenDisabled = await serviceDisabled.listApprovedAssets();
+    expect(assetsWhenDisabled[0].buffer).toEqual(image);
+
+    const serviceEnabled = createResultService({ storage, brandingService: enabledBrandingService });
+    const assetsWhenEnabled = await serviceEnabled.listApprovedAssets();
+    expect(assetsWhenEnabled[0].buffer).toEqual(brandedImage);
+  });
+
+  it('falls back to the original asset in the ZIP when branding is enabled but the result has no branded variant', async () => {
+    const { storage } = await fixture();
+    const enabledBrandingService = { getState: async () => ({ config: { enabled: true } }) };
+    const service = createResultService({ storage, brandingService: enabledBrandingService });
+    await service.setReviewStatus('new-id', 'approved');
+    const assets = await service.listApprovedAssets();
+    expect(assets[0].buffer).toEqual(image);
+  });
 });

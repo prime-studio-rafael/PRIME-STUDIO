@@ -7,8 +7,16 @@ import { bufferToDataUrl } from '../utils/imageEncoding.js';
 import { validateImageBuffer, validateUploadedImage } from '../utils/fileValidation.js';
 import { parseOpenRouterImageResponse } from '../providers/openrouter/openrouterResponse.js';
 import { createGenerationProfile, dimensionsOrNull, imageValidationMetadata } from '../utils/generationMetadata.js';
+import { applyLogoOverlay } from './logoOverlay.js';
 
-export function createGenerationExecutor({ openRouterClient, resultStorage, templateService, config = generationConfig, logger = console, now = () => Date.now(), uuid = randomUUID } = {}) {
+const DISABLED_BRANDING_METADATA = Object.freeze({
+  logoApplied: false, logoFileName: null, logoMime: null, logoDimensions: null,
+  logoPosition: null, logoScale: null, logoMargin: null,
+  brandingStatus: 'disabled', brandingError: null,
+  originalResultAsset: 'result', brandedResultAsset: null,
+});
+
+export function createGenerationExecutor({ openRouterClient, resultStorage, templateService, brandingService, config = generationConfig, logger = console, now = () => Date.now(), uuid = randomUUID } = {}) {
   async function execute({ templateId, modelId, garmentFile, templateSnapshot, batchContext } = {}) {
     const model = getModelById(modelId);
     if (!model) throw new AppError('INVALID_MODEL', 'O modelo selecionado não está disponível.', { status: 400 });
@@ -28,6 +36,7 @@ export function createGenerationExecutor({ openRouterClient, resultStorage, temp
     const completedAt = now();
     const durationMs = completedAt - startedAt;
     const costUsd = typeof generated.usage.cost === 'number' ? generated.usage.cost : null;
+    const { branded, brandingMetadata } = await applyBrandingIfEnabled({ brandingService, generated, logger });
     const metadata = {
       id: generationId,
       createdAt: new Date(completedAt).toISOString(),
@@ -48,11 +57,12 @@ export function createGenerationExecutor({ openRouterClient, resultStorage, temp
       costUsd,
       providerRequestId: generated.requestId,
       status: 'success',
+      ...brandingMetadata,
       ...(batchContext ? { batchId: batchContext.batchId, batchItemId: batchContext.batchItemId } : {}),
     };
     let localSave = { saved: false, metadataSaved: false, warning: 'A imagem foi gerada, mas não pôde ser salva localmente.' };
     try {
-      localSave = await resultStorage.save({ generationId, buffer: generated.buffer, mimeType: generated.mimeType, metadata, template: { buffer: template.image.buffer, mimeType: template.image.mimeType }, garment: { buffer: garment.buffer, mimeType: garment.mimeType } });
+      localSave = await resultStorage.save({ generationId, buffer: generated.buffer, mimeType: generated.mimeType, metadata, template: { buffer: template.image.buffer, mimeType: template.image.mimeType }, garment: { buffer: garment.buffer, mimeType: garment.mimeType }, branded });
     } catch (error) { logger.error?.('[storage]', error.code || error.message); }
     return { generationId, image: { dataUrl: bufferToDataUrl(generated.buffer, generated.mimeType), mimeType: generated.mimeType, downloadFilename: `prime-ia-studio-result.${extensionFor(generated.mimeType)}` }, metrics: { costUsd, durationMs }, requestId: generated.requestId, localSave, model: { id: model.id, label: model.label }, metadata };
   }
@@ -70,3 +80,56 @@ function validateSnapshot(snapshot, config) {
   return { id: snapshot.id, label: snapshot.label, image };
 }
 function extensionFor(mimeType) { return mimeType === 'image/jpeg' ? 'jpg' : mimeType.split('/')[1] || 'png'; }
+
+// Aplica a logo (overlay tradicional, sem IA) somente se Branding estiver ligado e houver logo aprovada.
+// Nenhuma chamada ao `sharp` acontece quando Branding está desligado. Falha aqui nunca invalida a geração paga:
+// o resultado original já foi gerado e será salvo normalmente; só a variante branded fica ausente.
+async function applyBrandingIfEnabled({ brandingService, generated, logger }) {
+  if (!brandingService) return { branded: null, brandingMetadata: DISABLED_BRANDING_METADATA };
+  let active = null;
+  try {
+    active = await brandingService.getActiveBranding();
+  } catch (error) {
+    logger.error?.('[branding]', error?.code || error?.message);
+    return { branded: null, brandingMetadata: DISABLED_BRANDING_METADATA };
+  }
+  if (!active) return { branded: null, brandingMetadata: DISABLED_BRANDING_METADATA };
+
+  try {
+    const overlay = await applyLogoOverlay({ resultBuffer: generated.buffer, resultMimeType: generated.mimeType, logoBuffer: active.buffer });
+    return {
+      branded: { buffer: overlay.buffer, mimeType: overlay.mimeType },
+      brandingMetadata: {
+        logoApplied: true,
+        logoFileName: active.fileName,
+        logoMime: active.mimeType,
+        logoDimensions: overlay.logoDimensions,
+        logoPosition: overlay.position,
+        logoScale: overlay.scale,
+        logoMargin: overlay.margin,
+        brandingStatus: 'applied',
+        brandingError: null,
+        originalResultAsset: 'result',
+        brandedResultAsset: 'branded',
+      },
+    };
+  } catch (error) {
+    logger.error?.('[branding]', error?.code || error?.message);
+    return {
+      branded: null,
+      brandingMetadata: {
+        logoApplied: false,
+        logoFileName: active.fileName,
+        logoMime: active.mimeType,
+        logoDimensions: null,
+        logoPosition: null,
+        logoScale: null,
+        logoMargin: null,
+        brandingStatus: 'failed',
+        brandingError: { code: error?.code || 'BRANDING_OVERLAY_FAILED', message: 'Não foi possível aplicar a logo a este resultado.' },
+        originalResultAsset: 'result',
+        brandedResultAsset: null,
+      },
+    };
+  }
+}

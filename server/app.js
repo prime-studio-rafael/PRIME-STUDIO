@@ -18,6 +18,9 @@ import { createLocalResultStorage } from './storage/localResultStorage.js';
 import { createLocalTemplateRepository } from './repositories/localTemplateRepository.js';
 import { createTemplateService } from './services/templateService.js';
 import { createResultService } from './services/resultService.js';
+import { createLocalBrandingStorage } from './storage/localBrandingStorage.js';
+import { createBrandingService } from './services/brandingService.js';
+import { createBrandingRouter } from './routes/branding.js';
 import { createOpenRouterClient } from './providers/openrouter/openrouterClient.js';
 import { createOpenRouterKeyValidator } from './providers/openrouter/openrouterKeyValidator.js';
 import { createOpenRouterKeyStore } from './secrets/openrouterKeyStore.js';
@@ -50,6 +53,8 @@ export function createApp({
   batchRepository,
   batchService,
   batchQueue,
+  brandingStorage = createLocalBrandingStorage(),
+  brandingService,
 } = {}) {
   let resolvedGenerationService;
   const resolvedCoordinator = generationCoordinator || createGenerationCoordinator();
@@ -58,7 +63,8 @@ export function createApp({
     repository: resolvedTemplateRepository,
     isGenerationActive: () => resolvedCoordinator.isBusy(),
   });
-  const resolvedExecutor = generationExecutor || createGenerationExecutor({ openRouterClient, resultStorage, templateService: resolvedTemplateService });
+  const resolvedBrandingService = brandingService || createBrandingService({ storage: brandingStorage });
+  const resolvedExecutor = generationExecutor || createGenerationExecutor({ openRouterClient, resultStorage, templateService: resolvedTemplateService, brandingService: resolvedBrandingService });
   resolvedGenerationService = generationService || (generateImage ? { generate: generateImage, isBusy: () => resolvedCoordinator.isBusy() } : createGenerationService({
     executor: resolvedExecutor,
     coordinator: resolvedCoordinator,
@@ -70,7 +76,7 @@ export function createApp({
   const resolvedBatchService = batchService || createBatchService({ repository: resolvedBatchRepository, templateService: resolvedTemplateService });
   const resolvedBatchQueue = batchQueue || createBatchQueue({ batchService: resolvedBatchService, executor: resolvedExecutor, coordinator: resolvedCoordinator });
   resolvedBatchRepository.ensureInitialized().catch((error) => console.error('[batches]', error?.message || error));
-  const resolvedResultService = resultService || createResultService({ storage: resultStorage, templateService: resolvedTemplateService });
+  const resolvedResultService = resultService || createResultService({ storage: resultStorage, templateService: resolvedTemplateService, brandingService: resolvedBrandingService });
   const app = express();
   app.disable('x-powered-by');
   app.use(requestLogger);
@@ -82,6 +88,7 @@ export function createApp({
   app.use('/api/generations', createGenerationsRouter({ generationService: resolvedGenerationService }));
   app.use('/api/batches', createBatchesRouter({ batchService: resolvedBatchService, repository: resolvedBatchRepository }));
   app.use('/api/results', createResultsRouter({ resultService: resolvedResultService }));
+  app.use('/api/branding', createBrandingRouter({ brandingService: resolvedBrandingService }));
 
   app.use((error, _request, response, _next) => {
     if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {

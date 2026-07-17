@@ -15,6 +15,7 @@ const approved = { ...newest, id: 'old', createdAt: '2026-01-01T10:00:00.000Z', 
 const byId = { new: newest, mid: middle, old: approved };
 
 beforeEach(() => {
+  vi.clearAllMocks();
   api.fetchResults.mockResolvedValue([newest, middle, approved]);
   api.fetchResult.mockImplementation(async (id) => byId[id]);
   api.updateResultStatus.mockImplementation(async (id, reviewStatus) => ({ ...byId[id], reviewStatus }));
@@ -156,5 +157,31 @@ describe('results page', () => {
     fireEvent.click((await screen.findAllByTestId('result-card'))[1].querySelector('button'));
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByAltText('Resultado gerado pela IA')).toHaveAttribute('src', '/mid/result');
+  });
+
+  it('shows the branded version by default with a selector, and offers both downloads separately', async () => {
+    const branded = { ...newest, id: 'branded', createdAt: '2026-01-04T10:00:00.000Z', logoApplied: true, assets: { result: '/branded/result', branded: '/branded/branded', template: '/branded/template', garment: '/branded/garment', currentTemplate: null } };
+    const brandedById = { ...byId, branded };
+    api.fetchResults.mockResolvedValue([branded, newest, middle, approved]);
+    api.fetchResult.mockImplementation(async (id) => brandedById[id]);
+    render(<App />); fireEvent.click(screen.getByRole('button', { name: 'Resultados' }));
+    fireEvent.click((await screen.findAllByTestId('result-card'))[0].querySelector('button'));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByAltText('Resultado gerado pela IA')).toHaveAttribute('src', '/branded/branded');
+    expect(within(dialog).getByText(/versão com logo/)).toBeInTheDocument();
+    expect(within(dialog).getByRole('link', { name: /Baixar original/ })).toHaveAttribute('href', '/branded/result');
+    expect(within(dialog).getByRole('link', { name: /Baixar com logo/ })).toHaveAttribute('href', '/branded/branded');
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Original' }));
+    expect(within(dialog).getByAltText('Resultado gerado pela IA')).toHaveAttribute('src', '/branded/result');
+    expect(within(dialog).getByText(/versão original/)).toBeInTheDocument();
+  });
+
+  it('does not show the original/branded selector for a result without a branded variant', async () => {
+    render(<App />); fireEvent.click(screen.getByRole('button', { name: 'Resultados' }));
+    fireEvent.click((await screen.findAllByTestId('result-card'))[0].querySelector('button'));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).queryByRole('button', { name: 'Original' })).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/versão com logo/)).not.toBeInTheDocument();
   });
 });
