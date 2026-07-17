@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createGenerationService } from '../../server/services/generateImage.js';
@@ -71,6 +71,10 @@ describe('generation service', () => {
     expect(result.image.dataUrl).toMatch(/^data:image\/png;base64,/);
     expect((await readFile(path.join(resultsDir, result.localSave.imageFilename))).length).toBeGreaterThan(0);
     const metadata = JSON.parse(await readFile(path.join(resultsDir, result.localSave.metadataFilename), 'utf8'));
+    const savedDirectory = path.join(resultsDir, result.generationId);
+    expect((await readdir(savedDirectory)).sort()).toEqual(['garment.jpg', 'metadata.json', 'result.png', 'template.jpg']);
+    expect(await readFile(path.join(savedDirectory, 'template.jpg'))).toEqual(garmentFile.buffer);
+    expect(await readFile(path.join(savedDirectory, 'garment.jpg'))).toEqual(garmentFile.buffer);
     expect(metadata).toMatchObject({
       promptVersion: 'upper-garment-v2',
       model: 'google/gemini-3.1-flash-lite-image',
@@ -88,6 +92,7 @@ describe('generation service', () => {
       inputTemplateValidation: { status: 'valid', quality: 'acceptable-with-warning', realFormat: 'jpeg', integrityValid: true },
       inputGarmentValidation: { status: 'valid', realFormat: 'jpeg', originalExtension: 'jpeg', integrityValid: true },
       aspectRatioActivation: { status: 'blocked' },
+      reviewStatus: 'pending',
     });
     expect(metadata.configurationId).toMatch(/^[a-f0-9]{12}$/);
     expect(metadata).not.toHaveProperty('garmentFile');

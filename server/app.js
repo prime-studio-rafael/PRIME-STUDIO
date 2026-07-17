@@ -6,10 +6,12 @@ import { createGenerationsRouter } from './routes/generations.js';
 import { createHealthRouter } from './routes/health.js';
 import { createTemplatesRouter } from './routes/templates.js';
 import { createOpenRouterSecretsRouter } from './routes/openrouterSecrets.js';
+import { createResultsRouter } from './routes/results.js';
 import { createGenerationService } from './services/generateImage.js';
 import { createLocalResultStorage } from './storage/localResultStorage.js';
 import { createLocalTemplateRepository } from './repositories/localTemplateRepository.js';
 import { createTemplateService } from './services/templateService.js';
+import { createResultService } from './services/resultService.js';
 import { createOpenRouterClient } from './providers/openrouter/openrouterClient.js';
 import { createOpenRouterKeyValidator } from './providers/openrouter/openrouterKeyValidator.js';
 import { createOpenRouterKeyStore } from './secrets/openrouterKeyStore.js';
@@ -32,6 +34,7 @@ export function createApp({
     baseUrl: generationConfig.openRouterBaseUrl,
   }),
   resultStorage = createLocalResultStorage(),
+  resultService,
   templateRepository,
   templateService,
   generationService,
@@ -48,14 +51,17 @@ export function createApp({
     resultStorage,
     templateService: resolvedTemplateService,
   }));
+  const resolvedResultService = resultService || createResultService({ storage: resultStorage, templateService: resolvedTemplateService });
   const app = express();
   app.disable('x-powered-by');
   app.use(requestLogger);
+  app.use(express.json({ limit: '16kb' }));
   app.use('/api/health', createHealthRouter({ keyResolver }));
   app.use('/api/config', createConfigRouter({ keyResolver }));
   app.use('/api/secrets/openrouter', createOpenRouterSecretsRouter({ keyStore, keyResolver, keyValidator }));
   app.use('/api/templates', createTemplatesRouter({ templateService: resolvedTemplateService }));
   app.use('/api/generations', createGenerationsRouter({ generationService: resolvedGenerationService }));
+  app.use('/api/results', createResultsRouter({ resultService: resolvedResultService }));
 
   app.use((error, _request, response, _next) => {
     if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {

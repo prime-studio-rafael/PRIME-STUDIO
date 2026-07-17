@@ -10,8 +10,9 @@ O escopo e a ordem das fases são definidos pelo [Documento Mestre](docs/DOCUMEN
 - Fase 02A: concluída;
 - Fase 02B: concluída;
 - Fase 2: **concluída oficialmente em 16 de julho de 2026**;
-- Fase 3: **tecnicamente concluída em 16 de julho de 2026**; aguardando somente autorização separada para commit e push.
-- Fase 4: não iniciada.
+- Fase 3: **concluída oficialmente e publicada em 16 de julho de 2026**.
+- Fase 4: **concluída oficialmente em 16 de julho de 2026**.
+- Fase 5: não iniciada.
 
 O encerramento está registrado em [FASE-02-ENCERRAMENTO.md](docs/FASE-02-ENCERRAMENTO.md) e a evolução consolidada do projeto em [HISTORICO.md](docs/HISTORICO.md).
 
@@ -102,7 +103,19 @@ Imagens concluídas e metadata mínimo são salvos automaticamente em:
 storage/results/
 ```
 
-Inputs, Base64, payloads e respostas completas não são salvos.
+Base64, payloads e respostas completas não são salvos. Até a Fase 3, os inputs permaneciam somente em memória.
+
+A partir da Fase 4, novas gerações preservam também os bytes validados do template e da roupa, exclusivamente para comparação histórica local:
+
+```text
+storage/results/<generation-id>/
+├── result.<ext>
+├── template.<ext>
+├── garment.<ext>
+└── metadata.json
+```
+
+Resultados anteriores no formato imagem + JSON continuam compatíveis. Abra **Resultados** na sidebar para filtrar, comparar, aprovar, reprovar, baixar ou excluir gerações locais. Referências históricas que nunca foram salvas aparecem como indisponíveis.
 
 O diretório ainda não existe enquanto nenhuma geração for concluída; ele será criado automaticamente no primeiro sucesso.
 
@@ -136,7 +149,7 @@ npm test
 npm run build
 ```
 
-Os testes usam respostas simuladas e não acessam o OpenRouter. Estado atual: 23 arquivos e 95 testes aprovados, incluindo os 63 testes anteriores.
+Os testes usam respostas simuladas e não acessam o OpenRouter. Estado atual: 26 arquivos e 108 testes aprovados, incluindo os 95 testes anteriores à Fase 4.
 
 ## Limitações intencionais
 

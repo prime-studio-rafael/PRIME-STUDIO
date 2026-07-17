@@ -1,6 +1,6 @@
 import { ImageOff } from 'lucide-react';
 
-export default function ComparisonGrid({ template, garmentPreviewUrl, result, aspectRatio = '1:1' }) {
+export default function ComparisonGrid({ template, garmentPreviewUrl, result, aspectRatio = '1:1', missingReferenceMessage = '' }) {
   const items = [
     { label: 'Modelo-base', src: template?.publicUrl, alt: template?.label },
     { label: 'Roupa enviada', src: garmentPreviewUrl, alt: 'Roupa superior enviada' },
@@ -16,7 +16,7 @@ export default function ComparisonGrid({ template, garmentPreviewUrl, result, as
             <span className="text-[10px] uppercase tracking-[0.14em] text-slate-400">{aspectRatio}</span>
           </div>
           <div className="min-h-[220px] bg-slate-100" style={{ aspectRatio: aspectRatio.replace(':', ' / ') }}>
-            {item.src ? <img src={item.src} alt={item.alt} className="h-full w-full object-contain" /> : <div className="flex h-full items-center justify-center text-slate-400"><ImageOff size={24} /></div>}
+            {item.src ? <img src={item.src} alt={item.alt} className="h-full w-full object-contain" /> : <div className="flex h-full flex-col items-center justify-center gap-3 px-5 text-center text-slate-400"><ImageOff size={24} />{missingReferenceMessage && <p className="text-xs leading-5">{missingReferenceMessage}</p>}</div>}
           </div>
         </figure>
       ))}

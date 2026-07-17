@@ -1,8 +1,8 @@
 # PRIME STUDIO — Documento Mestre
 
-Versão: 1.2
+Versão: 1.3
 Estado: referência oficial do projeto  
-Última consolidação: 16 de julho de 2026 — conclusão técnica da Fase 3
+Última consolidação: 16 de julho de 2026 — encerramento oficial da Fase 4
 
 ## 1. Autoridade e controle de escopo
 
@@ -39,7 +39,7 @@ O projeto preserva a proposta visual e funcional aprovada no PRIME IA STUDIO do 
 - Vite;
 - Tailwind CSS;
 - JavaScript;
-- uma SPA local com as views Nova geração e Templates, sem React Router;
+- uma SPA local com as views Nova geração, Templates e Resultados, sem React Router;
 - estado mantido em memória durante a sessão.
 
 ### Backend local
@@ -69,7 +69,8 @@ O projeto preserva a proposta visual e funcional aprovada no PRIME IA STUDIO do 
 
 - imagem final em `storage/results/`;
 - metadata JSON da geração em `storage/results/`;
-- roupa somente em memória;
+- roupa somente em memória até a Fase 3;
+- a partir da Fase 4, template e roupa das novas gerações são preservados localmente para comparação histórica;
 - template lido do catálogo local;
 - catálogo e imagens de templates em `storage/templates/`.
 
@@ -84,7 +85,7 @@ O projeto preserva a proposta visual e funcional aprovada no PRIME IA STUDIO do 
 - fila;
 - processamento em lote;
 - infraestrutura em nuvem;
-- histórico navegável;
+- histórico remoto ou em banco;
 - múltiplas gerações concorrentes.
 
 ## 4. Fluxo funcional oficial
@@ -212,7 +213,7 @@ O registro oficial está em [FASE-02-ENCERRAMENTO.md](./FASE-02-ENCERRAMENTO.md)
 
 ### Fase 3 — Templates Locais
 
-Estado: **FASE 3 TECNICAMENTE CONCLUÍDA em 16 de julho de 2026; aguardando somente autorização separada para commit e push**.
+Estado: **concluída, validada e publicada em 16 de julho de 2026**.
 
 Escopo aprovado e implementado:
 
@@ -255,7 +256,42 @@ Validação final aprovada:
 - 23 arquivos e 95 testes aprovados;
 - build aprovado com 1.801 módulos transformados;
 - nenhuma geração real, chamada ao OpenRouter ou consumo de créditos;
-- Fase 4 não iniciada.
+- na conclusão da Fase 3, a Fase 4 ainda não havia sido iniciada.
+
+### Fase 4 — Resultados e Histórico Local
+
+Estado: **FASE 4 CONCLUÍDA OFICIALMENTE em 16 de julho de 2026**.
+
+Escopo implementado:
+
+- view Resultados na sidebar, sem React Router;
+- listagem local ordenada do mais recente para o mais antigo;
+- filtros Todos, Aguardando aprovação, Aprovados e Reprovados;
+- cards com imagem, template, data, custo, duração, status e modelo;
+- detalhe com comparação, metadata, custo, duração, Request ID e download local;
+- `reviewStatus` independente do status técnico, com `pending`, `approved` e `rejected`;
+- aprovação e reprovação persistentes por escrita atômica;
+- exclusão confirmada por tombstone;
+- suporte aos formatos legado e por diretório;
+- novas gerações preservam resultado, template e roupa com bytes originais validados;
+- referências históricas ausentes usam fallback honesto e nunca são reconstruídas;
+- nenhum caminho físico ou Base64 na API ou metadata;
+- nenhuma geração real, chamada ao OpenRouter ou crédito consumido na validação;
+- 26 arquivos e 108 testes aprovados, com build concluído;
+- Fase 5 não iniciada.
+
+Validação final aprovada:
+
+- duas gerações legadas, ordenação, filtros e detalhes conferidos;
+- fallbacks históricos, campos ausentes e aviso sobre template atual confirmados;
+- aprovação, reprovação e persistência após dois reinícios confirmadas com cópia controlada;
+- download local e integridade dos assets aprovados;
+- exclusão confirmada sem afetar resultados reais ou templates;
+- desktop e móvel aprovados sem crop, distorção ou overflow;
+- nenhuma geração real, chamada ao OpenRouter ou consumo de créditos;
+- Fase 5 não iniciada.
+
+Detalhes: [FASE-04-IMPLEMENTACAO.md](./FASE-04-IMPLEMENTACAO.md).
 
 ## 7. Critérios cumpridos para passagem da Fase 2
 
@@ -284,5 +320,6 @@ A declaração `FASE 2 CONCLUÍDA` foi registrada depois da confirmação de tod
 - [Rubrica oficial](./FASE-02-RUBRICA-QUALIDADE.md)
 - [Histórico do projeto](./HISTORICO.md)
 - [Fase 3 — Templates Locais](./FASE-03-IMPLEMENTACAO.md)
+- [Fase 4 — Resultados e Histórico Local](./FASE-04-IMPLEMENTACAO.md)
 
 Em caso de conflito de escopo, este Documento Mestre prevalece.

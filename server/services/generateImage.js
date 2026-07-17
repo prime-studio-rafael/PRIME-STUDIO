@@ -82,6 +82,7 @@ export function createGenerationService({
           ...generationProfile,
           modelId: model.id,
           inputTemplateId: templateId,
+          inputTemplateLabel: template.label,
           inputTemplateMime: templateImage.mimeType,
           inputTemplateDimensions: dimensionsOrNull(templateImage.dimensions),
           inputTemplateValidation: imageValidationMetadata(templateImage),
@@ -107,6 +108,8 @@ export function createGenerationService({
             buffer: generated.buffer,
             mimeType: generated.mimeType,
             metadata,
+            template: { buffer: templateImage.buffer, mimeType: templateImage.mimeType },
+            garment: { buffer: garment.buffer, mimeType: garment.mimeType },
           });
         } catch (error) {
           logger.error?.('[storage]', error.code || error.message);
