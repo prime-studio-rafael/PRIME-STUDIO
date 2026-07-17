@@ -86,6 +86,22 @@ Novos componentes de apresentação, sem nova arquitetura: `BatchSummaryCards.js
 
 Validação: 12 novos testes de frontend (`tests/frontend/batchesManagement.test.jsx`), cobrindo cards de resumo, ausência de progresso fictício, preservação do `resultId` no botão "Abrir resultado", chamadas inalteradas às ações existentes, confirmação de cancelamento e estados vazio/loading/erro. Validação manual feita com o lote real de 8 itens já existente, sem nova geração.
 
+## Refinamento visual adicional — tabela operacional da Produção em Lotes
+
+Estado: **implementado em 17 de julho de 2026, aguardando validação final do usuário**. Não conclui oficialmente esta fase. Melhoria exclusivamente visual sobre o que a Fase 5.1 já entregou — nenhum endpoint, schema, service, hook, `GenerationExecutor`, fila ou regra de concorrência/retry foi alterado.
+
+Escopo implementado, em três etapas sucessivas (auditoria → aprovação → implementação, com validação visual a cada etapa):
+
+- **Resumo compacto**: os cards de resumo (Total, Concluídos, Processando, Aguardando, Erros) viraram uma faixa horizontal com separadores finos, no lugar de cinco cards grandes — mesmos cinco números, mesmos `data-testid`, mesmo cálculo a partir de `item.status`.
+- **Lista de lotes**: hover e seleção refinados (barra lateral indicando o lote selecionado, elevação sutil no hover, transições de 200ms), sem alterar `onClick`/`aria-pressed`.
+- **Tabela operacional de itens**: a lista de itens virou uma tabela real com 7 colunas alinhadas — Produto, Status, Progresso, Tempo, Custo, Resultado, Ações — com cabeçalho fixo por coluna. Nenhuma coluna "Tentativas" (o PRIME STUDIO usa zero retry automático; esse dado nunca existiu e não foi inventado).
+- **Progresso visual por etapa**: uma função pura de apresentação (`getVisualProgress`, em `BatchItemRow.jsx`) mapeia o `status` real do item para um percentual visual — `queued=0%`, `preparing=25%`, `generating=70%`, `completed=100%`, `failed=100%` (com cor de erro, não de sucesso) — e `cancelled`/`interrupted` mostram um traço, nunca um percentual inventado. Um ícone de informação ao lado do cabeçalho "Progresso" explica isso por tooltip acessível (mouse e teclado): *"Progresso calculado com base na etapa atual do processamento."* Nada disso é persistido nem depende de um novo dado do backend.
+- **Miniatura de resultado por item**: reaproveita o endpoint já existente `GET /api/results/:id/assets/result` a partir do `resultId` do item — nenhum endpoint novo.
+- **Responsividade em 3 camadas**: desktop/notebook mostra a tabela completa sem scroll; tablet (1024px e 768px) mantém as mesmas 7 colunas com scroll horizontal restrito à própria tabela (`overflow-x-auto` num wrapper dedicado, cabeçalho e linhas compartilhando o mesmo `min-w-[840px]`); mobile continua com os itens em cards empilhados. Nenhuma rolagem horizontal da página em nenhum tamanho — validado por medição direta (`scrollWidth === clientWidth` do documento) em 1280×800/900, 1024×768/900, 768×1024/1300 e 375px.
+- **Polimento final**: formulário "Novo lote" com labels, bordas e foco consistentes com o resto do app; radius unificado nos estados vazios; `motion-reduce:animate-none` nas barras/indicadores com pulso, respeitando `prefers-reduced-motion`; nenhuma cor nova fora da paleta slate/emerald/amber/rose/blue já usada no projeto.
+
+Validação: `tests/frontend/batchesManagement.test.jsx` cresceu de 12 para 22 testes (cobrindo percentual por estágio, traço em cancelled/interrupted, tooltip com o texto exato e acessível por foco, wrapper com scroll horizontal restrito à tabela, ausência de ações de retry/exclusão por item, e os 7 cabeçalhos de coluna sempre presentes). Suíte completa: 261 testes em 38 arquivos, build aprovado, `git diff --check` limpo, em execuções repetidas. Validação manual feita com o lote real de 8 itens já existente, sem nova geração e sem chamada ao OpenRouter.
+
 ## Próximas melhorias aprovadas, ainda não iniciadas
 
 - **Branding/Logo**: upload e validação de logo transparente, aprovação explícita do usuário e aplicação automática por overlay tradicional (sem uso de IA para redesenhar a logo), mantendo sempre a versão original sem logo disponível;
