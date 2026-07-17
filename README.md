@@ -12,7 +12,7 @@ O escopo e a ordem das fases são definidos pelo [Documento Mestre](docs/DOCUMEN
 - Fase 2: **concluída oficialmente em 16 de julho de 2026**;
 - Fase 3: **concluída oficialmente e publicada em 16 de julho de 2026**.
 - Fase 4: **concluída oficialmente em 16 de julho de 2026**.
-- Fase 5: não iniciada.
+- Fase 5: implementação concluída, aguardando validação final.
 
 O encerramento está registrado em [FASE-02-ENCERRAMENTO.md](docs/FASE-02-ENCERRAMENTO.md) e a evolução consolidada do projeto em [HISTORICO.md](docs/HISTORICO.md).
 
@@ -119,6 +119,10 @@ Resultados anteriores no formato imagem + JSON continuam compatíveis. Abra **Re
 
 O diretório ainda não existe enquanto nenhuma geração for concluída; ele será criado automaticamente no primeiro sucesso.
 
+## Produção em Lotes
+
+Abra **Produção em Lotes** na sidebar para criar um lote com um template local válido e várias roupas. Os arquivos são validados e copiados para `storage/batches/`; o lote não inicia automaticamente. Depois da confirmação explícita de créditos, a fila processa estritamente um item por vez e compartilha a mesma trava global da geração individual. Pausa, retomada explícita e cancelamento preservam o estado local. Consulte [FASE-05-IMPLEMENTACAO.md](docs/FASE-05-IMPLEMENTACAO.md) para os estados e limitações.
+
 ## Parar os servidores
 
 No terminal onde `npm run dev` estiver rodando, pressione:
@@ -158,7 +162,7 @@ Os testes usam respostas simuladas e não acessam o OpenRouter. Estado atual: 26
 - somente roupas superiores;
 - proporção efetiva validada em 1:1 na Fase 2; 4:5 é melhoria futura;
 - resolução fixa 1K;
-- sem histórico navegável;
+- sem banco, autenticação ou infraestrutura em nuvem;
 - sem banco, autenticação, fila ou infraestrutura em nuvem;
 - sem retry automático;
 - templates atuais são fotografias locais JPEG válidas para a geração 1:1; a futura adoção de 4:5 exigirá templates compatíveis;

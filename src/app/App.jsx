@@ -18,6 +18,8 @@ import TemplatesPage from '../features/templates/components/TemplatesPage.jsx';
 import useTemplates from '../features/templates/hooks/useTemplates.js';
 import ResultsPage from '../features/results/components/ResultsPage.jsx';
 import useResults from '../features/results/hooks/useResults.js';
+import BatchesPage from '../features/batches/components/BatchesPage.jsx';
+import useBatches from '../features/batches/hooks/useBatches.js';
 
 const initialConfig = {
   keyConfigured: false,
@@ -42,6 +44,7 @@ export default function App() {
   const [activeView, setActiveView] = useState('generation');
   const templateCatalog = useTemplates();
   const resultHistory = useResults(activeView === 'results');
+  const batchesState = useBatches(activeView === 'batches');
   const templates = templateCatalog.templates;
   const garmentPreviewUrl = useObjectUrl(garmentFile);
   const inspectionSequenceRef = useRef(0);
@@ -168,6 +171,8 @@ export default function App() {
         <TemplatesPage catalog={templateCatalog} policy={config.imagePolicy || imagePolicy} generationBusy={isBusy} />
       ) : activeView === 'results' ? (
         <ResultsPage history={resultHistory} />
+      ) : activeView === 'batches' ? (
+        <BatchesPage batchesState={batchesState} templates={templates} keyConfigured={config.keyConfigured} onOpenResult={() => setActiveView('results')} />
       ) : (
         <>
       <header className="mb-8 flex flex-col gap-4 border-b border-slate-200/80 pb-6 md:flex-row md:items-end md:justify-between">

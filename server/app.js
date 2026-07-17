@@ -8,6 +8,12 @@ import { createTemplatesRouter } from './routes/templates.js';
 import { createOpenRouterSecretsRouter } from './routes/openrouterSecrets.js';
 import { createResultsRouter } from './routes/results.js';
 import { createGenerationService } from './services/generateImage.js';
+import { createGenerationExecutor } from './services/generationExecutor.js';
+import { createGenerationCoordinator } from './services/generationCoordinator.js';
+import { createBatchService } from './services/batchService.js';
+import { createBatchQueue } from './services/batchQueue.js';
+import { createLocalBatchRepository } from './repositories/localBatchRepository.js';
+import { createBatchesRouter } from './routes/batches.js';
 import { createLocalResultStorage } from './storage/localResultStorage.js';
 import { createLocalTemplateRepository } from './repositories/localTemplateRepository.js';
 import { createTemplateService } from './services/templateService.js';
@@ -39,18 +45,31 @@ export function createApp({
   templateService,
   generationService,
   generateImage,
+  generationCoordinator,
+  generationExecutor,
+  batchRepository,
+  batchService,
+  batchQueue,
 } = {}) {
   let resolvedGenerationService;
+  const resolvedCoordinator = generationCoordinator || createGenerationCoordinator();
   const resolvedTemplateRepository = templateRepository || createLocalTemplateRepository();
   const resolvedTemplateService = templateService || createTemplateService({
     repository: resolvedTemplateRepository,
-    isGenerationActive: () => Boolean(resolvedGenerationService?.isBusy?.()),
+    isGenerationActive: () => resolvedCoordinator.isBusy(),
   });
-  resolvedGenerationService = generationService || (generateImage ? { generate: generateImage, isBusy: () => false } : createGenerationService({
+  const resolvedExecutor = generationExecutor || createGenerationExecutor({ openRouterClient, resultStorage, templateService: resolvedTemplateService });
+  resolvedGenerationService = generationService || (generateImage ? { generate: generateImage, isBusy: () => resolvedCoordinator.isBusy() } : createGenerationService({
+    executor: resolvedExecutor,
+    coordinator: resolvedCoordinator,
     openRouterClient,
     resultStorage,
     templateService: resolvedTemplateService,
   }));
+  const resolvedBatchRepository = batchRepository || createLocalBatchRepository();
+  const resolvedBatchService = batchService || createBatchService({ repository: resolvedBatchRepository, templateService: resolvedTemplateService });
+  const resolvedBatchQueue = batchQueue || createBatchQueue({ batchService: resolvedBatchService, executor: resolvedExecutor, coordinator: resolvedCoordinator });
+  resolvedBatchRepository.ensureInitialized().catch((error) => console.error('[batches]', error?.message || error));
   const resolvedResultService = resultService || createResultService({ storage: resultStorage, templateService: resolvedTemplateService });
   const app = express();
   app.disable('x-powered-by');
@@ -61,6 +80,7 @@ export function createApp({
   app.use('/api/secrets/openrouter', createOpenRouterSecretsRouter({ keyStore, keyResolver, keyValidator }));
   app.use('/api/templates', createTemplatesRouter({ templateService: resolvedTemplateService }));
   app.use('/api/generations', createGenerationsRouter({ generationService: resolvedGenerationService }));
+  app.use('/api/batches', createBatchesRouter({ batchService: resolvedBatchService, repository: resolvedBatchRepository }));
   app.use('/api/results', createResultsRouter({ resultService: resolvedResultService }));
 
   app.use((error, _request, response, _next) => {

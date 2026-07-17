@@ -2,7 +2,7 @@
 
 Versão: 1.3
 Estado: referência oficial do projeto  
-Última consolidação: 16 de julho de 2026 — encerramento oficial da Fase 4
+Última consolidação: 16 de julho de 2026 — implementação da Fase 5 aguardando validação final
 
 ## 1. Autoridade e controle de escopo
 
@@ -39,7 +39,7 @@ O projeto preserva a proposta visual e funcional aprovada no PRIME IA STUDIO do 
 - Vite;
 - Tailwind CSS;
 - JavaScript;
-- uma SPA local com as views Nova geração, Templates e Resultados, sem React Router;
+- uma SPA local com as views Nova geração, Templates, Resultados e Produção em Lotes, sem React Router;
 - estado mantido em memória durante a sessão.
 
 ### Backend local
@@ -82,8 +82,7 @@ O projeto preserva a proposta visual e funcional aprovada no PRIME IA STUDIO do 
 - autenticação;
 - usuários;
 - Docker;
-- fila;
-- processamento em lote;
+- fila remota, banco ou processamento paralelo;
 - infraestrutura em nuvem;
 - histórico remoto ou em banco;
 - múltiplas gerações concorrentes.
@@ -293,6 +292,19 @@ Validação final aprovada:
 
 Detalhes: [FASE-04-IMPLEMENTACAO.md](./FASE-04-IMPLEMENTACAO.md).
 
+### Fase 5 — Produção em Lotes
+
+Estado: implementação concluída, **aguardando validação final**.
+
+- lotes locais persistidos com snapshot de template e roupas;
+- fila sequencial, concorrência global 1 com geração individual e zero retry;
+- estados, pausa, retomada explícita, cancelamento e recuperação segura após reinício;
+- resultados da Fase 4 vinculados por `batchId` e `batchItemId`;
+- sem banco, autenticação, agendamento ou processamento paralelo;
+- nenhuma geração real foi executada durante a implementação.
+
+Detalhes: [FASE-05-IMPLEMENTACAO.md](./FASE-05-IMPLEMENTACAO.md).
+
 ## 7. Critérios cumpridos para passagem da Fase 2
 
 A declaração `FASE 2 CONCLUÍDA` foi registrada depois da confirmação de todos os critérios:
@@ -321,5 +333,6 @@ A declaração `FASE 2 CONCLUÍDA` foi registrada depois da confirmação de tod
 - [Histórico do projeto](./HISTORICO.md)
 - [Fase 3 — Templates Locais](./FASE-03-IMPLEMENTACAO.md)
 - [Fase 4 — Resultados e Histórico Local](./FASE-04-IMPLEMENTACAO.md)
+- [Fase 5 — Produção em Lotes](./FASE-05-IMPLEMENTACAO.md)
 
 Em caso de conflito de escopo, este Documento Mestre prevalece.
