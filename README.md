@@ -123,7 +123,9 @@ O diretório ainda não existe enquanto nenhuma geração for concluída; ele se
 
 ## Produção em Lotes
 
-Abra **Produção em Lotes** na sidebar para criar um lote com um template local válido e várias roupas. Os arquivos são validados e copiados para `storage/batches/`; o lote não inicia automaticamente. Depois da confirmação explícita de créditos, a fila processa estritamente um item por vez e compartilha a mesma trava global da geração individual. Pausa, retomada explícita e cancelamento preservam o estado local. O botão "Abrir resultado" de cada item leva diretamente ao resultado correspondente na tela Resultados. Consulte [FASE-05-IMPLEMENTACAO.md](docs/FASE-05-IMPLEMENTACAO.md) para os estados, a validação real e as limitações.
+Abra **Produção em Lotes** na sidebar para criar um lote com um template local válido e várias roupas. Os arquivos são validados e copiados para `storage/batches/`; o lote não inicia automaticamente. Depois da confirmação explícita de créditos, a fila processa estritamente um item por vez e compartilha a mesma trava global da geração individual. Pausa, retomada explícita e cancelamento preservam o estado local. O botão "Abrir resultado" de cada item leva diretamente ao resultado correspondente na tela Resultados.
+
+A tela mostra a contagem de lotes e um indicador discreto quando há lote em execução; o formulário "Novo lote" é um painel colapsável, priorizando a consulta aos lotes existentes. O lote selecionado exibe cards de resumo (Total, Concluídos, Processando, Aguardando, Erros) e uma barra de progresso, sempre calculados a partir dos estados reais dos itens — nunca fictícios. Cada item mostra a thumbnail da roupa, badge de status, duração e custo; cancelar um lote exige confirmação inline. Consulte [FASE-05-IMPLEMENTACAO.md](docs/FASE-05-IMPLEMENTACAO.md) para os estados, a validação real, a Fase 5.1 e as limitações.
 
 ## Parar os servidores
 
@@ -155,7 +157,7 @@ npm test
 npm run build
 ```
 
-Os testes usam respostas simuladas e não acessam o OpenRouter. Estado atual: 28 arquivos e 124 testes aprovados, incluindo os 108 testes anteriores ao encerramento da Fase 5.
+Os testes usam respostas simuladas e não acessam o OpenRouter. Estado atual: 29 arquivos e 136 testes aprovados, incluindo os 124 testes anteriores à Fase 5.1.
 
 ## Limitações intencionais
 

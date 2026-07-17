@@ -310,11 +310,28 @@ Estado: **FASE 5 OFICIALMENTE CONCLUÍDA em 17 de julho de 2026**.
 
 Detalhes: [FASE-05-IMPLEMENTACAO.md](./FASE-05-IMPLEMENTACAO.md).
 
+#### Fase 5.1 — UX Enterprise da Produção em Lotes
+
+Estado: **implementada em 17 de julho de 2026**.
+
+- melhoria exclusivamente visual da tela Produção em Lotes, aproximando-a da referência Base44, sem alterar backend, endpoints, estados, transições, concorrência, retry, custos ou qualquer regra de negócio;
+- cabeçalho com contagem total de lotes e indicador discreto de lote(s) em execução;
+- formulário "Novo lote" convertido em painel colapsável, priorizando a consulta aos lotes existentes;
+- cards de resumo do lote selecionado (Total, Concluídos, Processando, Aguardando, Erros) calculados exclusivamente a partir dos estados reais dos itens, sem progresso fictício;
+- lista de itens com thumbnail real da roupa, badge de status semântico, duração, custo e erro seguro;
+- botão "Abrir resultado" preservado exatamente (`onOpenResult?.(item.resultId)`);
+- ações Iniciar/Pausar/Retomar/Cancelar com ícone, texto, carregamento local e confirmação inline para cancelar;
+- estados visuais de carregamento, vazio, erro e "nenhum lote selecionado";
+- responsividade validada em desktop e mobile, sem overflow horizontal;
+- 136 testes aprovados em 29 arquivos e build aprovado;
+- nenhuma geração real, nenhuma chamada ao OpenRouter e nenhum crédito consumido durante a implementação e a validação.
+
+Detalhes: [FASE-05-IMPLEMENTACAO.md](./FASE-05-IMPLEMENTACAO.md).
+
 Fase 6 ainda não foi iniciada.
 
 #### Próximas melhorias aprovadas, ainda não iniciadas
 
-- **Fase 5.1 — UX Enterprise da Fila de Produção**, inspirada na referência visual Base44;
 - **Branding/Logo**: upload e validação de logo transparente, aprovação explícita do usuário e aplicação automática por overlay tradicional, sem uso de IA para redesenhar a logo, mantendo sempre disponível a versão original sem logo;
 - **download em massa das imagens finais**, ampliando o download em lote já validado na Fase 5.
 

@@ -65,10 +65,30 @@ Lote executado com 8 roupas reais sobre o template `model-01`:
 
 Não há processamento paralelo, retry, banco, agendamento, WebSocket, remoção pós-criação ou recuperação automática.
 
+## Fase 5.1 — UX Enterprise da Produção em Lotes
+
+Estado: **implementada em 17 de julho de 2026**. Melhoria exclusivamente visual, sem alteração de regra de negócio, endpoint, estado, transição, concorrência, retry ou custo.
+
+Escopo implementado:
+
+- cabeçalho com contagem total de lotes e indicador discreto de lote(s) em execução;
+- formulário "Novo lote" convertido em painel colapsável, priorizando visualmente a consulta aos lotes existentes;
+- lista de lotes reestilizada com badge de status semântico, contagem de itens, custo real (ou estimado quando ainda não houver custo real) e barra de progresso compacta por lote;
+- cards de resumo do lote selecionado — Total, Concluídos, Processando, Aguardando, Erros — calculados exclusivamente a partir dos estados reais dos itens (`item.status`), sem nenhum valor fictício;
+- barra de progresso do lote selecionado com rótulo `concluídos/total` real, sem animação ou percentual inventado;
+- lista de itens com thumbnail da roupa (via `GET /api/batches/:id/items/:itemId/garment`, endpoint já existente), nome, dimensões, MIME, badge de status semântico, duração, custo e erro seguro quando houver;
+- botão "Abrir resultado" com ícone, preservando exatamente `onOpenResult?.(item.resultId)`;
+- ações Iniciar/Pausar/Retomar/Cancelar com ícone + texto, estado de carregamento local por ação e confirmação inline antes de cancelar (sem alterar o endpoint ou o payload da ação);
+- estados visuais dedicados para carregamento, lista vazia, erro de carregamento e "nenhum lote selecionado";
+- responsividade validada em desktop e mobile, sem overflow horizontal, com os cards de resumo em grade adaptável e os itens empilhados em telas estreitas; todas as imagens usam `object-contain`.
+
+Novos componentes de apresentação, sem nova arquitetura: `BatchSummaryCards.jsx` e `BatchItemRow.jsx`, em `src/features/batches/components/`.
+
+Validação: 12 novos testes de frontend (`tests/frontend/batchesManagement.test.jsx`), cobrindo cards de resumo, ausência de progresso fictício, preservação do `resultId` no botão "Abrir resultado", chamadas inalteradas às ações existentes, confirmação de cancelamento e estados vazio/loading/erro. Validação manual feita com o lote real de 8 itens já existente, sem nova geração.
+
 ## Próximas melhorias aprovadas, ainda não iniciadas
 
-- **Fase 5.1 — UX Enterprise da Fila de Produção**, inspirada na referência visual Base44;
 - **Branding/Logo**: upload e validação de logo transparente, aprovação explícita do usuário e aplicação automática por overlay tradicional (sem uso de IA para redesenhar a logo), mantendo sempre a versão original sem logo disponível;
-- **download em massa das imagens finais** (ampliação do download em lote já validado nesta fase).
+- **download em massa das imagens finais** (ampliação do download em lote já validado na Fase 5).
 
 Nenhuma dessas melhorias foi iniciada. A Fase 6 também não foi iniciada.
