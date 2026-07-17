@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
-import { AlertCircle, Check, ImageOff, Loader2, ShieldCheck, Trash2, Upload } from 'lucide-react';
-import { BRANDING_APPROVED_LOGO_URL, BRANDING_PENDING_LOGO_URL } from '../api/brandingClient.js';
+import { AlertCircle, BadgeCheck, Check, ImageOff, Loader2, ShieldCheck, Trash2, Upload } from 'lucide-react';
+import { BRANDING_APPROVED_LOGO_URL, BRANDING_PENDING_LOGO_URL, BRANDING_PREVIEW_BRANDED_URL, BRANDING_PREVIEW_ORIGINAL_URL } from '../api/brandingClient.js';
 import useBranding from '../hooks/useBranding.js';
 
 const QUALITY = {
@@ -9,7 +9,7 @@ const QUALITY = {
   inadequate: ['Inadequada', 'bg-rose-50 text-rose-700'],
 };
 
-export default function BrandingPage({ open }) {
+export default function BrandingPage({ open, variant = 'panel' }) {
   const branding = useBranding(open);
   const inputRef = useRef();
   const [fileError, setFileError] = useState('');
@@ -34,6 +34,13 @@ export default function BrandingPage({ open }) {
 
   return (
     <div className="space-y-5">
+      {variant === 'page' && (
+        <header className="mb-3 border-b border-slate-200/80 pb-6">
+          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500"><BadgeCheck size={14} /> PRIME IA STUDIO</div>
+          <h1 className="text-3xl font-semibold tracking-[-0.035em] text-slate-950">Branding</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">Gerencie a logo da PRIME STORE e o overlay automático aplicado às imagens finais.</p>
+        </header>
+      )}
       <div>
         <h3 className="text-sm font-semibold text-slate-900">Logo da loja</h3>
         <p className="mt-1 text-xs leading-5 text-slate-500">Envie um PNG com transparência real. Depois de aprovada, a logo pode ser aplicada automaticamente (canto inferior direito) sobre as imagens finais, sem uso de IA.</p>
@@ -93,6 +100,32 @@ export default function BrandingPage({ open }) {
           {branding.mutationPending ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />} {approved || pending ? 'Enviar outra logo (PNG)' : 'Enviar logo (PNG)'}
         </button>
         {(fileError || branding.error) && <p className="mt-2 flex items-start gap-1.5 text-xs text-rose-700"><AlertCircle size={13} className="mt-0.5 shrink-0" />{fileError || branding.error}</p>}
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <h3 className="text-sm font-semibold text-slate-900">Prévia da aplicação</h3>
+        <p className="mt-1 text-xs leading-5 text-slate-500">Prévia da aplicação: logo com escala de 9%, margem de 3% e posição inferior direita.</p>
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <div>
+            <span className="mb-1.5 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600">Original</span>
+            <div className="aspect-[4/5] overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+              <img src={BRANDING_PREVIEW_ORIGINAL_URL} alt="Prévia original, sem a logo aplicada" className="h-full w-full object-contain" />
+            </div>
+          </div>
+          <div>
+            <span className="mb-1.5 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600">Com logo</span>
+            {approved ? (
+              <div className="aspect-[4/5] overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                <img src={`${BRANDING_PREVIEW_BRANDED_URL}&t=${encodeURIComponent(approved.approvedAt || '')}`} alt="Prévia com a logo aplicada no canto inferior direito" className="h-full w-full object-contain" />
+              </div>
+            ) : (
+              <div className="flex aspect-[4/5] flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 px-3 text-center">
+                <ImageOff size={18} className="text-slate-400" />
+                <p className="text-[11px] leading-4 text-slate-500">Aprove uma logo para ver a prévia com a marca aplicada.</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <label className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4">

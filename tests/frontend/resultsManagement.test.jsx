@@ -5,7 +5,23 @@ import * as api from '../../src/features/results/api/resultsClient.js';
 import * as batchesApi from '../../src/features/batches/api/batchesClient.js';
 
 vi.mock('../../src/features/generation/api/generationClient.js', () => ({ fetchConfig: vi.fn(async () => ({ keyConfigured: false, model: { id: 'nano-banana-lite' }, fixedGeneration: { resolution: '1K', aspectRatio: '1:1' } })), generateImage: vi.fn() }));
-vi.mock('../../src/features/templates/api/templatesClient.js', () => ({ fetchTemplates: vi.fn(async () => [{ id: 'model-01', label: 'Modelo 01', publicUrl: '/template.jpg', valid: true, active: true }]), createTemplate: vi.fn(), updateTemplate: vi.fn(), replaceTemplateImage: vi.fn(), duplicateTemplate: vi.fn(), setTemplateActive: vi.fn(), deleteTemplate: vi.fn() }));
+vi.mock('../../src/features/templates/api/templatesClient.js', () => {
+  const fetchTemplates = vi.fn(async () => [{ id: 'model-01', label: 'Modelo 01', publicUrl: '/template.jpg', valid: true, active: true }]);
+  return {
+    fetchTemplates,
+    fetchTemplatesPage: vi.fn(async () => {
+      const templates = await fetchTemplates();
+      return { templates, page: 1, pageSize: 60, total: templates.length };
+    }),
+    fetchTemplateCategories: vi.fn(async () => []),
+    createTemplate: vi.fn(),
+    updateTemplate: vi.fn(),
+    replaceTemplateImage: vi.fn(),
+    duplicateTemplate: vi.fn(),
+    setTemplateActive: vi.fn(),
+    deleteTemplate: vi.fn(),
+  };
+});
 vi.mock('../../src/features/results/api/resultsClient.js', () => ({ fetchResults: vi.fn(), fetchResult: vi.fn(), updateResultStatus: vi.fn(), deleteResult: vi.fn(), APPROVED_ZIP_DOWNLOAD_URL: '/api/results/download/approved' }));
 vi.mock('../../src/features/batches/api/batchesClient.js', () => ({ fetchBatches: vi.fn(), fetchBatch: vi.fn(), batchAction: vi.fn(), createBatch: vi.fn() }));
 

@@ -114,6 +114,33 @@ describe('branding HTTP API', () => {
     } finally { await close(); }
   });
 
+  it('serves the Original × Com logo preview, and 404s the branded variant before any logo is approved', async () => {
+    const { app } = await fixtureApp();
+    const { baseUrl, close } = await startTestServer(app);
+    try {
+      const originalResponse = await fetch(`${baseUrl}/api/branding/preview?variant=original`);
+      expect(originalResponse.status).toBe(200);
+      expect(originalResponse.headers.get('content-type')).toContain('image/jpeg');
+
+      const brandedBefore = await fetch(`${baseUrl}/api/branding/preview?variant=branded`);
+      expect(brandedBefore.status).toBe(404);
+      expect((await brandedBefore.json()).error.code).toBe('BRANDING_NO_APPROVED_LOGO');
+
+      const buffer = await pngBuffer();
+      const form = new FormData();
+      form.set('logo', new Blob([buffer], { type: 'image/png' }), 'logo.png');
+      await fetch(`${baseUrl}/api/branding/logo`, { method: 'POST', body: form });
+      await fetch(`${baseUrl}/api/branding/approve`, { method: 'POST' });
+
+      const brandedAfter = await fetch(`${baseUrl}/api/branding/preview?variant=branded`);
+      expect(brandedAfter.status).toBe(200);
+      expect(brandedAfter.headers.get('content-type')).toContain('image/jpeg');
+      const brandedBytes = Buffer.from(await brandedAfter.arrayBuffer());
+      const originalBytes = Buffer.from(await (await fetch(`${baseUrl}/api/branding/preview?variant=original`)).arrayBuffer());
+      expect(brandedBytes.equals(originalBytes)).toBe(false);
+    } finally { await close(); }
+  });
+
   it('deletes the approved logo', async () => {
     const { app } = await fixtureApp();
     const { baseUrl, close } = await startTestServer(app);

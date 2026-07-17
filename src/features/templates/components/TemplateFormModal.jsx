@@ -2,6 +2,8 @@ import { AlertCircle, CheckCircle2, ImagePlus, Loader2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useObjectUrl } from '../../generation/utils/imagePreview.js';
 import { inspectTemplateFile } from '../utils/inspectTemplateUpload.js';
+import { DEFAULT_TEMPLATE_CATEGORY_ID } from '../hooks/useTemplateLibraryFilters.js';
+import TemplateCategorySelect from './TemplateCategorySelect.jsx';
 
 const TITLES = {
   create: 'Novo template',
@@ -9,9 +11,12 @@ const TITLES = {
   replace: 'Substituir imagem',
 };
 
-export default function TemplateFormModal({ open, mode, template, policy, busy, onClose, onSubmit }) {
+export default function TemplateFormModal({ open, mode, template, policy, categories = [], busy, onClose, onSubmit }) {
   const [label, setLabel] = useState('');
   const [description, setDescription] = useState('');
+  const [category, setCategory] = useState(DEFAULT_TEMPLATE_CATEGORY_ID);
+  const [tagsInput, setTagsInput] = useState('');
+  const [hoverDescription, setHoverDescription] = useState('');
   const [file, setFile] = useState(null);
   const [assessment, setAssessment] = useState(null);
   const [inspecting, setInspecting] = useState(false);
@@ -26,6 +31,9 @@ export default function TemplateFormModal({ open, mode, template, policy, busy, 
     if (!open) return undefined;
     setLabel(template?.label || '');
     setDescription(template?.description || '');
+    setCategory(template?.category || DEFAULT_TEMPLATE_CATEGORY_ID);
+    setTagsInput((template?.tags || []).join(', '));
+    setHoverDescription(template?.hoverDescription || '');
     setFile(null);
     setAssessment(null);
     setLocalError('');
@@ -70,7 +78,8 @@ export default function TemplateFormModal({ open, mode, template, policy, busy, 
     if (!canSubmit) return;
     try {
       setLocalError('');
-      await onSubmit({ label: label.trim(), description: description.trim(), file });
+      const tags = tagsInput.split(',').map((tag) => tag.trim()).filter(Boolean);
+      await onSubmit({ label: label.trim(), description: description.trim(), category, tags, hoverDescription: hoverDescription.trim(), file });
     } catch (error) {
       setLocalError(error.message || 'Não foi possível salvar o template.');
     }
@@ -97,6 +106,18 @@ export default function TemplateFormModal({ open, mode, template, policy, busy, 
               <label className="block text-sm font-semibold text-slate-800">
                 Descrição <span className="font-normal text-slate-400">(opcional)</span>
                 <textarea value={description} onChange={(event) => setDescription(event.target.value)} maxLength={240} rows={3} disabled={busy} className="mt-2 w-full resize-none rounded-xl border border-slate-200 px-3.5 py-3 text-sm outline-none transition focus:border-slate-500 disabled:bg-slate-100" />
+              </label>
+              <label className="block text-sm font-semibold text-slate-800" htmlFor="template-category-input">
+                Categoria
+                <TemplateCategorySelect categories={categories} value={category} onChange={setCategory} disabled={busy} />
+              </label>
+              <label className="block text-sm font-semibold text-slate-800">
+                Tags <span className="font-normal text-slate-400">(separadas por vírgula, opcional)</span>
+                <input value={tagsInput} onChange={(event) => setTagsInput(event.target.value)} placeholder="casual, verão" disabled={busy} className="mt-2 w-full rounded-xl border border-slate-200 px-3.5 py-3 text-sm outline-none transition focus:border-slate-500 disabled:bg-slate-100" />
+              </label>
+              <label className="block text-sm font-semibold text-slate-800">
+                Texto do tooltip <span className="font-normal text-slate-400">(opcional — aparece ao passar o mouse)</span>
+                <input value={hoverDescription} onChange={(event) => setHoverDescription(event.target.value)} maxLength={160} disabled={busy} className="mt-2 w-full rounded-xl border border-slate-200 px-3.5 py-3 text-sm outline-none transition focus:border-slate-500 disabled:bg-slate-100" />
               </label>
             </>
           )}

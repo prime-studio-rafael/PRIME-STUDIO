@@ -5,6 +5,7 @@ import { createConfigRouter } from './routes/config.js';
 import { createGenerationsRouter } from './routes/generations.js';
 import { createHealthRouter } from './routes/health.js';
 import { createTemplatesRouter } from './routes/templates.js';
+import { createTemplateCategoriesRouter } from './routes/templateCategories.js';
 import { createOpenRouterSecretsRouter } from './routes/openrouterSecrets.js';
 import { createResultsRouter } from './routes/results.js';
 import { createGenerationService } from './services/generateImage.js';
@@ -84,6 +85,7 @@ export function createApp({
   app.use('/api/health', createHealthRouter({ keyResolver }));
   app.use('/api/config', createConfigRouter({ keyResolver }));
   app.use('/api/secrets/openrouter', createOpenRouterSecretsRouter({ keyStore, keyResolver, keyValidator }));
+  app.use('/api/templates/categories', createTemplateCategoriesRouter());
   app.use('/api/templates', createTemplatesRouter({ templateService: resolvedTemplateService }));
   app.use('/api/generations', createGenerationsRouter({ generationService: resolvedGenerationService }));
   app.use('/api/batches', createBatchesRouter({ batchService: resolvedBatchService, repository: resolvedBatchRepository }));

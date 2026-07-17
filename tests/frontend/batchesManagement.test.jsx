@@ -3,9 +3,26 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import App from '../../src/app/App.jsx';
 import * as batchesApi from '../../src/features/batches/api/batchesClient.js';
 import * as resultsApi from '../../src/features/results/api/resultsClient.js';
+import * as templatesApi from '../../src/features/templates/api/templatesClient.js';
 
 vi.mock('../../src/features/generation/api/generationClient.js', () => ({ fetchConfig: vi.fn(async () => ({ keyConfigured: true, model: { id: 'nano-banana-lite' }, fixedGeneration: { resolution: '1K', aspectRatio: '1:1' } })), generateImage: vi.fn() }));
-vi.mock('../../src/features/templates/api/templatesClient.js', () => ({ fetchTemplates: vi.fn(async () => [{ id: 'model-01', label: 'Modelo 01', publicUrl: '/template.jpg', valid: true, active: true, width: 773, height: 1024, mimeType: 'image/jpeg' }]), createTemplate: vi.fn(), updateTemplate: vi.fn(), replaceTemplateImage: vi.fn(), duplicateTemplate: vi.fn(), setTemplateActive: vi.fn(), deleteTemplate: vi.fn() }));
+vi.mock('../../src/features/templates/api/templatesClient.js', () => {
+  const fetchTemplates = vi.fn(async () => [{ id: 'model-01', label: 'Modelo 01', publicUrl: '/template.jpg', valid: true, active: true, width: 773, height: 1024, mimeType: 'image/jpeg' }]);
+  return {
+    fetchTemplates,
+    fetchTemplatesPage: vi.fn(async () => {
+      const templates = await fetchTemplates();
+      return { templates, page: 1, pageSize: 60, total: templates.length };
+    }),
+    fetchTemplateCategories: vi.fn(async () => []),
+    createTemplate: vi.fn(),
+    updateTemplate: vi.fn(),
+    replaceTemplateImage: vi.fn(),
+    duplicateTemplate: vi.fn(),
+    setTemplateActive: vi.fn(),
+    deleteTemplate: vi.fn(),
+  };
+});
 vi.mock('../../src/features/results/api/resultsClient.js', () => ({ fetchResults: vi.fn(async () => []), fetchResult: vi.fn(), updateResultStatus: vi.fn(), deleteResult: vi.fn(), APPROVED_ZIP_DOWNLOAD_URL: '/api/results/download/approved' }));
 vi.mock('../../src/features/batches/api/batchesClient.js', () => ({ fetchBatches: vi.fn(), fetchBatch: vi.fn(), batchAction: vi.fn(), createBatch: vi.fn() }));
 
@@ -128,5 +145,22 @@ describe('batches page', () => {
     const thumbnail = screen.getAllByRole('img').find((img) => img.getAttribute('src')?.includes('/api/batches/batch-1/items/i1/garment'));
     expect(thumbnail).toHaveClass('object-contain');
     expect(screen.getByText('1 em execução')).toBeInTheDocument();
+  });
+
+  it('groups templates by category in the "Novo lote" select using optgroup', async () => {
+    templatesApi.fetchTemplates.mockResolvedValue([
+      { id: 'model-01', label: 'Camisa polo', publicUrl: '/template.jpg', valid: true, active: true, category: 'moda-masculina' },
+      { id: 'model-02', label: 'Vestido floral', publicUrl: '/template.jpg', valid: true, active: true, category: 'moda-feminina' },
+    ]);
+    templatesApi.fetchTemplateCategories.mockResolvedValue([
+      { id: 'moda-masculina', label: 'Moda Masculina', emoji: '👕', order: 10 },
+      { id: 'moda-feminina', label: 'Moda Feminina', emoji: '👩', order: 20 },
+    ]);
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Produção em Lotes' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Novo lote' }));
+    const select = await screen.findByLabelText('Template');
+    const groupLabels = within(select).getAllByRole('group').map((group) => group.getAttribute('label'));
+    expect(groupLabels).toEqual(['Moda Masculina', 'Moda Feminina']);
   });
 });

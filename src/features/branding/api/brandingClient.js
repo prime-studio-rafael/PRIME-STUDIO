@@ -27,3 +27,5 @@ export function updateBrandingConfig(enabled) { return requestJson('/api/brandin
 export function deleteBrandingLogo() { return requestJson('/api/branding/logo', { method: 'DELETE' }); }
 export const BRANDING_PENDING_LOGO_URL = '/api/branding/logo?variant=pending';
 export const BRANDING_APPROVED_LOGO_URL = '/api/branding/logo?variant=approved';
+export const BRANDING_PREVIEW_ORIGINAL_URL = '/api/branding/preview?variant=original';
+export const BRANDING_PREVIEW_BRANDED_URL = '/api/branding/preview?variant=branded';

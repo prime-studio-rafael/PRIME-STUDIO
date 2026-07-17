@@ -3,12 +3,18 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, readdir, rename, unlink } from 'node:fs/promises';
 import { generationConfig } from '../config/generationConfig.js';
 import { getTemplateById, listTemplates } from '../catalogs/templates.js';
+import { DEFAULT_TEMPLATE_CATEGORY_ID } from '../catalogs/templateCategories.js';
 import { validateImageBuffer } from '../utils/fileValidation.js';
 import { AppError } from '../utils/errors.js';
 import { serializeJson, writeFileAtomically } from '../utils/atomicJsonStorage.js';
 
-export const TEMPLATE_CATALOG_SCHEMA_VERSION = 1;
-export const DEFAULT_TEMPLATE_LIMIT = 50;
+export const TEMPLATE_CATALOG_SCHEMA_VERSION = 2;
+// Trava técnica de segurança contra crescimento patológico/acidental do catálogo — nunca um
+// limite de produto. A biblioteca de templates (Fase 6) é projetada para centenas/milhares de
+// registros via paginação e busca no backend (ver listPage), não para um teto de negócio.
+export const DEFAULT_TEMPLATE_SAFETY_LIMIT = 5000;
+export const DEFAULT_TEMPLATE_PAGE_SIZE = 60;
+export const MAX_TEMPLATE_PAGE_SIZE = 200;
 
 const EXTENSION_BY_MIME = Object.freeze({
   'image/jpeg': 'jpeg',
@@ -18,10 +24,31 @@ const EXTENSION_BY_MIME = Object.freeze({
 
 const STORAGE_KEY_PATTERN = /^[a-z0-9-]+\.(?:jpeg|png|webp)$/;
 
+// Fase 6 — correção obrigatória: os dois templates seed nasceram com nomes e categoria
+// genéricos ("Modelo base 01/02", "Sem categoria") porque a primeira leva da Fase 6 só
+// preparou o schema, sem migrar o conteúdo. Estes valores substituem os genéricos, mas
+// apenas enquanto o registro ainda estiver intocado desde o bootstrap — uma edição manual
+// do usuário (label, categoria, tags ou hoverDescription diferentes do genérico original)
+// nunca é sobrescrita.
+const PROFESSIONAL_SEED_METADATA = Object.freeze({
+  'model-01': Object.freeze({
+    label: 'Masculino Frontal — Clássico',
+    category: 'moda-masculina',
+    tags: Object.freeze(['masculino', 'frontal', 'camiseta', 'classico']),
+    hoverDescription: 'Modelo masculino em pose frontal e enquadramento clássico, ideal para camisetas e moda casual.',
+  }),
+  'model-02': Object.freeze({
+    label: 'Masculino Frontal — Logo Central',
+    category: 'moda-masculina',
+    tags: Object.freeze(['masculino', 'frontal', 'camiseta', 'estampa']),
+    hoverDescription: 'Modelo masculino em pose frontal, indicado para camisetas com logos ou estampas centrais.',
+  }),
+});
+
 export function createLocalTemplateRepository({
   templatesDirectory = path.resolve(process.cwd(), 'storage/templates'),
   seedCatalog = { listTemplates, getTemplateById },
-  limit = DEFAULT_TEMPLATE_LIMIT,
+  limit = DEFAULT_TEMPLATE_SAFETY_LIMIT,
   uuid = randomUUID,
   now = () => new Date(),
 } = {}) {
@@ -48,6 +75,7 @@ export function createLocalTemplateRepository({
 
     if (primary.status === 'valid') {
       catalogCache = primary.catalog;
+      if (primary.needsRewrite) await persistMigratedCatalog(catalogCache);
       await cleanupOrphanImages(catalogCache);
       return;
     }
@@ -56,6 +84,7 @@ export function createLocalTemplateRepository({
     if (backup.status === 'valid') {
       await writeFileAtomically(catalogPath, serializeJson(backup.catalog));
       catalogCache = backup.catalog;
+      if (backup.needsRewrite) await persistMigratedCatalog(catalogCache);
       await cleanupOrphanImages(catalogCache);
       return;
     }
@@ -100,6 +129,7 @@ export function createLocalTemplateRepository({
           active: true,
           createdAt,
           updatedAt: createdAt,
+          ...PROFESSIONAL_SEED_METADATA[seed.id],
         }));
       }
 
@@ -132,6 +162,26 @@ export function createLocalTemplateRepository({
   async function list() {
     await ensureInitialized();
     return catalogCache.templates.map(cloneRecord);
+  }
+
+  async function listPage({ page = 1, pageSize = DEFAULT_TEMPLATE_PAGE_SIZE, search = '', category } = {}) {
+    await ensureInitialized();
+    const normalizedPage = Math.max(1, Math.trunc(Number(page)) || 1);
+    const normalizedPageSize = Math.min(MAX_TEMPLATE_PAGE_SIZE, Math.max(1, Math.trunc(Number(pageSize)) || DEFAULT_TEMPLATE_PAGE_SIZE));
+    const normalizedSearch = String(search || '').trim().toLocaleLowerCase('pt-BR');
+    const normalizedCategory = category ? String(category) : null;
+
+    let filtered = catalogCache.templates;
+    if (normalizedCategory) filtered = filtered.filter((template) => template.category === normalizedCategory);
+    if (normalizedSearch) {
+      filtered = filtered.filter((template) => template.label.toLocaleLowerCase('pt-BR').includes(normalizedSearch)
+        || template.tags.some((tag) => tag.toLocaleLowerCase('pt-BR').includes(normalizedSearch)));
+    }
+
+    const total = filtered.length;
+    const start = (normalizedPage - 1) * normalizedPageSize;
+    const templates = filtered.slice(start, start + normalizedPageSize).map(cloneRecord);
+    return { templates, page: normalizedPage, pageSize: normalizedPageSize, total };
   }
 
   async function getById(id) {
@@ -272,10 +322,23 @@ export function createLocalTemplateRepository({
   async function readCatalog(filePath) {
     try {
       const parsed = JSON.parse(await readFile(filePath, 'utf8'));
-      return { status: 'valid', catalog: freezeCatalog(parsed, limit) };
+      const migratedShape = migrateCatalogShape(parsed);
+      const { catalog: withProfessionalNames, changed: professionalNamesApplied } = applyProfessionalSeedMetadata(migratedShape, seedCatalog);
+      const catalog = freezeCatalog(withProfessionalNames, limit);
+      return {
+        status: 'valid',
+        catalog,
+        needsRewrite: parsed.schemaVersion !== TEMPLATE_CATALOG_SCHEMA_VERSION || professionalNamesApplied,
+      };
     } catch (error) {
       return error?.code === 'ENOENT' ? { status: 'missing' } : { status: 'invalid' };
     }
+  }
+
+  async function persistMigratedCatalog(catalog) {
+    const serialized = serializeJson(catalog);
+    await writeFileAtomically(catalogPath, serialized);
+    await writeFileAtomically(backupPath, serialized);
   }
 
   function resolveStoragePath(storageKey) {
@@ -306,6 +369,7 @@ export function createLocalTemplateRepository({
 
   return Object.freeze({
     list,
+    listPage,
     getById,
     readImage,
     create,
@@ -319,7 +383,11 @@ export function createLocalTemplateRepository({
   });
 }
 
-function createRecord({ id, label, description = '', storageKey, image, active = true, createdAt, updatedAt, ...existing }) {
+function createRecord({
+  id, label, description = '', storageKey, image, active = true, createdAt, updatedAt,
+  category = DEFAULT_TEMPLATE_CATEGORY_ID, tags = [], hoverDescription = null, usageMetrics = null,
+  ...existing
+}) {
   const imageFields = image ? {
     mimeType: image.mimeType,
     width: image.width,
@@ -345,6 +413,10 @@ function createRecord({ id, label, description = '', storageKey, image, active =
     storageKey,
     ...imageFields,
     active: Boolean(active),
+    category: category || DEFAULT_TEMPLATE_CATEGORY_ID,
+    tags: Object.freeze(Array.isArray(tags) ? tags.map((tag) => String(tag)) : []),
+    hoverDescription: hoverDescription == null ? null : String(hoverDescription),
+    usageMetrics: usageMetrics ?? null,
     createdAt,
     updatedAt,
   });
@@ -368,6 +440,51 @@ function createStorageKey(prefix, mimeType, uuid) {
   if (!extension) throw new AppError('UNSUPPORTED_MIME', 'Use uma imagem JPEG, PNG ou WebP.', { status: 400 });
   const safePrefix = String(prefix).toLowerCase().replace(/[^a-z0-9-]/g, '-').slice(0, 40) || 'template';
   return `${safePrefix}-${uuid().toLowerCase().replace(/[^a-z0-9-]/g, '')}.${extension}`;
+}
+
+// Migração v1 → v2 (Fase 6): torna category/tags/hoverDescription/usageMetrics aditivos e
+// idempotentes. Um catálogo já em v2 passa direto; um v1 reconhecido ganha os defaults;
+// qualquer outra forma é devolvida como está para freezeCatalog rejeitar explicitamente.
+function migrateCatalogShape(raw) {
+  if (raw?.schemaVersion === TEMPLATE_CATALOG_SCHEMA_VERSION) return raw;
+  if (raw?.schemaVersion === 1 && raw.initialized === true && Array.isArray(raw.templates)) {
+    return {
+      ...raw,
+      schemaVersion: TEMPLATE_CATALOG_SCHEMA_VERSION,
+      templates: raw.templates.map((record) => ({
+        ...record,
+        category: record.category ?? DEFAULT_TEMPLATE_CATEGORY_ID,
+        tags: Array.isArray(record.tags) ? record.tags : [],
+        hoverDescription: record.hoverDescription ?? null,
+        usageMetrics: record.usageMetrics ?? null,
+      })),
+    };
+  }
+  return raw;
+}
+
+// Fase 6 — aplica os nomes/categoria/tags profissionais de PROFESSIONAL_SEED_METADATA a um
+// registro seed apenas se ele ainda estiver exatamente como o bootstrap o criou (mesmo label,
+// description e defaults de categoria/tags/hoverDescription do seed original). Idempotente:
+// depois de aplicado, o registro deixa de bater com o teste "ainda genérico" e não é mais
+// alterado; uma personalização do usuário também deixa de bater e é preservada.
+function applyProfessionalSeedMetadata(catalog, seedCatalog) {
+  let changed = false;
+  const templates = catalog.templates.map((record) => {
+    const professional = PROFESSIONAL_SEED_METADATA[record.id];
+    if (!professional) return record;
+    const seed = seedCatalog.getTemplateById(record.id);
+    const stillGeneric = Boolean(seed)
+      && record.label === seed.label
+      && record.description === (seed.description || '')
+      && record.category === DEFAULT_TEMPLATE_CATEGORY_ID
+      && Array.isArray(record.tags) && record.tags.length === 0
+      && record.hoverDescription == null;
+    if (!stillGeneric) return record;
+    changed = true;
+    return { ...record, ...professional };
+  });
+  return changed ? { catalog: { ...catalog, templates }, changed: true } : { catalog, changed: false };
 }
 
 function freezeCatalog(value, limit) {
@@ -396,6 +513,9 @@ function assertRecord(record) {
   if (!EXTENSION_BY_MIME[record.mimeType]) throw new Error('Invalid template MIME.');
   if (![record.width, record.height, record.aspectRatio, record.sizeBytes].every(Number.isFinite)) throw new Error('Invalid template dimensions.');
   if (typeof record.valid !== 'boolean' || typeof record.active !== 'boolean' || !Array.isArray(record.warnings)) throw new Error('Invalid template state.');
+  if (typeof record.category !== 'string' || !record.category) throw new Error('Invalid template category.');
+  if (!Array.isArray(record.tags) || !record.tags.every((tag) => typeof tag === 'string')) throw new Error('Invalid template tags.');
+  if (record.hoverDescription !== null && typeof record.hoverDescription !== 'string') throw new Error('Invalid template hover description.');
 }
 
 function assertCapacity(catalog, limit) {

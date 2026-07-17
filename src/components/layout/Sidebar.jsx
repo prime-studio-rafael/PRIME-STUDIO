@@ -1,4 +1,4 @@
-import { CheckCircle2, Images, ImagePlus, Layers3, LayoutGrid, Settings2, ShieldAlert, Sparkles } from 'lucide-react';
+import { BadgeCheck, CheckCircle2, Images, ImagePlus, Layers3, LayoutGrid, Settings2, ShieldAlert, Sparkles } from 'lucide-react';
 
 export default function Sidebar({ keyConfigured, activeView = 'generation', onNavigate, onOpenSettings }) {
   return (
@@ -29,6 +29,10 @@ export default function Sidebar({ keyConfigured, activeView = 'generation', onNa
         <button type="button" onClick={() => onNavigate?.('batches')} aria-current={activeView === 'batches' ? 'page' : undefined} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${activeView === 'batches' ? 'bg-white/[0.09] text-white' : 'text-slate-400 hover:bg-white/[0.07] hover:text-white'}`}>
           <Layers3 size={17} />
           Produção em Lotes
+        </button>
+        <button type="button" onClick={() => onNavigate?.('branding')} aria-current={activeView === 'branding' ? 'page' : undefined} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${activeView === 'branding' ? 'bg-white/[0.09] text-white' : 'text-slate-400 hover:bg-white/[0.07] hover:text-white'}`}>
+          <BadgeCheck size={17} />
+          Branding
         </button>
         <button type="button" onClick={onOpenSettings} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-400 transition hover:bg-white/[0.07] hover:text-white">
           <Settings2 size={17} />

@@ -11,6 +11,8 @@ vi.mock('../../src/features/branding/api/brandingClient.js', () => ({
   deleteBrandingLogo: vi.fn(),
   BRANDING_PENDING_LOGO_URL: '/api/branding/logo?variant=pending',
   BRANDING_APPROVED_LOGO_URL: '/api/branding/logo?variant=approved',
+  BRANDING_PREVIEW_ORIGINAL_URL: '/api/branding/preview?variant=original',
+  BRANDING_PREVIEW_BRANDED_URL: '/api/branding/preview?variant=branded',
 }));
 
 const emptyState = { config: { enabled: false }, pending: null, approved: null };
@@ -129,6 +131,41 @@ describe('BrandingPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Remover logo' }));
     await waitFor(() => expect(api.deleteBrandingLogo).toHaveBeenCalled());
     expect(await screen.findByText('Nenhuma logo enviada ainda')).toBeInTheDocument();
+  });
+
+  it('shows the "Original" preview but a friendly empty state for "Com logo" when there is no approved logo', async () => {
+    api.fetchBrandingState.mockResolvedValue(emptyState);
+    render(<BrandingPage open />);
+    await screen.findByText('Nenhuma logo enviada ainda');
+    expect(screen.getByAltText('Prévia original, sem a logo aplicada')).toHaveAttribute('src', '/api/branding/preview?variant=original');
+    expect(screen.queryByAltText('Prévia com a logo aplicada no canto inferior direito')).not.toBeInTheDocument();
+    expect(screen.getByText('Aprove uma logo para ver a prévia com a marca aplicada.')).toBeInTheDocument();
+    expect(screen.getByText('Prévia da aplicação: logo com escala de 9%, margem de 3% e posição inferior direita.')).toBeInTheDocument();
+  });
+
+  it('shows both "Original" and "Com logo" previews once a logo is approved, regardless of the toggle state', async () => {
+    api.fetchBrandingState.mockResolvedValueOnce({ ...emptyState, approved: approvedRecord });
+    render(<BrandingPage open />);
+    await screen.findByText('Logo ativa (aprovada)');
+    expect(screen.getByAltText('Prévia original, sem a logo aplicada')).toHaveAttribute('src', '/api/branding/preview?variant=original');
+    expect(screen.getByAltText('Prévia com a logo aplicada no canto inferior direito')).toHaveAttribute('src', expect.stringContaining('/api/branding/preview?variant=branded'));
+  });
+
+  it('keeps showing the branded preview when "Aplicar logo nas imagens" is turned off', async () => {
+    api.fetchBrandingState.mockResolvedValueOnce({ config: { enabled: false }, pending: null, approved: approvedRecord });
+    render(<BrandingPage open />);
+    await screen.findByText('Logo ativa (aprovada)');
+    expect(screen.getByLabelText('Aplicar logo nas imagens')).not.toBeChecked();
+    expect(screen.getByAltText('Prévia com a logo aplicada no canto inferior direito')).toBeInTheDocument();
+  });
+
+  it('never calls any OpenRouter or generation endpoint while rendering the preview', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    api.fetchBrandingState.mockResolvedValueOnce({ ...emptyState, approved: approvedRecord });
+    render(<BrandingPage open />);
+    await screen.findByText('Logo ativa (aprovada)');
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
   });
 
   it('shows a safe error message when the upload is rejected', async () => {

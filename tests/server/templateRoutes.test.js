@@ -99,4 +99,60 @@ describe('template HTTP API', () => {
       await server.close();
     }
   });
+
+  it('exposes GET /api/templates/categories without being shadowed by /:id routes', async () => {
+    const server = await startFixture();
+    try {
+      const response = await fetch(`${server.baseUrl}/api/templates/categories`);
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body.categories.map(({ id }) => id)).toContain('sem-categoria');
+      expect(body.categories.map(({ id }) => id)).toContain('moda-masculina');
+      expect(body.categories[0].order).toBeLessThanOrEqual(body.categories[1].order);
+    } finally {
+      await server.close();
+    }
+  });
+
+  it('creates a template with category, tags and hoverDescription via multipart, and returns them on GET', async () => {
+    const server = await startFixture();
+    try {
+      const buffer = await readFile(sourceUrl);
+      const form = new FormData();
+      form.set('label', 'Camisa com categoria');
+      form.set('description', 'Fotografia editorial local');
+      form.set('category', 'moda-masculina');
+      form.set('tags', JSON.stringify(['casual', 'verão']));
+      form.set('hoverDescription', 'Ideal para o catálogo de verão');
+      form.set('templateImage', new Blob([buffer], { type: 'image/jpeg' }), 'modelo.jpeg');
+
+      const response = await fetch(`${server.baseUrl}/api/templates`, { method: 'POST', body: form });
+      expect(response.status).toBe(201);
+      const created = (await response.json()).template;
+      expect(created).toMatchObject({ category: 'moda-masculina', tags: ['casual', 'verão'], hoverDescription: 'Ideal para o catálogo de verão', usageMetrics: null });
+
+      const listResponse = await fetch(`${server.baseUrl}/api/templates`);
+      const listed = (await listResponse.json()).templates.find(({ id }) => id === created.id);
+      expect(listed).toMatchObject({ category: 'moda-masculina', tags: ['casual', 'verão'] });
+    } finally {
+      await server.close();
+    }
+  });
+
+  it('paginates and filters via query params without breaking the plain GET /api/templates contract', async () => {
+    const server = await startFixture();
+    try {
+      const plain = await fetch(`${server.baseUrl}/api/templates`);
+      const plainBody = await plain.json();
+      expect(plainBody.templates.map(({ id }) => id)).toEqual(['model-01', 'model-02']);
+      expect(plainBody.page).toBeUndefined();
+
+      const paged = await fetch(`${server.baseUrl}/api/templates?page=1&pageSize=1`);
+      const pagedBody = await paged.json();
+      expect(pagedBody.templates).toHaveLength(1);
+      expect(pagedBody).toMatchObject({ page: 1, pageSize: 1, total: 2 });
+    } finally {
+      await server.close();
+    }
+  });
 });

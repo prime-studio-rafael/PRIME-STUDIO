@@ -15,6 +15,11 @@ vi.mock('../../src/features/generation/api/generationClient.js', () => ({
 
 vi.mock('../../src/features/templates/api/templatesClient.js', () => ({
   fetchTemplates: mocks.fetchTemplates,
+  fetchTemplatesPage: vi.fn(async () => {
+    const templates = await mocks.fetchTemplates();
+    return { templates, page: 1, pageSize: 60, total: templates.length };
+  }),
+  fetchTemplateCategories: vi.fn(async () => []),
   createTemplate: vi.fn(),
   updateTemplate: vi.fn(),
   replaceTemplateImage: vi.fn(),

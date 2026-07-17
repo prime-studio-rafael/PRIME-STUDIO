@@ -228,3 +228,34 @@ describe('brandingService — approval and configuration', () => {
     expect(active.mimeType).toBe('image/png');
   });
 });
+
+describe('brandingService — Original × Com logo preview', () => {
+  it('always serves the original demo image, with no logo required', async () => {
+    const { service } = await fixture();
+    const original = await service.getPreviewAsset('original');
+    expect(original.buffer.length).toBeGreaterThan(0);
+    expect(original.mimeType).toBe('image/jpeg');
+  });
+
+  it('rejects the branded variant when there is no approved logo yet', async () => {
+    const { service } = await fixture();
+    await expect(service.getPreviewAsset('branded')).rejects.toMatchObject({ code: 'BRANDING_NO_APPROVED_LOGO' });
+  });
+
+  it('composes the branded variant locally (no AI) once a logo is approved, using the 9%/3%/bottom-right pattern', async () => {
+    const { service } = await fixture();
+    const buffer = await pngBuffer();
+    await service.uploadLogo({ buffer, mimetype: 'image/png', originalname: 'logo.png' });
+    await service.approveLogo();
+
+    const original = await service.getPreviewAsset('original');
+    const branded = await service.getPreviewAsset('branded');
+    expect(branded.mimeType).toBe('image/jpeg');
+    expect(branded.buffer.equals(original.buffer)).toBe(false);
+  });
+
+  it('rejects an unknown preview variant', async () => {
+    const { service } = await fixture();
+    await expect(service.getPreviewAsset('other')).rejects.toMatchObject({ code: 'BRANDING_INVALID_PREVIEW_VARIANT' });
+  });
+});

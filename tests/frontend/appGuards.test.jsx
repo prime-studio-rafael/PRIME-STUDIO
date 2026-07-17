@@ -14,6 +14,8 @@ vi.mock('../../src/features/generation/api/generationClient.js', () => ({
 
 vi.mock('../../src/features/templates/api/templatesClient.js', () => ({
   fetchTemplates: vi.fn(async () => [{ id: 'model-01', label: 'Modelo base 01', publicUrl: '/templates/model-01.jpeg', valid: true, active: true }]),
+  fetchTemplatesPage: vi.fn(async () => ({ templates: [{ id: 'model-01', label: 'Modelo base 01', publicUrl: '/templates/model-01.jpeg', valid: true, active: true }], page: 1, pageSize: 60, total: 1 })),
+  fetchTemplateCategories: vi.fn(async () => []),
   createTemplate: vi.fn(),
   updateTemplate: vi.fn(),
   replaceTemplateImage: vi.fn(),

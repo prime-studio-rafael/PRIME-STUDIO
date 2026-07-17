@@ -1,8 +1,8 @@
 # PRIME STUDIO — Documento Mestre
 
-Versão: 1.6
+Versão: 1.7
 Estado: referência oficial do projeto  
-Última consolidação: 17 de julho de 2026 — Branding/Logo concluído oficialmente (MVP); Fase 6 ainda não iniciada
+Última consolidação: 17 de julho de 2026 — Fase 6 (Biblioteca Profissional de Templates) **concluída oficialmente**, incluindo a correção de aderência (preview de Branding, nomes profissionais de model-01/model-02, paginação real na interface, lazy loading), validada e aprovada pelo usuário
 
 ## 1. Autoridade e controle de escopo
 
@@ -328,8 +328,6 @@ Estado: **implementada em 17 de julho de 2026**.
 
 Detalhes: [FASE-05-IMPLEMENTACAO.md](./FASE-05-IMPLEMENTACAO.md).
 
-Fase 6 ainda não foi iniciada.
-
 ### Branding/Logo — Aplicação Automática de Marca
 
 Estado: **BRANDING/LOGO OFICIALMENTE CONCLUÍDO (MVP) em 17 de julho de 2026**.
@@ -338,7 +336,7 @@ Estado: **BRANDING/LOGO OFICIALMENTE CONCLUÍDO (MVP) em 17 de julho de 2026**.
 - classificação adequate / acceptable_with_warning / inadequate; logo inadequada não pode ser aprovada;
 - aprovação explícita obrigatória antes de qualquer aplicação automática; substituição sempre atômica, preservando a logo anterior até a nova ser gravada com sucesso;
 - overlay tradicional (sem IA), posição fixa no canto inferior direito, **escala fixa de 9% e margem fixa de 3%** da menor dimensão da imagem final — padrão definitivo, validado visualmente pelo usuário com um resultado real e a logo aprovada da PRIME STORE, sem distorcer, sem cortar, sem ampliar a logo além da resolução original;
-- posição, escala e margem **não são configuráveis nesta fase** — sem editor, slider ou seleção de posição; tornam-se ajustáveis apenas na Fase 6;
+- posição, escala e margem **não são configuráveis nesta fase** — sem editor, slider ou seleção de posição; tornam-se ajustáveis apenas numa fase futura;
 - toggle global "Aplicar logo nas imagens", válido tanto para a geração individual quanto para a Produção em Lotes, sem duplicar pipeline — o hook está no `GenerationExecutor` compartilhado;
 - resultado original e resultado com logo sempre preservados separadamente (`result.<ext>` e `branded.<ext>`); falha no overlay nunca invalida a geração paga nem gera retry ou nova chamada ao OpenRouter;
 - tela Resultados com seletor Original/Com logo e downloads separados; ZIP das aprovadas usa a versão com logo quando o Branding está ativo e o resultado a possui, e a versão original nos demais casos;
@@ -346,6 +344,24 @@ Estado: **BRANDING/LOGO OFICIALMENTE CONCLUÍDO (MVP) em 17 de julho de 2026**.
 - nenhuma geração real, nenhuma chamada ao OpenRouter e nenhum crédito consumido durante a implementação e a validação.
 
 Detalhes: [FASE-BRANDING-IMPLEMENTACAO.md](./FASE-BRANDING-IMPLEMENTACAO.md).
+
+Adendo: Branding foi promovido de aba do modal de Configurações para uma **view própria na sidebar** (item "Branding", no mesmo nível de Nova geração/Templates/Resultados/Produção em Lotes), reaproveitando integralmente a mesma feature, o mesmo hook e os mesmos endpoints — sem duplicar estado ou lógica. O modal de Configurações mantém apenas um atalho de descoberta ("Ir para Branding").
+
+### Fase 6 — Biblioteca Profissional de Templates
+
+Estado: **concluída oficialmente em 17 de julho de 2026**.
+
+- templates ganharam categoria (catálogo fixo e versionado em código: 👕 Moda Masculina, 👩 Moda Feminina, 👟 Tênis Masculino, 👟 Tênis Feminino, ⌚ Acessórios, 👜 Bolsas, Sem categoria), tags normalizadas e um texto de tooltip (`hoverDescription`), além de um campo `usageMetrics` reservado para métricas futuras (sempre `null` nesta fase);
+- schema do catálogo de templates evoluiu de v1 para v2 de forma **aditiva e com migração automática/idempotente** — nenhum campo removido, IDs seed `model-01`/`model-02` preservados, nenhuma quebra de compatibilidade com geração individual, Produção em Lotes ou Resultados;
+- **sem limite de negócio no número de templates** — a trava anterior de 50 virou apenas uma trava técnica de segurança bem mais alta; a paginação/busca real do backend (`page`, `pageSize`, `search`, `category`) é **consumida de fato** pela interface (`TemplatesPage` e `TemplatePicker` carregam por página com "Carregar mais", nunca a lista inteira para filtrar no navegador);
+- tela Templates (admin) e o seletor de modelo-base na Nova geração ganharam busca, filtro por categoria, paginação real, badge de categoria, tags e um ícone de "mais detalhes" (hover, acessível por teclado), mantendo integralmente o Design System atual;
+- `model-01`/`model-02` têm nomes profissionais e categoria "Moda Masculina" (correção aplicada tanto a instalações novas quanto a catálogos locais já existentes, sem sobrescrever uma personalização já feita pelo usuário);
+- a view Branding ganhou uma prévia real **Original × Com logo**, reaproveitando a composição local já usada na geração (9%/3%/inferior direita), funcionando com ou sem logo aprovada e independente do toggle;
+- o `<select>` de template na Produção em Lotes passou a agrupar as opções por categoria (`<optgroup>`);
+- 252 testes aprovados em 38 arquivos e build aprovado;
+- nenhuma geração real, nenhuma chamada ao OpenRouter e nenhum crédito consumido durante a implementação e a validação.
+
+Detalhes: [FASE-6-IMPLEMENTACAO.md](./FASE-6-IMPLEMENTACAO.md).
 
 #### Próximas melhorias aprovadas, ainda não iniciadas
 
@@ -383,5 +399,6 @@ A declaração `FASE 2 CONCLUÍDA` foi registrada depois da confirmação de tod
 - [Fase 4 — Resultados e Histórico Local](./FASE-04-IMPLEMENTACAO.md)
 - [Fase 5 — Produção em Lotes](./FASE-05-IMPLEMENTACAO.md)
 - [Branding/Logo — Aplicação Automática de Marca](./FASE-BRANDING-IMPLEMENTACAO.md)
+- [Fase 6 — Biblioteca Profissional de Templates](./FASE-6-IMPLEMENTACAO.md)
 
 Em caso de conflito de escopo, este Documento Mestre prevalece.

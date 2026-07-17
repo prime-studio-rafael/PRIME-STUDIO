@@ -111,4 +111,65 @@ describe('TemplateService', () => {
     await pending;
     expect(fixture.service.isBusy()).toBe(false);
   });
+
+  it('creates a template with category, tags and hoverDescription, normalizing tags', async () => {
+    const created = await fixture.service.create({
+      label: 'Camisa social',
+      description: 'Fotografia de catálogo',
+      category: 'moda-masculina',
+      tags: ['  Casual  ', 'CASUAL', 'verão'],
+      hoverDescription: 'Ideal para looks de trabalho',
+      file: await upload(),
+    });
+    expect(created).toMatchObject({ category: 'moda-masculina', tags: ['casual', 'verão'], hoverDescription: 'Ideal para looks de trabalho', usageMetrics: null });
+  });
+
+  it('defaults to "sem-categoria" and empty tags when not provided', async () => {
+    const created = await fixture.service.create({ label: 'Sem detalhes', description: '', file: await upload() });
+    expect(created).toMatchObject({ category: 'sem-categoria', tags: [], hoverDescription: null });
+  });
+
+  it('rejects an unknown category', async () => {
+    await expect(fixture.service.create({ label: 'Categoria inválida', description: '', category: 'categoria-fantasma', file: await upload() }))
+      .rejects.toMatchObject({ code: 'TEMPLATE_CATEGORY_INVALID', status: 400 });
+  });
+
+  it('rejects more than the maximum number of tags', async () => {
+    const tooManyTags = Array.from({ length: 9 }, (_, index) => `tag-${index}`);
+    await expect(fixture.service.create({ label: 'Muitas tags', description: '', tags: tooManyTags, file: await upload() }))
+      .rejects.toMatchObject({ code: 'TEMPLATE_TAGS_TOO_MANY', status: 400 });
+  });
+
+  it('rejects a tag longer than the maximum length', async () => {
+    await expect(fixture.service.create({ label: 'Tag longa', description: '', tags: ['a'.repeat(25)], file: await upload() }))
+      .rejects.toMatchObject({ code: 'TEMPLATE_TAG_TOO_LONG', status: 400 });
+  });
+
+  it('rejects a hoverDescription longer than the maximum length', async () => {
+    await expect(fixture.service.create({ label: 'Tooltip longo', description: '', hoverDescription: 'a'.repeat(200), file: await upload() }))
+      .rejects.toMatchObject({ code: 'TEMPLATE_HOVER_DESCRIPTION_TOO_LONG', status: 400 });
+  });
+
+  it('keeps category and tags on update when not explicitly changed, and updates them when provided', async () => {
+    const created = await fixture.service.create({ label: 'Editável', description: '', category: 'bolsas', tags: ['couro'], file: await upload() });
+    const untouched = await fixture.service.update(created.id, { label: 'Editável renomeado' });
+    expect(untouched).toMatchObject({ category: 'bolsas', tags: ['couro'] });
+    const recategorized = await fixture.service.update(created.id, { category: 'acessorios', tags: ['relógio'] });
+    expect(recategorized).toMatchObject({ category: 'acessorios', tags: ['relógio'] });
+  });
+
+  it('paginates, searches and filters templates by category through listPage', async () => {
+    await fixture.service.create({ label: 'Tênis corrida', description: '', category: 'tenis-masculino', tags: ['esporte'], file: await upload() });
+    await fixture.service.create({ label: 'Tênis casual', description: '', category: 'tenis-feminino', tags: ['casual'], file: await upload() });
+
+    const page = await fixture.service.listPage({ page: 1, pageSize: 2 });
+    expect(page.templates).toHaveLength(2);
+    expect(page.total).toBe(4);
+
+    const filtered = await fixture.service.listPage({ category: 'tenis-masculino' });
+    expect(filtered.templates.map(({ label }) => label)).toEqual(['Tênis corrida']);
+
+    const searched = await fixture.service.listPage({ search: 'esporte' });
+    expect(searched.templates.map(({ label }) => label)).toEqual(['Tênis corrida']);
+  });
 });

@@ -30,19 +30,38 @@ export async function fetchTemplates() {
   return body.templates || [];
 }
 
-export async function createTemplate({ label, description, file }) {
+export async function fetchTemplatesPage({ page, pageSize, search, category } = {}) {
+  const params = new URLSearchParams();
+  if (page !== undefined) params.set('page', page);
+  if (pageSize !== undefined) params.set('pageSize', pageSize);
+  if (search) params.set('search', search);
+  if (category) params.set('category', category);
+  const query = params.toString();
+  const body = await requestJson(`/api/templates${query ? `?${query}` : ''}`);
+  return { templates: body.templates || [], page: body.page, pageSize: body.pageSize, total: body.total };
+}
+
+export async function fetchTemplateCategories() {
+  const body = await requestJson('/api/templates/categories');
+  return body.categories || [];
+}
+
+export async function createTemplate({ label, description, category, tags, hoverDescription, file }) {
   const formData = new FormData();
   formData.append('label', label);
   formData.append('description', description || '');
+  if (category !== undefined) formData.append('category', category);
+  if (tags !== undefined) formData.append('tags', JSON.stringify(tags));
+  if (hoverDescription !== undefined) formData.append('hoverDescription', hoverDescription || '');
   formData.append('templateImage', file);
   return (await requestJson('/api/templates', { method: 'POST', body: formData })).template;
 }
 
-export async function updateTemplate(id, { label, description }) {
+export async function updateTemplate(id, { label, description, category, tags, hoverDescription }) {
   return (await requestJson(`/api/templates/${encodeURIComponent(id)}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ label, description }),
+    body: JSON.stringify({ label, description, category, tags, hoverDescription }),
   })).template;
 }
 

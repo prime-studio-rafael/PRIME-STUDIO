@@ -10,9 +10,14 @@ export function createTemplatesRouter({ templateService }) {
   });
   router.use(json({ limit: '32kb' }));
 
-  router.get('/', async (_request, response, next) => {
+  router.get('/', async (request, response, next) => {
     try {
-      response.json({ templates: await templateService.list() });
+      const { page, pageSize, search, category } = request.query;
+      if (page === undefined && pageSize === undefined && search === undefined && category === undefined) {
+        response.json({ templates: await templateService.list() });
+      } else {
+        response.json(await templateService.listPage({ page, pageSize, search, category }));
+      }
     } catch (error) {
       next(error);
     }
@@ -23,6 +28,9 @@ export function createTemplatesRouter({ templateService }) {
       const template = await templateService.create({
         label: request.body.label,
         description: request.body.description,
+        category: request.body.category,
+        tags: parseTags(request.body.tags),
+        hoverDescription: request.body.hoverDescription,
         file: request.file,
       });
       response.status(201).json({ template });
@@ -36,6 +44,9 @@ export function createTemplatesRouter({ templateService }) {
       const template = await templateService.update(request.params.id, {
         label: request.body?.label,
         description: request.body?.description,
+        category: request.body?.category,
+        tags: request.body?.tags,
+        hoverDescription: request.body?.hoverDescription,
       });
       response.json({ template });
     } catch (error) {
@@ -94,4 +105,18 @@ export function createTemplatesRouter({ templateService }) {
     }
   });
   return router;
+}
+
+// Campos de tag chegam como texto no multipart (não há JSON body no upload); aceita tanto
+// um array serializado em JSON quanto uma lista separada por vírgula.
+function parseTags(raw) {
+  if (raw === undefined || raw === null || raw === '') return undefined;
+  if (Array.isArray(raw)) return raw;
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+  } catch {
+    // não era JSON — trata como lista separada por vírgula abaixo
+  }
+  return String(raw).split(',');
 }

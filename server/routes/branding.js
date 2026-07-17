@@ -28,6 +28,17 @@ export function createBrandingRouter({ brandingService }) {
     try { response.json(await brandingService.setConfig({ enabled: request.body?.enabled === true })); } catch (error) { next(error); }
   });
 
+  router.get('/preview', async (request, response, next) => {
+    try {
+      const variant = request.query.variant === 'branded' ? 'branded' : 'original';
+      const asset = await brandingService.getPreviewAsset(variant);
+      response.type(asset.mimeType);
+      response.set('X-Content-Type-Options', 'nosniff');
+      response.set('Content-Length', String(asset.buffer.length));
+      response.send(asset.buffer);
+    } catch (error) { next(error); }
+  });
+
   router.get('/logo', async (request, response, next) => {
     try {
       const variant = request.query.variant === 'pending' ? 'pending' : 'approved';

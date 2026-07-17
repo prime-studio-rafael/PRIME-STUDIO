@@ -1,9 +1,13 @@
 import { generationConfig } from '../config/generationConfig.js';
 import { AppError } from '../utils/errors.js';
 import { validateImageBuffer } from '../utils/fileValidation.js';
+import { DEFAULT_TEMPLATE_CATEGORY_ID, isKnownTemplateCategory } from '../catalogs/templateCategories.js';
 
 const LABEL_MAX_LENGTH = 80;
 const DESCRIPTION_MAX_LENGTH = 240;
+const HOVER_DESCRIPTION_MAX_LENGTH = 160;
+const TAG_MAX_COUNT = 8;
+const TAG_MAX_LENGTH = 24;
 
 export function createTemplateService({
   repository,
@@ -16,6 +20,12 @@ export function createTemplateService({
   async function list() {
     const records = await repository.list();
     return Promise.all(records.map(inspectRecord));
+  }
+
+  async function listPage({ page, pageSize, search, category } = {}) {
+    const result = await repository.listPage({ page, pageSize, search, category });
+    const templates = await Promise.all(result.templates.map(inspectRecord));
+    return { templates, page: result.page, pageSize: result.pageSize, total: result.total };
   }
 
   async function getForGeneration(id) {
@@ -40,9 +50,9 @@ export function createTemplateService({
     return { buffer: resolved.image.buffer, mimeType: resolved.image.mimeType, updatedAt: record.updatedAt };
   }
 
-  async function create({ label, description, file }) {
+  async function create({ label, description, category, tags, hoverDescription, file }) {
     return runMutation(async () => {
-      const data = await validateFields({ label, description });
+      const data = await validateFields({ label, description, category, tags, hoverDescription });
       await assertUniqueLabel(data.label);
       const image = validateUpload(file);
       const record = await repository.create(data, image);
@@ -50,12 +60,15 @@ export function createTemplateService({
     });
   }
 
-  async function update(id, { label, description }) {
+  async function update(id, { label, description, category, tags, hoverDescription }) {
     return runMutation(async () => {
       const current = await requireRecord(id);
       const data = await validateFields({
         label: label === undefined ? current.label : label,
         description: description === undefined ? current.description : description,
+        category: category === undefined ? current.category : category,
+        tags: tags === undefined ? current.tags : tags,
+        hoverDescription: hoverDescription === undefined ? current.hoverDescription : hoverDescription,
       });
       await assertUniqueLabel(data.label, id);
       return inspectRecord(await repository.update(id, data));
@@ -146,13 +159,44 @@ export function createTemplateService({
     };
   }
 
-  async function validateFields({ label, description = '' }) {
+  async function validateFields({ label, description = '', category, tags = [], hoverDescription = '' }) {
     const normalizedLabel = String(label || '').trim().replace(/\s+/g, ' ');
     const normalizedDescription = String(description || '').trim().replace(/\s+/g, ' ');
     if (!normalizedLabel) throw new AppError('TEMPLATE_LABEL_REQUIRED', 'Informe um nome para o template.', { status: 400 });
     if (normalizedLabel.length > LABEL_MAX_LENGTH) throw new AppError('TEMPLATE_LABEL_TOO_LONG', `O nome deve ter no máximo ${LABEL_MAX_LENGTH} caracteres.`, { status: 400 });
     if (normalizedDescription.length > DESCRIPTION_MAX_LENGTH) throw new AppError('TEMPLATE_DESCRIPTION_TOO_LONG', `A descrição deve ter no máximo ${DESCRIPTION_MAX_LENGTH} caracteres.`, { status: 400 });
-    return { label: normalizedLabel, description: normalizedDescription };
+
+    const normalizedCategory = category ? String(category).trim() : DEFAULT_TEMPLATE_CATEGORY_ID;
+    if (!isKnownTemplateCategory(normalizedCategory)) throw new AppError('TEMPLATE_CATEGORY_INVALID', 'Selecione uma categoria válida para o template.', { status: 400 });
+
+    const normalizedTags = normalizeTags(tags);
+
+    const normalizedHoverDescription = hoverDescription == null ? '' : String(hoverDescription).trim().replace(/\s+/g, ' ');
+    if (normalizedHoverDescription.length > HOVER_DESCRIPTION_MAX_LENGTH) throw new AppError('TEMPLATE_HOVER_DESCRIPTION_TOO_LONG', `O texto do tooltip deve ter no máximo ${HOVER_DESCRIPTION_MAX_LENGTH} caracteres.`, { status: 400 });
+
+    return {
+      label: normalizedLabel,
+      description: normalizedDescription,
+      category: normalizedCategory,
+      tags: normalizedTags,
+      hoverDescription: normalizedHoverDescription || null,
+    };
+  }
+
+  function normalizeTags(tags) {
+    const list = Array.isArray(tags) ? tags : [];
+    const seen = new Set();
+    const normalized = [];
+    for (const rawTag of list) {
+      const tag = String(rawTag ?? '').trim().toLocaleLowerCase('pt-BR');
+      if (!tag) continue;
+      if (tag.length > TAG_MAX_LENGTH) throw new AppError('TEMPLATE_TAG_TOO_LONG', `Cada tag deve ter no máximo ${TAG_MAX_LENGTH} caracteres.`, { status: 400 });
+      if (seen.has(tag)) continue;
+      seen.add(tag);
+      normalized.push(tag);
+    }
+    if (normalized.length > TAG_MAX_COUNT) throw new AppError('TEMPLATE_TAGS_TOO_MANY', `Use no máximo ${TAG_MAX_COUNT} tags por template.`, { status: 400 });
+    return normalized;
   }
 
   async function assertUniqueLabel(label, ignoredId) {
@@ -190,6 +234,7 @@ export function createTemplateService({
 
   return Object.freeze({
     list,
+    listPage,
     getForGeneration,
     getImage,
     create,
@@ -229,6 +274,10 @@ function publicTemplate(record, image) {
     mimeMatches: image.validation.mimeMatches,
     fourByFiveReady: image.validation.fourByFiveReady,
     validationError: null,
+    category: record.category,
+    tags: record.tags,
+    hoverDescription: record.hoverDescription,
+    usageMetrics: record.usageMetrics,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   };
@@ -261,6 +310,10 @@ function invalidPublicTemplate(record, error) {
     mimeMatches: false,
     fourByFiveReady: false,
     validationError: error?.message || 'A imagem local deste template está inválida.',
+    category: record.category,
+    tags: record.tags,
+    hoverDescription: record.hoverDescription,
+    usageMetrics: record.usageMetrics,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   };

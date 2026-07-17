@@ -1,7 +1,15 @@
 import path from 'node:path';
+import { readFile } from 'node:fs/promises';
 import sharp from 'sharp';
 import { AppError } from '../utils/errors.js';
 import { detectImageFormat } from '../../shared/imageInspection.js';
+import { getTemplateById } from '../catalogs/templates.js';
+import { applyLogoOverlay } from './logoOverlay.js';
+
+// Prévia "Original × Com logo": reaproveita uma fotografia local já existente (o mesmo template
+// seed usado na geração) em vez de criar uma imagem de demonstração nova, e reaproveita
+// integralmente a composição tradicional (sem IA) já usada no pipeline real de geração.
+const PREVIEW_DEMO_TEMPLATE_ID = 'model-01';
 
 // Valores iniciais recomendados — documentados e ajustáveis conforme validação visual.
 const MIN_DIMENSION = 256;
@@ -105,6 +113,27 @@ export function createBrandingService({ storage } = {}) {
     return { buffer, mimeType: 'image/png' };
   }
 
+  async function getPreviewAsset(variant) {
+    if (!['original', 'branded'].includes(variant)) {
+      throw new AppError('BRANDING_INVALID_PREVIEW_VARIANT', 'Variante de prévia inválida.', { status: 400 });
+    }
+    const demoTemplate = getTemplateById(PREVIEW_DEMO_TEMPLATE_ID);
+    if (!demoTemplate?.filePath) {
+      throw new AppError('BRANDING_PREVIEW_DEMO_MISSING', 'Imagem de demonstração local não encontrada.', { status: 500 });
+    }
+    const demoBuffer = await readFile(demoTemplate.filePath);
+    const demoMimeType = demoTemplate.expectedMimeType;
+    if (variant === 'original') return { buffer: demoBuffer, mimeType: demoMimeType };
+
+    const metadata = await storage.readMetadata();
+    const logoBuffer = metadata.approved ? await storage.readApprovedLogo() : null;
+    if (!metadata.approved || !logoBuffer) {
+      throw new AppError('BRANDING_NO_APPROVED_LOGO', 'Nenhuma logo aprovada para gerar a prévia.', { status: 404 });
+    }
+    const overlay = await applyLogoOverlay({ resultBuffer: demoBuffer, resultMimeType: demoMimeType, logoBuffer });
+    return { buffer: overlay.buffer, mimeType: overlay.mimeType };
+  }
+
   // Uso interno pelo GenerationExecutor — não exposto via HTTP.
   async function getActiveBranding() {
     const config = await storage.readConfig();
@@ -115,7 +144,7 @@ export function createBrandingService({ storage } = {}) {
     return { buffer, mimeType: 'image/png', fileName: metadata.approved?.fileName || 'logo.png' };
   }
 
-  return Object.freeze({ getState, uploadLogo, approveLogo, setConfig, deleteLogo, readLogoAsset, getActiveBranding });
+  return Object.freeze({ getState, uploadLogo, approveLogo, setConfig, deleteLogo, readLogoAsset, getPreviewAsset, getActiveBranding });
 }
 
 function assertBasics(buffer, mimetype) {

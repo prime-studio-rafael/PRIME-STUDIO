@@ -2,12 +2,18 @@ import { AlertCircle, ImagePlus, Loader2, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import TemplateCard from './TemplateCard.jsx';
 import TemplateFormModal from './TemplateFormModal.jsx';
+import TemplateLibraryToolbar from './TemplateLibraryToolbar.jsx';
+import TemplateLibraryLoadMore from './TemplateLibraryLoadMore.jsx';
+import useTemplateCategories from '../hooks/useTemplateCategories.js';
+import useTemplateLibraryPage from '../hooks/useTemplateLibraryPage.js';
 
 export default function TemplatesPage({ catalog, policy, generationBusy }) {
   const [modal, setModal] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [feedback, setFeedback] = useState(null);
   const actionsDisabled = generationBusy || catalog.mutationPending;
+  const templateCategories = useTemplateCategories();
+  const library = useTemplateLibraryPage();
 
   async function run(operation, successMessage) {
     setFeedback(null);
@@ -16,6 +22,7 @@ export default function TemplatesPage({ catalog, policy, generationBusy }) {
       setModal(null);
       setDeleteTarget(null);
       setFeedback({ type: 'success', message: successMessage });
+      await library.reload();
     } catch (error) {
       setFeedback({ type: 'error', message: error.message || 'Não foi possível concluir a operação.' });
       throw error;
@@ -55,20 +62,46 @@ export default function TemplatesPage({ catalog, policy, generationBusy }) {
       )}
 
       {catalog.status === 'ready' && catalog.templates.length > 0 && (
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {catalog.templates.map((template) => (
-            <TemplateCard
-              key={template.id}
-              template={template}
-              disabled={actionsDisabled}
-              onEdit={() => setModal({ mode: 'edit', template })}
-              onReplace={() => setModal({ mode: 'replace', template })}
-              onDuplicate={() => run(() => catalog.duplicate(template.id), 'Template duplicado com sucesso.').catch(() => {})}
-              onToggle={() => run(() => catalog.setActive(template.id, !template.active), template.active ? 'Template desativado.' : 'Template ativado.').catch(() => {})}
-              onDelete={() => setDeleteTarget(template)}
-            />
-          ))}
+        <TemplateLibraryToolbar
+          categories={templateCategories.categories}
+          search={library.search}
+          onSearchChange={library.setSearch}
+          category={library.category}
+          onCategoryChange={library.setCategory}
+        />
+      )}
+
+      {catalog.status === 'ready' && catalog.templates.length > 0 && !library.initialLoading && library.items.length === 0 && (
+        <div className="flex min-h-[240px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 text-center">
+          <ImagePlus size={26} className="text-slate-400" />
+          <h2 className="mt-4 text-base font-semibold text-slate-900">Nenhum template neste filtro</h2>
+          <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">Ajuste a busca ou escolha outra categoria.</p>
         </div>
+      )}
+
+      {catalog.status === 'ready' && catalog.templates.length > 0 && library.initialLoading && library.items.length === 0 && (
+        <div className="flex min-h-[240px] items-center justify-center rounded-2xl border border-slate-200 bg-white"><Loader2 size={22} className="animate-spin text-slate-500" /></div>
+      )}
+
+      {catalog.status === 'ready' && library.items.length > 0 && (
+        <>
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {library.items.map((template) => (
+              <TemplateCard
+                key={template.id}
+                template={template}
+                categories={templateCategories.categories}
+                disabled={actionsDisabled}
+                onEdit={() => setModal({ mode: 'edit', template })}
+                onReplace={() => setModal({ mode: 'replace', template })}
+                onDuplicate={() => run(() => catalog.duplicate(template.id), 'Template duplicado com sucesso.').catch(() => {})}
+                onToggle={() => run(() => catalog.setActive(template.id, !template.active), template.active ? 'Template desativado.' : 'Template ativado.').catch(() => {})}
+                onDelete={() => setDeleteTarget(template)}
+              />
+            ))}
+          </div>
+          <TemplateLibraryLoadMore hasMore={library.hasMore} loading={library.loadingMore} error={library.loadMoreError} onLoadMore={library.loadMore} />
+        </>
       )}
 
       <TemplateFormModal
@@ -76,6 +109,7 @@ export default function TemplatesPage({ catalog, policy, generationBusy }) {
         mode={modal?.mode || 'create'}
         template={modal?.template || null}
         policy={policy}
+        categories={templateCategories.categories}
         busy={catalog.mutationPending}
         onClose={() => !catalog.mutationPending && setModal(null)}
         onSubmit={(data) => {

@@ -1,15 +1,35 @@
-import { ImageOff } from 'lucide-react';
+import { ImageOff, Loader2 } from 'lucide-react';
 import SectionCard from '../../../components/ui/SectionCard.jsx';
+import TemplateLibraryToolbar from '../../templates/components/TemplateLibraryToolbar.jsx';
+import TemplateLibraryLoadMore from '../../templates/components/TemplateLibraryLoadMore.jsx';
+import TemplateTagList from '../../templates/components/TemplateTagList.jsx';
+import useTemplateCategories from '../../templates/hooks/useTemplateCategories.js';
+import useTemplateLibraryPage from '../../templates/hooks/useTemplateLibraryPage.js';
 
 export default function TemplatePicker({ templates, selectedTemplateId, disabled = false, aspectRatio = '1:1', onSelect, templateImageErrors = {}, onImageError }) {
+  const templateCategories = useTemplateCategories();
+  const library = useTemplateLibraryPage({ pageSize: 8 });
+
   return (
     <SectionCard
       eyebrow="Etapa 01"
       title="Escolha o modelo-base"
       description="As fotografias locais podem ser substituídas por novos modelos-base aprovados da PRIME STORE."
     >
+      {templates.length > 1 && (
+        <TemplateLibraryToolbar
+          categories={templateCategories.categories}
+          search={library.search}
+          onSearchChange={library.setSearch}
+          category={library.category}
+          onCategoryChange={library.setCategory}
+        />
+      )}
+      {library.initialLoading && library.items.length === 0 && (
+        <div className="flex min-h-[160px] items-center justify-center"><Loader2 size={20} className="animate-spin text-slate-500" /></div>
+      )}
       <div className="grid grid-cols-2 gap-3">
-        {templates.map((template) => {
+        {library.items.map((template) => {
           const selected = template.id === selectedTemplateId;
           const metadataInvalid = template.valid === false;
           const inactive = template.active === false;
@@ -22,6 +42,7 @@ export default function TemplatePicker({ templates, selectedTemplateId, disabled
               type="button"
               aria-pressed={selected}
               disabled={invalid || disabled}
+              title={template.hoverDescription || template.description || undefined}
               onClick={() => !invalid && !disabled && onSelect(template.id)}
               className={`group overflow-hidden rounded-xl border text-left transition disabled:cursor-not-allowed disabled:opacity-80 ${selected ? 'border-slate-950 ring-2 ring-slate-950/10' : 'border-slate-200 hover:border-slate-400'}`}
             >
@@ -51,6 +72,7 @@ export default function TemplatePicker({ templates, selectedTemplateId, disabled
                     <>
                       <span className="mt-1 block text-[10px] text-slate-500">{formatTemplateMeta(template)}</span>
                       {!template.fourByFiveReady && <span className="mt-1 block text-[10px] font-medium text-amber-700">Fora da tolerância 4:5</span>}
+                      <TemplateTagList tags={template.tags} max={2} className="mt-1.5" />
                     </>
                   )}
                 </div>
@@ -60,6 +82,7 @@ export default function TemplatePicker({ templates, selectedTemplateId, disabled
           );
         })}
       </div>
+      <TemplateLibraryLoadMore hasMore={library.hasMore} loading={library.loadingMore} error={library.loadMoreError} onLoadMore={library.loadMore} />
     </SectionCard>
   );
 }

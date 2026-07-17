@@ -1,16 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { CheckCircle2, Eye, EyeOff, KeyRound, Loader2, ShieldAlert, Trash2, X } from 'lucide-react';
+import { ArrowUpRight, BadgeCheck, CheckCircle2, Eye, EyeOff, KeyRound, Loader2, ShieldAlert, Trash2, X } from 'lucide-react';
 import {
   deleteOpenRouterKey,
   fetchOpenRouterKeyStatus,
   saveOpenRouterKey,
   testOpenRouterKey,
 } from '../api/openRouterSettingsClient.js';
-import BrandingPage from '../../branding/components/BrandingPage.jsx';
 
 const initialStatus = { configured: false, source: 'none' };
 
-export default function OpenRouterSettingsModal({ open, onClose, onStatusChange }) {
+export default function OpenRouterSettingsModal({ open, onClose, onStatusChange, onNavigateToBranding }) {
   const [status, setStatus] = useState(initialStatus);
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
@@ -159,7 +158,16 @@ export default function OpenRouterSettingsModal({ open, onClose, onStatusChange 
 
         {tab === 'branding' && (
           <div className="p-5 sm:p-6">
-            <BrandingPage open={open} />
+            <div className="flex flex-col items-start gap-3 rounded-xl border border-slate-200 bg-white p-5">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-950 text-white"><BadgeCheck size={18} /></span>
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Branding agora tem uma tela própria</p>
+                <p className="mt-1 text-xs leading-5 text-slate-500">Envio, aprovação e o toggle da logo ficam na tela cheia "Branding", acessível pela barra lateral.</p>
+              </div>
+              <button type="button" onClick={onNavigateToBranding} className="mt-1 inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">
+                Ir para Branding <ArrowUpRight size={16} />
+              </button>
+            </div>
           </div>
         )}
       </section>

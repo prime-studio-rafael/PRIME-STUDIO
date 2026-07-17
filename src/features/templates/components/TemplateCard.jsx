@@ -1,9 +1,12 @@
 import { Copy, ImageOff, Pencil, Power, RefreshCw, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import TemplateHoverCard from './TemplateHoverCard.jsx';
+import TemplateTagList from './TemplateTagList.jsx';
 
-export default function TemplateCard({ template, disabled, onEdit, onReplace, onDuplicate, onToggle, onDelete }) {
+export default function TemplateCard({ template, categories = [], disabled, onEdit, onReplace, onDuplicate, onToggle, onDelete }) {
   const [imageFailed, setImageFailed] = useState(false);
   const unavailable = !template.valid || imageFailed;
+  const category = categories.find((item) => item.id === template.category);
 
   useEffect(() => setImageFailed(false), [template.publicUrl]);
 
@@ -17,7 +20,7 @@ export default function TemplateCard({ template, disabled, onEdit, onReplace, on
             <p className="text-[11px] leading-4">{template.validationError || 'O arquivo não pôde ser carregado.'}</p>
           </div>
         ) : (
-          <img src={template.publicUrl} alt={template.label} className="h-full w-full object-contain" onError={() => setImageFailed(true)} />
+          <img src={template.publicUrl} alt={template.label} loading="lazy" className="h-full w-full object-contain" onError={() => setImageFailed(true)} />
         )}
         <span className={`absolute left-3 top-3 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${template.active ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-500'}`}>
           {template.active ? 'Ativo' : 'Inativo'}
@@ -28,8 +31,13 @@ export default function TemplateCard({ template, disabled, onEdit, onReplace, on
       </div>
 
       <div className="p-4">
-        <h2 className="truncate text-sm font-semibold text-slate-950">{template.label}</h2>
+        <div className="flex items-center gap-1.5">
+          <h2 className="truncate text-sm font-semibold text-slate-950">{template.label}</h2>
+          <TemplateHoverCard label={template.label} tags={template.tags} hoverDescription={template.hoverDescription} fallbackDescription={template.description} disabled={disabled} />
+        </div>
         <p className="mt-1 min-h-10 text-xs leading-5 text-slate-500">{template.description || 'Sem descrição.'}</p>
+        {category && <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600">{category.emoji ? `${category.emoji} ` : ''}{category.label}</span>}
+        <TemplateTagList tags={template.tags} className="mt-2" />
         <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 border-y border-slate-100 py-3 text-[11px]">
           <Meta label="Formato" value={(template.realFormat || template.mimeType?.replace('image/', '') || '—').toUpperCase()} />
           <Meta label="Dimensões" value={template.width && template.height ? `${template.width}×${template.height}` : '—'} />

@@ -14,6 +14,7 @@ O escopo e a ordem das fases são definidos pelo [Documento Mestre](docs/DOCUMEN
 - Fase 4: **concluída oficialmente em 16 de julho de 2026**.
 - Fase 5: **concluída oficialmente em 17 de julho de 2026**.
 - Branding/Logo: **concluído oficialmente (MVP) em 17 de julho de 2026** — ver [FASE-BRANDING-IMPLEMENTACAO.md](docs/FASE-BRANDING-IMPLEMENTACAO.md).
+- Fase 6 — Biblioteca de Templates: **concluída oficialmente em 17 de julho de 2026** — ver [FASE-6-IMPLEMENTACAO.md](docs/FASE-6-IMPLEMENTACAO.md).
 
 O encerramento está registrado em [FASE-02-ENCERRAMENTO.md](docs/FASE-02-ENCERRAMENTO.md) e a evolução consolidada do projeto em [HISTORICO.md](docs/HISTORICO.md).
 
@@ -96,6 +97,8 @@ Novos templates aceitam JPEG, PNG ou WebP, até 10 MB, com mínimo de 768×960 e
 
 O catálogo e as imagens são locais e ignorados pelo Git. A arquitetura, os endpoints e as regras de recuperação estão registrados em [FASE-03-IMPLEMENTACAO.md](docs/FASE-03-IMPLEMENTACAO.md).
 
+Cada template pode ter uma **categoria** (👕 Moda Masculina, 👩 Moda Feminina, 👟 Tênis Masculino, 👟 Tênis Feminino, ⌚ Acessórios, 👜 Bolsas ou Sem categoria), **tags** e um texto de **tooltip** exibido ao passar o mouse ou navegar por teclado. A tela Templates e o seletor de modelo-base na Nova geração mostram uma barra de busca, filtro por categoria e paginação real (busca/categoria são enviadas ao backend; um botão **"Carregar mais"** busca a próxima página, sem baixar o catálogo inteiro para filtrar no navegador). Sem limite máximo de templates codificado. Os dois templates iniciais (`model-01`, `model-02`) têm nomes profissionais e categoria `Moda Masculina` desde a instalação; catálogos já existentes recebem essa correção automaticamente, sem sobrescrever uma personalização já feita pelo usuário. Consulte [FASE-6-IMPLEMENTACAO.md](docs/FASE-6-IMPLEMENTACAO.md) para o schema, a migração e as limitações desta fase.
+
 ## Salvamento
 
 Imagens concluídas e metadata mínimo são salvos automaticamente em:
@@ -130,7 +133,7 @@ A tela mostra a contagem de lotes e um indicador discreto quando há lote em exe
 
 ## Branding/Logo
 
-Em **Configurações**, aba **Branding**, é possível enviar uma logo PNG com transparência real, revisar a validação técnica (dimensões, transparência, área útil da arte) e aprová-la explicitamente. Uma vez aprovada, o toggle **"Aplicar logo nas imagens"** passa a valer tanto para a geração individual quanto para a Produção em Lotes: a logo é aplicada por composição tradicional (sem IA), em **9% da menor dimensão** e **3% de margem** no canto inferior direito — padrão definitivo validado visualmente e fixo nesta fase (configurável apenas na Fase 6) — preservando sempre a versão original sem logo. Consulte [FASE-BRANDING-IMPLEMENTACAO.md](docs/FASE-BRANDING-IMPLEMENTACAO.md) para a validação, o storage e as limitações desta primeira versão.
+Na view **Branding** da sidebar, é possível enviar uma logo PNG com transparência real, revisar a validação técnica (dimensões, transparência, área útil da arte) e aprová-la explicitamente. A mesma tela mostra uma prévia **Original × Com logo** lado a lado, usando uma fotografia local já existente e a composição real (sem IA) — funciona com ou sem logo aprovada, e independente do toggle estar ligado ou desligado. Uma vez aprovada, o toggle **"Aplicar logo nas imagens"** passa a valer tanto para a geração individual quanto para a Produção em Lotes: a logo é aplicada por composição tradicional (sem IA), em **9% da menor dimensão** e **3% de margem** no canto inferior direito — padrão definitivo validado visualmente e fixo por enquanto (posição/escala configuráveis apenas numa fase futura) — preservando sempre a versão original sem logo. Consulte [FASE-BRANDING-IMPLEMENTACAO.md](docs/FASE-BRANDING-IMPLEMENTACAO.md) para a validação, o storage e as limitações desta primeira versão.
 
 ## Parar os servidores
 
@@ -162,7 +165,7 @@ npm test
 npm run build
 ```
 
-Os testes usam respostas simuladas e não acessam o OpenRouter. Estado atual: 34 arquivos e 196 testes aprovados, incluindo os 136 testes anteriores à fase Branding/Logo.
+Os testes usam respostas simuladas e não acessam o OpenRouter. Estado atual: 38 arquivos e 252 testes aprovados, incluindo os 196 testes anteriores à Fase 6.
 
 ## Limitações intencionais
 

@@ -65,10 +65,149 @@ describe('LocalTemplateRepository', () => {
 
     expect(templates.map(({ id }) => id)).toEqual(['model-01', 'model-02']);
     expect(catalog).toEqual(backup);
-    expect(catalog).toMatchObject({ schemaVersion: 1, initialized: true });
+    expect(catalog).toMatchObject({ schemaVersion: 2, initialized: true });
     expect(imageFiles).toHaveLength(2);
     expect(JSON.stringify(catalog)).not.toContain('/Users/');
     expect(JSON.stringify(catalog)).not.toContain('base64');
+  });
+
+  it('bootstraps new templates with professional names, category and tags (never the generic Fase 6 defaults)', async () => {
+    const templates = await fixture.repository.list();
+    const byId = Object.fromEntries(templates.map((template) => [template.id, template]));
+    expect(byId['model-01']).toMatchObject({
+      label: 'Masculino Frontal — Clássico',
+      category: 'moda-masculina',
+      tags: ['masculino', 'frontal', 'camiseta', 'classico'],
+      usageMetrics: null,
+    });
+    expect(byId['model-01'].hoverDescription).toBeTruthy();
+    expect(byId['model-02']).toMatchObject({
+      label: 'Masculino Frontal — Logo Central',
+      category: 'moda-masculina',
+      tags: ['masculino', 'frontal', 'camiseta', 'estampa'],
+      usageMetrics: null,
+    });
+    expect(byId['model-02'].hoverDescription).toBeTruthy();
+  });
+
+  it('migrates a schemaVersion 1 catalog to 2 transparently, rewriting both files atomically', async () => {
+    await fixture.repository.list();
+    const v1Catalog = JSON.parse(await readFile(fixture.repository.paths.catalogPath, 'utf8'));
+    v1Catalog.schemaVersion = 1;
+    // Simula um catálogo v1 genuinamente antigo: nomes genéricos do seed original (uma
+    // instalação real de antes desta correção), sem nenhum campo da Fase 6 ainda.
+    const genericLabels = { 'model-01': 'Modelo base 01', 'model-02': 'Modelo base 02' };
+    for (const template of v1Catalog.templates) {
+      template.label = genericLabels[template.id];
+      template.description = 'Fotografia local do modelo-base.';
+      delete template.category;
+      delete template.tags;
+      delete template.hoverDescription;
+      delete template.usageMetrics;
+    }
+    const v1Raw = JSON.stringify(v1Catalog);
+    await writeFile(fixture.repository.paths.catalogPath, v1Raw);
+    await writeFile(fixture.repository.paths.backupPath, v1Raw);
+
+    const restarted = createLocalTemplateRepository({ templatesDirectory: fixture.templatesDirectory });
+    const templates = await restarted.list();
+    expect(templates.map(({ id }) => id)).toEqual(['model-01', 'model-02']);
+    for (const template of templates) {
+      expect(template.usageMetrics).toBeNull();
+      // Ainda genéricos após a migração de schema (v1→v2) — a correção de nomes profissionais
+      // da Fase 6 também se aplica aqui, pois o registro nunca foi editado manualmente.
+      expect(template.category).toBe('moda-masculina');
+      expect(template.tags.length).toBeGreaterThan(0);
+      expect(template.hoverDescription).toBeTruthy();
+    }
+
+    const migratedCatalog = JSON.parse(await readFile(fixture.repository.paths.catalogPath, 'utf8'));
+    const migratedBackup = JSON.parse(await readFile(fixture.repository.paths.backupPath, 'utf8'));
+    expect(migratedCatalog.schemaVersion).toBe(2);
+    expect(migratedBackup.schemaVersion).toBe(2);
+  });
+
+  it('preserves an already-migrated field (e.g. a real category) instead of overwriting it during migration', async () => {
+    await fixture.repository.list();
+    const v1Catalog = JSON.parse(await readFile(fixture.repository.paths.catalogPath, 'utf8'));
+    v1Catalog.schemaVersion = 1;
+    v1Catalog.templates[0].category = 'moda-masculina';
+    v1Catalog.templates[0].tags = ['casual'];
+    // model-02 simula um catálogo v1 genuinamente antigo, ainda com o nome genérico do seed.
+    v1Catalog.templates[1].label = 'Modelo base 02';
+    v1Catalog.templates[1].description = 'Fotografia local do modelo-base.';
+    delete v1Catalog.templates[1].category;
+    delete v1Catalog.templates[1].tags;
+    delete v1Catalog.templates[1].hoverDescription;
+    const v1Raw = JSON.stringify(v1Catalog);
+    await writeFile(fixture.repository.paths.catalogPath, v1Raw);
+    await writeFile(fixture.repository.paths.backupPath, v1Raw);
+
+    const restarted = createLocalTemplateRepository({ templatesDirectory: fixture.templatesDirectory });
+    const templates = await restarted.list();
+    expect(templates.find(({ id }) => id === 'model-01')).toMatchObject({ category: 'moda-masculina', tags: ['casual'] });
+    // model-02 nunca foi personalizado pelo usuário (só perdeu category no v1 bruto), então a
+    // correção de nomes profissionais da Fase 6 se aplica a ele normalmente.
+    const model02 = templates.find(({ id }) => id === 'model-02');
+    expect(model02.category).toBe('moda-masculina');
+    expect(model02.label).toBe('Masculino Frontal — Logo Central');
+  });
+
+  it('never overwrites a template whose label/description was manually customized by the user, even if category/tags are still empty', async () => {
+    await fixture.repository.list();
+    const v1Catalog = JSON.parse(await readFile(fixture.repository.paths.catalogPath, 'utf8'));
+    v1Catalog.schemaVersion = 1;
+    const custom = v1Catalog.templates.find((template) => template.id === 'model-01');
+    custom.label = 'Nome escolhido pelo usuário';
+    delete custom.category;
+    delete custom.tags;
+    delete custom.hoverDescription;
+    const v1Raw = JSON.stringify(v1Catalog);
+    await writeFile(fixture.repository.paths.catalogPath, v1Raw);
+    await writeFile(fixture.repository.paths.backupPath, v1Raw);
+
+    const restarted = createLocalTemplateRepository({ templatesDirectory: fixture.templatesDirectory });
+    const templates = await restarted.list();
+    const model01 = templates.find(({ id }) => id === 'model-01');
+    expect(model01.label).toBe('Nome escolhido pelo usuário');
+    expect(model01.category).toBe('sem-categoria');
+    expect(model01.tags).toEqual([]);
+  });
+
+  it('is idempotent: applying the professional-names correction twice never changes an already-corrected record again', async () => {
+    await fixture.repository.list();
+    const restartedOnce = createLocalTemplateRepository({ templatesDirectory: fixture.templatesDirectory });
+    const first = await restartedOnce.list();
+    const restartedTwice = createLocalTemplateRepository({ templatesDirectory: fixture.templatesDirectory });
+    const second = await restartedTwice.list();
+    expect(second).toEqual(first);
+  });
+
+  it('lists templates with pagination, search and category filtering without a business cap', async () => {
+    const image = await validImage();
+    await fixture.repository.list();
+    await fixture.repository.create({ label: 'Camisa polo', description: '', category: 'moda-masculina', tags: ['casual', 'verão'] }, image);
+    await fixture.repository.create({ label: 'Vestido floral', description: '', category: 'moda-feminina', tags: ['festa'] }, image);
+
+    const all = await fixture.repository.listPage({});
+    expect(all.total).toBe(4);
+    expect(all.templates).toHaveLength(4);
+
+    const firstPage = await fixture.repository.listPage({ page: 1, pageSize: 2 });
+    expect(firstPage.templates).toHaveLength(2);
+    expect(firstPage.total).toBe(4);
+    const secondPage = await fixture.repository.listPage({ page: 2, pageSize: 2 });
+    expect(secondPage.templates).toHaveLength(2);
+    expect(new Set([...firstPage.templates, ...secondPage.templates].map((t) => t.id)).size).toBe(4);
+
+    const byCategory = await fixture.repository.listPage({ category: 'moda-feminina' });
+    expect(byCategory.templates.map(({ label }) => label)).toEqual(['Vestido floral']);
+
+    const bySearch = await fixture.repository.listPage({ search: 'polo' });
+    expect(bySearch.templates.map(({ label }) => label)).toEqual(['Camisa polo']);
+
+    const bySearchTag = await fixture.repository.listPage({ search: 'festa' });
+    expect(bySearchTag.templates.map(({ label }) => label)).toEqual(['Vestido floral']);
   });
 
   it('persists CRUD, replacement, duplication and status across a repository restart', async () => {

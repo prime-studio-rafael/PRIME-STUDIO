@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const api = vi.hoisted(() => ({
   fetchTemplates: vi.fn(),
+  fetchTemplatesPage: vi.fn(),
+  fetchTemplateCategories: vi.fn(),
   createTemplate: vi.fn(),
   updateTemplate: vi.fn(),
   replaceTemplateImage: vi.fn(),
@@ -52,6 +54,22 @@ beforeEach(() => {
   store = cloneFrom(initialTemplates);
   Object.values(api).forEach((mock) => mock.mockReset());
   api.fetchTemplates.mockImplementation(async () => cloneTemplates());
+  api.fetchTemplatesPage.mockImplementation(async ({ page = 1, pageSize = 60, search, category } = {}) => {
+    let list = cloneTemplates();
+    if (category) list = list.filter((template) => template.category === category);
+    if (search) {
+      const query = search.toLowerCase();
+      list = list.filter((template) => template.label.toLowerCase().includes(query) || (template.tags || []).some((tag) => tag.toLowerCase().includes(query)));
+    }
+    const total = list.length;
+    const start = (page - 1) * pageSize;
+    return { templates: list.slice(start, start + pageSize), page, pageSize, total };
+  });
+  api.fetchTemplateCategories.mockImplementation(async () => [
+    { id: 'moda-masculina', label: 'Moda Masculina', emoji: '👕', order: 10 },
+    { id: 'moda-feminina', label: 'Moda Feminina', emoji: '👩', order: 20 },
+    { id: 'sem-categoria', label: 'Sem categoria', emoji: '📦', order: 999 },
+  ]);
   api.createTemplate.mockImplementation(async ({ label, description }) => {
     const template = { ...initialTemplates[0], id: 'created-id', label, description, publicUrl: '/api/templates/created-id/image?v=1' };
     store = [...store, template];
@@ -162,7 +180,7 @@ describe('local template management UI', () => {
     expect(await screen.findByText('Catálogo indisponível para teste.')).toBeInTheDocument();
   });
 
-  it('blocks every mutation control while a generation is active', () => {
+  it('blocks every mutation control while a generation is active', async () => {
     const catalog = {
       templates: cloneFrom(initialTemplates), status: 'ready', error: '', mutationPending: false,
       load: vi.fn(), create: vi.fn(), update: vi.fn(), replaceImage: vi.fn(), duplicate: vi.fn(), setActive: vi.fn(), remove: vi.fn(),
@@ -170,7 +188,8 @@ describe('local template management UI', () => {
     render(<TemplatesPage catalog={catalog} policy={imagePolicy} generationBusy />);
     expect(screen.getByText(/Uma geração está ativa/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Novo template' })).toBeDisabled();
-    screen.getAllByTestId('template-card').forEach((card) => {
+    const cards = await screen.findAllByTestId('template-card');
+    cards.forEach((card) => {
       within(card).getAllByRole('button').forEach((button) => expect(button).toBeDisabled());
     });
   });
@@ -190,8 +209,113 @@ describe('local template management UI', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: /^Modelo base 01/ })).toHaveAttribute('aria-pressed', 'true'));
     expect(screen.getByRole('button', { name: /^Modelo base 02/ })).toBeDisabled();
   });
+
+  it('creates a template with a category and tags, and shows them on the card', async () => {
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Templates' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Novo template' }));
+    fireEvent.change(screen.getByLabelText('Nome'), { target: { value: 'Camisa polo' } });
+    fireEvent.change(screen.getByLabelText('Categoria'), { target: { value: 'moda-masculina' } });
+    fireEvent.change(screen.getByLabelText(/Tags/), { target: { value: 'casual, verão' } });
+    fireEvent.change(document.querySelector('#template-image-input'), { target: { files: [createJpegFile('modelo.jpeg')] } });
+    await within(screen.getByRole('dialog')).findByText('Aceitável com aviso');
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar template' }));
+
+    await screen.findByText('Template criado com sucesso.');
+    expect(api.createTemplate).toHaveBeenCalledWith(expect.objectContaining({ category: 'moda-masculina', tags: ['casual', 'verão'] }));
+  });
+
+  it('filters templates by category using the toolbar chips', async () => {
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Templates' }));
+    await screen.findByRole('heading', { name: 'Templates' });
+    fireEvent.click(await screen.findByRole('button', { name: /Moda Masculina/ }));
+    expect(await screen.findByText('Nenhum template neste filtro')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Todas' }));
+    expect(await screen.findAllByTestId('template-card')).toHaveLength(2);
+  });
+
+  it('filters templates by search text', async () => {
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Templates' }));
+    await screen.findAllByTestId('template-card');
+    fireEvent.change(screen.getByLabelText('Buscar templates'), { target: { value: 'base 02' } });
+    await waitFor(() => expect(screen.getAllByTestId('template-card')).toHaveLength(1));
+    expect(screen.getByText('Modelo base 02')).toBeInTheDocument();
+  });
 });
 
 function cloneFrom(templates) {
   return templates.map((template) => ({ ...template, warnings: [...template.warnings] }));
 }
+
+describe('TemplatesPage real pagination', () => {
+  function bigCatalog(count) {
+    return Array.from({ length: count }, (_, index) => ({
+      id: `bulk-${index + 1}`, label: `Template ${index + 1}`, description: '', publicUrl: `/api/templates/bulk-${index + 1}/image`,
+      valid: true, active: true, mimeType: 'image/jpeg', realFormat: 'jpeg', width: 773, height: 1024,
+      aspectRatio: 773 / 1024, sizeBytes: 77966, qualityLabel: 'Válido', fourByFiveReady: true, warnings: [],
+      category: 'sem-categoria', tags: [],
+    }));
+  }
+
+  beforeEach(() => {
+    store = bigCatalog(15);
+    api.fetchTemplatesPage.mockImplementation(async ({ page = 1, pageSize = 12, search, category } = {}) => {
+      let list = cloneTemplates();
+      if (category) list = list.filter((template) => template.category === category);
+      if (search) {
+        const query = search.toLowerCase();
+        list = list.filter((template) => template.label.toLowerCase().includes(query));
+      }
+      const total = list.length;
+      const start = (page - 1) * pageSize;
+      return { templates: list.slice(start, start + pageSize), page, pageSize, total };
+    });
+  });
+
+  it('loads only the first page, then "Carregar mais" appends the next page without duplicating items', async () => {
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Templates' }));
+    await waitFor(() => expect(screen.getAllByTestId('template-card')).toHaveLength(12));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Carregar mais' }));
+    await waitFor(() => expect(screen.getAllByTestId('template-card')).toHaveLength(15));
+    const ids = screen.getAllByTestId('template-card').map((card) => within(card).getByRole('heading').textContent);
+    expect(new Set(ids).size).toBe(15);
+  });
+
+  it('hides the "Carregar mais" button once every item is loaded', async () => {
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Templates' }));
+    await waitFor(() => expect(screen.getAllByTestId('template-card')).toHaveLength(12));
+    fireEvent.click(screen.getByRole('button', { name: 'Carregar mais' }));
+    await waitFor(() => expect(screen.getAllByTestId('template-card')).toHaveLength(15));
+    expect(screen.queryByRole('button', { name: 'Carregar mais' })).not.toBeInTheDocument();
+  });
+
+  it('resets to the first page and clears accumulated items when the search text changes', async () => {
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Templates' }));
+    await waitFor(() => expect(screen.getAllByTestId('template-card')).toHaveLength(12));
+    fireEvent.click(screen.getByRole('button', { name: 'Carregar mais' }));
+    await waitFor(() => expect(screen.getAllByTestId('template-card')).toHaveLength(15));
+
+    fireEvent.change(screen.getByLabelText('Buscar templates'), { target: { value: 'Template 1' } });
+    await waitFor(() => {
+      const labels = screen.getAllByTestId('template-card').map((card) => within(card).getByRole('heading').textContent);
+      expect(labels.every((label) => label.includes('Template 1'))).toBe(true);
+    });
+  });
+
+  it('preserves earlier pages when "Carregar mais" fails, and surfaces the error', async () => {
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Templates' }));
+    await waitFor(() => expect(screen.getAllByTestId('template-card')).toHaveLength(12));
+
+    api.fetchTemplatesPage.mockRejectedValueOnce(new Error('Falha ao carregar mais templates.'));
+    fireEvent.click(screen.getByRole('button', { name: 'Carregar mais' }));
+    expect(await screen.findByText('Falha ao carregar mais templates.')).toBeInTheDocument();
+    expect(screen.getAllByTestId('template-card')).toHaveLength(12);
+  });
+});

@@ -3,6 +3,8 @@ import { AlertCircle, ChevronDown, ChevronUp, FolderPlus, Layers3, Loader2, Paus
 import SectionCard from '../../../components/ui/SectionCard.jsx';
 import BatchSummaryCards from './BatchSummaryCards.jsx';
 import BatchItemRow from './BatchItemRow.jsx';
+import useTemplateCategories from '../../templates/hooks/useTemplateCategories.js';
+import { DEFAULT_TEMPLATE_CATEGORY_ID } from '../../templates/hooks/useTemplateLibraryFilters.js';
 
 const money = (value) => Number.isFinite(value) ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value) : 'Não informado';
 const terminal = new Set(['completed', 'failed', 'cancelled', 'interrupted']);
@@ -26,6 +28,8 @@ export default function BatchesPage({ batchesState, templates, keyConfigured, on
   const [formOpen, setFormOpen] = useState(false);
   const [name, setName] = useState(''); const [templateId, setTemplateId] = useState(''); const [files, setFiles] = useState([]); const [confirmed, setConfirmed] = useState(false); const [submitting, setSubmitting] = useState(false); const [formError, setFormError] = useState(''); const input = useRef();
   const activeTemplates = templates.filter((template) => template.valid && template.active !== false);
+  const templateCategories = useTemplateCategories();
+  const templateGroups = useMemo(() => groupTemplatesByCategory(activeTemplates, templateCategories.categories), [activeTemplates, templateCategories.categories]);
   const estimated = files.length * 0.034;
   const selectedTemplate = useMemo(() => activeTemplates.find((template) => template.id === templateId), [activeTemplates, templateId]);
   const runningCount = useMemo(() => batches.filter((batch) => batch.status === 'running').length, [batches]);
@@ -64,7 +68,7 @@ export default function BatchesPage({ batchesState, templates, keyConfigured, on
         {formOpen && (
           <form onSubmit={create} className="border-t border-slate-100 p-5 sm:p-6">
             <label className="block text-sm font-medium">Nome<input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" maxLength="100" /></label>
-            <label className="mt-4 block text-sm font-medium">Template<select value={templateId} onChange={(e) => setTemplateId(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"><option value="">Selecione um template</option>{activeTemplates.map((template) => <option key={template.id} value={template.id}>{template.label}</option>)}</select></label>
+            <label className="mt-4 block text-sm font-medium">Template<select value={templateId} onChange={(e) => setTemplateId(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2"><option value="">Selecione um template</option>{templateGroups.map((group) => <optgroup key={group.id} label={group.label}>{group.templates.map((template) => <option key={template.id} value={template.id}>{template.label}</option>)}</optgroup>)}</select></label>
             {selectedTemplate && <p className="mt-2 text-xs text-slate-500">{selectedTemplate.width}×{selectedTemplate.height} · {selectedTemplate.mimeType}</p>}
             <div onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); accept(e.dataTransfer.files); }} className="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-center">
               <Upload className="mx-auto text-slate-500" size={20} />
@@ -187,4 +191,21 @@ function BatchDetail({ batch, action, onOpenResult }) {
       </ul>
     </SectionCard>
   );
+}
+
+function groupTemplatesByCategory(templates, categories) {
+  const byCategory = new Map();
+  for (const template of templates) {
+    const categoryId = template.category || DEFAULT_TEMPLATE_CATEGORY_ID;
+    if (!byCategory.has(categoryId)) byCategory.set(categoryId, []);
+    byCategory.get(categoryId).push(template);
+  }
+  const orderedIds = [...categories.map((category) => category.id), DEFAULT_TEMPLATE_CATEGORY_ID].filter((id) => byCategory.has(id));
+  const knownIds = new Set(orderedIds);
+  const remainingIds = [...byCategory.keys()].filter((id) => !knownIds.has(id));
+  return [...orderedIds, ...remainingIds].map((id) => ({
+    id,
+    label: categories.find((category) => category.id === id)?.label || 'Outros',
+    templates: byCategory.get(id),
+  }));
 }
