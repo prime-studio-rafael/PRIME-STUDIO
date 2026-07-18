@@ -1,4 +1,5 @@
 import { AppError } from '../utils/errors.js';
+import { normalizeAdditionalInstruction } from '../utils/additionalInstruction.js';
 import { createGenerationExecutor } from './generationExecutor.js';
 import { createGenerationCoordinator } from './generationCoordinator.js';
 
@@ -10,8 +11,9 @@ export function createGenerationService({ executor, coordinator, openRouterClien
   async function generate({ templateId, modelId, confirmPaid, garmentFile, additionalInstruction }) {
     if (!confirmPaid) throw new AppError('PAID_CONFIRMATION_REQUIRED', 'Confirme o uso de créditos antes de gerar.', { status: 400 });
     if (templateService?.isBusy?.()) throw new AppError('TEMPLATE_MUTATION_IN_PROGRESS', 'Aguarde a alteração do template terminar antes de gerar.', { status: 409 });
+    const normalizedInstruction = normalizeAdditionalInstruction(additionalInstruction);
     await assertTemplateGenerationReady(templateId);
-    return resolvedCoordinator.run(() => resolvedExecutor.execute({ templateId, modelId, garmentFile, additionalInstruction }));
+    return resolvedCoordinator.run(() => resolvedExecutor.execute({ templateId, modelId, garmentFile, additionalInstruction: normalizedInstruction }));
   }
 
   // Bloqueia antes do lock global e antes de qualquer chamada ao provider — nenhum crédito é

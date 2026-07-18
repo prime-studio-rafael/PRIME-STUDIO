@@ -79,7 +79,13 @@ export function createLocalBatchRepository({ batchesDir = path.resolve(process.c
   async function readTemplate(batchId) {
     const batch = await get(batchId); const buffer = await fsImpl.readFile(path.join(child(batch.id), batch.templateStorageKey)); const mimeType = detectImageMime(buffer);
     if (!mimeType) throw new AppError('BATCH_TEMPLATE_INVALID', 'O snapshot local do template está inválido.', { status: 422 });
-    return { id: batch.templateId, label: batch.templateLabel, buffer, mimeType, fileName: batch.templateStorageKey };
+    return {
+      id: batch.templateId, label: batch.templateLabel, category: batch.templateCategory ?? null, buffer, mimeType, fileName: batch.templateStorageKey,
+      prompt: batch.templatePrompt ?? null, negativePrompt: batch.templateNegativePrompt ?? null,
+      provider: batch.templateProvider ?? null, modelId: batch.templateModelId ?? null,
+      generationAspectRatio: batch.templateGenerationAspectRatio ?? null, resolution: batch.templateResolution ?? null,
+      promptVersion: batch.templatePromptVersion ?? null,
+    };
   }
   async function readRecoverable(id) {
     const dir = child(id); const primary = await readJson(path.join(dir, 'batch.json')); const backup = await readJson(path.join(dir, 'batch.json.bak'));

@@ -265,6 +265,18 @@ describe('generation service', () => {
     expect(sentPrompt.indexOf('INSTRUÇÃO ADICIONAL')).toBeGreaterThan(sentPrompt.indexOf('PROIBIÇÕES FINAIS'));
   });
 
+  it('accepts an additionalInstruction with exactly 500 characters and rejects 501, without calling the provider', async () => {
+    const provider = { generate: vi.fn(async () => ({ body: { data: [{ b64_json: responseBase64, media_type: 'image/png' }], usage: { cost: 0.034 } }, requestId: 'mock-request' })) };
+    const service = createService({ templatePath: fixture.templatePath, openRouterClient: provider, resultStorage: { save: vi.fn() } });
+
+    await expect(service.generate({ templateId: 'model-01', modelId: generationConfig.modelId, confirmPaid: true, garmentFile, additionalInstruction: 'x'.repeat(501) }))
+      .rejects.toMatchObject({ code: 'ADDITIONAL_INSTRUCTION_TOO_LONG', status: 422 });
+    expect(provider.generate).not.toHaveBeenCalled();
+
+    await service.generate({ templateId: 'model-01', modelId: generationConfig.modelId, confirmPaid: true, garmentFile, additionalInstruction: 'x'.repeat(500) });
+    expect(provider.generate).toHaveBeenCalledTimes(1);
+  });
+
   it('never repeats globalRules and omits empty sections when there is no negativePrompt/additionalInstruction', async () => {
     const provider = { generate: vi.fn(async () => ({ body: { data: [{ b64_json: responseBase64, media_type: 'image/png' }], usage: { cost: 0.034 } }, requestId: 'mock-request' })) };
     const service = createService({ templatePath: fixture.templatePath, openRouterClient: provider, resultStorage: { save: vi.fn() } });

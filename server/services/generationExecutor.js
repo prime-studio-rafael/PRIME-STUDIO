@@ -24,7 +24,7 @@ export function createGenerationExecutor({ openRouterClient, resultStorage, temp
     if (template.provider && template.provider !== 'openrouter') {
       throw new AppError('UNSUPPORTED_PROVIDER', 'Este Template está configurado para um provedor de IA não suportado.', { status: 422 });
     }
-    const model = getModelById(template.modelId || modelId);
+    const model = getModelById(template.modelId || modelId || config.modelId);
     if (!model) throw new AppError('INVALID_MODEL', 'O modelo selecionado não está disponível.', { status: 400 });
     const generationId = uuid();
     const startedAt = now();
