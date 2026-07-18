@@ -1,0 +1,41 @@
+// Regras universais de fidelidade/identidade/segurança da geração — aplicam-se igualmente a
+// qualquer categoria de Template (moda superior, tênis, bolsas, relógios, óculos, perfumes,
+// mockups e futuras categorias). Nenhuma especificidade de categoria/produto deve entrar aqui —
+// isso pertence exclusivamente ao `prompt` de cada Template (ver buildGenerationPrompt.js).
+export const GLOBAL_RULES_VERSION = 'global-rules-v1';
+
+export const GLOBAL_GENERATION_RULES = [
+  'PAPEL DAS IMAGENS',
+  '- Imagem 1: fonte imutável da pessoa, identidade, pose, câmera, cenário e iluminação originais.',
+  '- Imagem 2: única referência visual do item que deve substituir o item-alvo definido pela instrução do Template na Imagem 1.',
+  '',
+  'ELEMENTOS IMUTÁVEIS DA IMAGEM 1',
+  'Preserve identidade, rosto, formato da cabeça, cabelo, textura natural da pele, expressão, mãos, dedos, pose, posição corporal, anatomia, acessórios, relógios e pulseiras, e qualquer parte do corpo ou do produto que não seja o item-alvo definido pela instrução do Template.',
+  'Preserve também fundo, objetos do cenário, perspectiva, lente aparente, distância da câmera, profundidade de campo, exposição, balanço de branco, contraste e enquadramento original.',
+  '',
+  'REGIÃO EDITÁVEL',
+  'Altere somente o item-alvo definido pela instrução do Template, seu contorno estritamente necessário, oclusões naturais, sombras de contato, dobras ou deformações e a interação do item com o restante da cena.',
+  'Um item volumoso pode alterar o contorno visual ao seu redor, mas nunca a geometria real da pose, a anatomia ou a identidade da pessoa.',
+  '',
+  'FIDELIDADE DO ITEM DE REFERÊNCIA (IMAGEM 2)',
+  'Reproduza com máxima fidelidade somente o que estiver visível na Imagem 2: cor, formato, proporções, acabamento, volume, espessura, rigidez, elasticidade, brilho e material.',
+  'Preserve trama, textura, acolchoamento, nervuras, costuras ou junções, espaçamento e direção de elementos estruturais, zíperes, botões, bolsos, estampas, padrões, logo, posição, escala e orientação, quando aplicável ao item.',
+  '',
+  'MARCAS, LOGOS E TEXTOS',
+  'Não espelhe logos ou textos, não redesenhe letras, não corrija nem complete palavras e não altere posição ou escala da marca.',
+  'Se um texto ou símbolo estiver ilegível, não invente: preserve apenas os elementos realmente visíveis na referência.',
+  '',
+  'OCLUSÕES E INTEGRAÇÃO FÍSICA',
+  'Mantenha correta a ordem das camadas: cabelo, mãos, acessórios e o item-alvo devem permanecer à frente ou atrás conforme a pose original.',
+  'Crie sombras coerentes nos pontos de contato do item com o corpo ou com a cena.',
+  'Preserve a cor intrínseca do item, aplicando somente a iluminação compatível com a cena da Imagem 1.',
+  '',
+  'REGRA DE INCERTEZA',
+  'Faça inferência conservadora apenas nas áreas ocultas ou nas partes internas necessárias para posicionar o item na pose.',
+  'Não invente marcas, textos, símbolos, estampas, costuras ou detalhes de design visíveis que não existam na Imagem 2.',
+  '',
+  'PROIBIÇÕES FINAIS',
+  'Não mude identidade, rosto, penteado, expressão, pose ou enquadramento. Não aplique embelezamento, correção de pele, retoque global, zoom, crop ou recomposição.',
+  'Não limpe nem substitua o fundo, não mude globalmente a iluminação, não remova acessórios e não crie membros, dedos ou elementos duplicados.',
+  'O resultado deve parecer uma fotografia original e fisicamente coerente, sem aparência de montagem artificial.',
+].join('\n');

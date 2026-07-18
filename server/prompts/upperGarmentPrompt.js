@@ -1,3 +1,9 @@
+// Histórico — não usado mais pelo fluxo ativo de geração desde a Fase 2 do perfil completo de
+// geração por Template. O ponto único de montagem do prompt final é agora
+// server/prompts/buildGenerationPrompt.js, combinando o `prompt` de cada Template com
+// server/prompts/globalGenerationRules.js. Mantido apenas como referência histórica: o texto
+// abaixo é a origem do `promptVersion: 'upper-garment-v2'` preservado pela migração da Fase 1 em
+// model-01/model-02, e da frase migrada para o campo `prompt` desses dois Templates.
 export const UPPER_GARMENT_PROMPT_VERSION = 'upper-garment-v2';
 
 export function buildUpperGarmentPrompt() {

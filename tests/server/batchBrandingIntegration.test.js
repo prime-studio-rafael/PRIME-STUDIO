@@ -32,7 +32,7 @@ async function fixture({ brandingEnabled }) {
   const batchService = createBatchService({ repository, templateService: { getForGeneration: async () => snapshot } });
 
   const generatedImage = await sharp({ create: { width: 300, height: 300, channels: 3, background: { r: 30, g: 30, b: 30 } } }).jpeg().toBuffer();
-  const openRouterClient = { generate: async () => ({ body: { data: [{ b64_json: generatedImage.toString('base64'), media_type: 'image/jpeg' }], usage: { cost: 0.034 } }, requestId: 'batch-request-1' }) };
+  const openRouterClient = { generate: vi.fn(async () => ({ body: { data: [{ b64_json: generatedImage.toString('base64'), media_type: 'image/jpeg' }], usage: { cost: 0.034 } }, requestId: 'batch-request-1' })) };
 
   const brandingStorage = createLocalBrandingStorage({ brandingDirectory: path.join(directory, 'branding') });
   const brandingService = createBrandingService({ storage: brandingStorage });
@@ -50,31 +50,36 @@ async function fixture({ brandingEnabled }) {
   return { directory, templateBuffer, batchService, resultStorage, openRouterClient };
 }
 
+// Fase 2 do perfil completo de geração por Template: nenhum templateSnapshot real de lote carrega
+// prompt/negativePrompt/provider/modelId/generationAspectRatio/resolution/promptVersion hoje —
+// esses campos só serão congelados no snapshot na Fase 3 (batchService.js/localBatchRepository.js
+// não foram alterados nesta fase, por instrução explícita). Sem essa evidência persistida, o
+// GenerationExecutor agora rejeita todo snapshot incompleto antes de montar qualquer prompt e
+// antes de qualquer chamada ao provedor — nunca com um fallback genérico por suposição (a mesma
+// falha estrutural já comprovada com o Template "Tenis 9060" na geração individual). Por isso,
+// a cobertura real de "Branding aplicado durante a execução de um lote" fica temporariamente
+// indisponível via o pipeline completo (batchService → batchQueue → executor) até a Fase 3 entregar
+// o snapshot completo — os dois testes abaixo passam a validar o bloqueio seguro em vez disso.
 describe('batch queue — Branding integration (shared executor, no pipeline duplication)', () => {
-  it('applies the logo to batch items when Branding is enabled, with exactly one provider call per item', async () => {
-    const { templateBuffer, batchService, resultStorage } = await fixture({ brandingEnabled: true });
+  it('rejects a legacy batch snapshot without a configured prompt, before any provider call or credit consumption — never applies a generic fallback', async () => {
+    const { templateBuffer, batchService, openRouterClient } = await fixture({ brandingEnabled: true });
     const batch = await batchService.create({ name: 'Lote com branding', templateId: 'model-01', files: [{ buffer: templateBuffer, mimetype: 'image/jpeg', originalname: 'roupa.jpeg' }] });
     await batchService.start(batch.id, { confirmPaid: true });
-    await vi.waitFor(async () => expect((await batchService.get(batch.id)).status).toBe('completed'));
+    await vi.waitFor(async () => expect((await batchService.get(batch.id)).status).not.toBe('running'));
     const finished = await batchService.get(batch.id);
-    expect(finished.items[0].status).toBe('completed');
-    const resultId = finished.items[0].resultId;
-    const entry = await resultStorage.findById(resultId);
-    expect(entry.metadata.logoApplied).toBe(true);
-    expect(entry.metadata.brandingStatus).toBe('applied');
-    expect(entry.assets.branded).toBeTruthy();
+    expect(finished.items[0].status).toBe('failed');
+    expect(finished.items[0].safeError).toMatchObject({ code: 'BATCH_TEMPLATE_PROFILE_INCOMPLETE' });
+    expect(finished.items[0].resultId).toBeNull();
+    expect(openRouterClient.generate).not.toHaveBeenCalled();
   });
 
-  it('does not apply any logo to batch items when Branding is disabled, preserving prior behaviour', async () => {
-    const { templateBuffer, batchService, resultStorage } = await fixture({ brandingEnabled: false });
+  it('never calls the provider for a legacy batch snapshot, with or without Branding enabled', async () => {
+    const { templateBuffer, batchService, openRouterClient } = await fixture({ brandingEnabled: false });
     const batch = await batchService.create({ name: 'Lote sem branding', templateId: 'model-01', files: [{ buffer: templateBuffer, mimetype: 'image/jpeg', originalname: 'roupa.jpeg' }] });
     await batchService.start(batch.id, { confirmPaid: true });
-    await vi.waitFor(async () => expect((await batchService.get(batch.id)).status).toBe('completed'));
+    await vi.waitFor(async () => expect((await batchService.get(batch.id)).status).not.toBe('running'));
     const finished = await batchService.get(batch.id);
-    const resultId = finished.items[0].resultId;
-    const entry = await resultStorage.findById(resultId);
-    expect(entry.metadata.logoApplied).toBe(false);
-    expect(entry.metadata.brandingStatus).toBe('disabled');
-    expect(entry.assets.branded).toBeNull();
+    expect(finished.items[0].status).toBe('failed');
+    expect(openRouterClient.generate).not.toHaveBeenCalled();
   });
 });

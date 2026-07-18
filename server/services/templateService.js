@@ -8,6 +8,18 @@ const DESCRIPTION_MAX_LENGTH = 240;
 const HOVER_DESCRIPTION_MAX_LENGTH = 160;
 const TAG_MAX_COUNT = 8;
 const TAG_MAX_LENGTH = 24;
+const GENERATION_PROFILE_FIELDS = ['prompt', 'negativePrompt', 'provider', 'modelId', 'generationAspectRatio', 'resolution'];
+
+// Repassa somente os campos do perfil de geração realmente informados pelo chamador — nunca
+// limpa um campo que o chamador não mencionou (o mesmo cuidado que localTemplateRepository.js
+// já toma para decidir se promptVersion precisa ser recalculado).
+function pickGenerationProfile(source) {
+  const picked = {};
+  for (const field of GENERATION_PROFILE_FIELDS) {
+    if (field in source) picked[field] = source[field];
+  }
+  return picked;
+}
 
 export function createTemplateService({
   repository,
@@ -50,17 +62,17 @@ export function createTemplateService({
     return { buffer: resolved.image.buffer, mimeType: resolved.image.mimeType, updatedAt: record.updatedAt };
   }
 
-  async function create({ label, description, category, tags, hoverDescription, file }) {
+  async function create({ label, description, category, tags, hoverDescription, file, ...generationProfile }) {
     return runMutation(async () => {
       const data = await validateFields({ label, description, category, tags, hoverDescription });
       await assertUniqueLabel(data.label);
       const image = validateUpload(file);
-      const record = await repository.create(data, image);
+      const record = await repository.create({ ...data, ...pickGenerationProfile(generationProfile) }, image);
       return inspectRecord(record);
     });
   }
 
-  async function update(id, { label, description, category, tags, hoverDescription }) {
+  async function update(id, { label, description, category, tags, hoverDescription, ...generationProfile }) {
     return runMutation(async () => {
       const current = await requireRecord(id);
       const data = await validateFields({
@@ -71,7 +83,7 @@ export function createTemplateService({
         hoverDescription: hoverDescription === undefined ? current.hoverDescription : hoverDescription,
       });
       await assertUniqueLabel(data.label, id);
-      return inspectRecord(await repository.update(id, data));
+      return inspectRecord(await repository.update(id, { ...data, ...pickGenerationProfile(generationProfile) }));
     });
   }
 
@@ -278,6 +290,13 @@ function publicTemplate(record, image) {
     tags: record.tags,
     hoverDescription: record.hoverDescription,
     usageMetrics: record.usageMetrics,
+    prompt: record.prompt,
+    negativePrompt: record.negativePrompt,
+    provider: record.provider,
+    modelId: record.modelId,
+    generationAspectRatio: record.generationAspectRatio,
+    resolution: record.resolution,
+    promptVersion: record.promptVersion,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   };
@@ -314,6 +333,13 @@ function invalidPublicTemplate(record, error) {
     tags: record.tags,
     hoverDescription: record.hoverDescription,
     usageMetrics: record.usageMetrics,
+    prompt: record.prompt,
+    negativePrompt: record.negativePrompt,
+    provider: record.provider,
+    modelId: record.modelId,
+    generationAspectRatio: record.generationAspectRatio,
+    resolution: record.resolution,
+    promptVersion: record.promptVersion,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   };

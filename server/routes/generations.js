@@ -16,6 +16,7 @@ export function createGenerationsRouter({ generationService }) {
         modelId: request.body.modelId,
         confirmPaid: request.body.confirmPaid === 'true',
         garmentFile: request.file,
+        additionalInstruction: request.body.additionalInstruction || null,
       });
       response.json(result);
     } catch (error) {

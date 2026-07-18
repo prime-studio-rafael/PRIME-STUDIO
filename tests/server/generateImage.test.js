@@ -15,6 +15,7 @@ import { createTemplateService } from '../../server/services/templateService.js'
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
 const responseBase64 = png.toString('base64');
 const templateSource = new URL('../../public/templates/model-01.jpeg', import.meta.url);
+const TEMPLATE_PROMPT = 'Edite exclusivamente a roupa da parte superior do corpo da pessoa da Imagem 1, usando a roupa da Imagem 2 como referência visual.';
 
 async function createFixture() {
   const directory = await mkdtemp(path.join(tmpdir(), 'prime-studio-test-'));
@@ -39,7 +40,7 @@ function createService({ templatePath, openRouterClient, resultStorage, now = ()
           role: 'template',
           policy: generationConfig.imagePolicy,
         });
-        return { publicTemplate: { id: 'model-01', label: 'Modelo base 01', valid: true, active: true }, image };
+        return { publicTemplate: { id: 'model-01', label: 'Modelo base 01', valid: true, active: true, prompt: TEMPLATE_PROMPT, promptVersion: 'upper-garment-v2', negativePrompt: null, provider: null, modelId: null, generationAspectRatio: null, resolution: null }, image };
       }),
     },
   });
@@ -109,6 +110,7 @@ describe('generation service', () => {
       label: 'Template criado no teste',
       description: 'Integração simulada',
       file: garmentFile,
+      prompt: 'Edite exclusivamente o item-alvo desta categoria de teste.',
     });
     const provider = {
       generate: vi.fn(async () => ({
@@ -132,7 +134,7 @@ describe('generation service', () => {
       inputReferences: [expect.stringMatching(/^data:image\/jpeg;base64,/), expect.stringMatching(/^data:image\/jpeg;base64,/)],
     });
     expect(storage.save.mock.calls[0][0].metadata).toMatchObject({
-      promptVersion: 'upper-garment-v2',
+      promptVersion: expect.stringMatching(/^template-[0-9a-f]{8}$/),
       model: 'google/gemini-3.1-flash-lite-image',
       resolution: '1K',
       effectiveAspectRatio: '1:1',
@@ -217,6 +219,65 @@ describe('generation service', () => {
     await expect(service.generate({ templateId: 'model-01', modelId: generationConfig.modelId, confirmPaid: true, garmentFile })).rejects.toMatchObject({ code: 'OPENROUTER_INVALID_BASE64' });
     expect(provider.generate).toHaveBeenCalledTimes(1);
   });
+
+  it('blocks generation before the lock/provider call when the Template has no prompt configured, without consuming credit', async () => {
+    const provider = { generate: vi.fn() };
+    const service = createGenerationService({
+      openRouterClient: provider,
+      resultStorage: { save: vi.fn() },
+      templateService: {
+        getForGeneration: vi.fn(async () => ({ publicTemplate: { id: 'tenis-9060', label: 'Tenis 9060', valid: true, active: true, prompt: null, promptVersion: null } })),
+      },
+    });
+
+    await expect(service.generate({ templateId: 'tenis-9060', modelId: generationConfig.modelId, confirmPaid: true, garmentFile }))
+      .rejects.toMatchObject({ code: 'TEMPLATE_PROFILE_INCOMPLETE', status: 422 });
+    expect(provider.generate).not.toHaveBeenCalled();
+  });
+
+  it('rejects a Template configured for an unsupported provider, without calling the client', async () => {
+    const provider = { generate: vi.fn() };
+    const withUnsupportedProvider = createGenerationService({
+      openRouterClient: provider,
+      resultStorage: { save: vi.fn() },
+      templateService: {
+        getForGeneration: vi.fn(async () => {
+          const buffer = await readFile(fixture.templatePath);
+          const image = validateImageBuffer(buffer, { maxBytes: generationConfig.maxFileSizeBytes, fieldLabel: 'Modelo base 01', fileName: 'model-01.jpeg', expectedMimeType: 'image/jpeg', role: 'template', policy: generationConfig.imagePolicy });
+          return { publicTemplate: { id: 'model-01', label: 'Modelo base 01', valid: true, active: true, prompt: TEMPLATE_PROMPT, promptVersion: 'upper-garment-v2', provider: 'another-provider' }, image };
+        }),
+      },
+    });
+
+    await expect(withUnsupportedProvider.generate({ templateId: 'model-01', modelId: generationConfig.modelId, confirmPaid: true, garmentFile }))
+      .rejects.toMatchObject({ code: 'UNSUPPORTED_PROVIDER' });
+    expect(provider.generate).not.toHaveBeenCalled();
+  });
+
+  it('appends additionalInstruction as the last section of the final prompt, without altering the Template', async () => {
+    const provider = { generate: vi.fn(async () => ({ body: { data: [{ b64_json: responseBase64, media_type: 'image/png' }], usage: { cost: 0.034 } }, requestId: 'mock-request' })) };
+    const service = createService({ templatePath: fixture.templatePath, openRouterClient: provider, resultStorage: { save: vi.fn() } });
+
+    await service.generate({ templateId: 'model-01', modelId: generationConfig.modelId, confirmPaid: true, garmentFile, additionalInstruction: 'Instrução exclusiva desta geração de teste.' });
+
+    const sentPrompt = provider.generate.mock.calls[0][0].prompt;
+    expect(sentPrompt).toContain('--- INSTRUÇÃO ADICIONAL DESTA GERAÇÃO ---\nInstrução exclusiva desta geração de teste.');
+    expect(sentPrompt.indexOf('INSTRUÇÃO ADICIONAL')).toBeGreaterThan(sentPrompt.indexOf('PROIBIÇÕES FINAIS'));
+  });
+
+  it('never repeats globalRules and omits empty sections when there is no negativePrompt/additionalInstruction', async () => {
+    const provider = { generate: vi.fn(async () => ({ body: { data: [{ b64_json: responseBase64, media_type: 'image/png' }], usage: { cost: 0.034 } }, requestId: 'mock-request' })) };
+    const service = createService({ templatePath: fixture.templatePath, openRouterClient: provider, resultStorage: { save: vi.fn() } });
+
+    await service.generate({ templateId: 'model-01', modelId: generationConfig.modelId, confirmPaid: true, garmentFile });
+
+    const sentPrompt = provider.generate.mock.calls[0][0].prompt;
+    for (const section of ['PAPEL DAS IMAGENS', 'ELEMENTOS IMUTÁVEIS', 'REGIÃO EDITÁVEL', 'FIDELIDADE DO ITEM', 'MARCAS, LOGOS E TEXTOS', 'OCLUSÕES E INTEGRAÇÃO FÍSICA', 'REGRA DE INCERTEZA', 'PROIBIÇÕES FINAIS']) {
+      expect(sentPrompt.split(section)).toHaveLength(2); // aparece exatamente uma vez
+    }
+    expect(sentPrompt).not.toContain('PROMPT NEGATIVO');
+    expect(sentPrompt).not.toContain('INSTRUÇÃO ADICIONAL');
+  });
 });
 
 describe('generation service — Branding integration', () => {
@@ -267,7 +328,7 @@ describe('generation service — Branding integration', () => {
         getForGeneration: vi.fn(async () => {
           const buffer = await readFile(fixture.templatePath);
           const image = validateImageBuffer(buffer, { maxBytes: generationConfig.maxFileSizeBytes, fieldLabel: 'Modelo base 01', fileName: 'model-01.jpeg', expectedMimeType: 'image/jpeg', role: 'template', policy: generationConfig.imagePolicy });
-          return { publicTemplate: { id: 'model-01', label: 'Modelo base 01', valid: true, active: true }, image };
+          return { publicTemplate: { id: 'model-01', label: 'Modelo base 01', valid: true, active: true, prompt: TEMPLATE_PROMPT, promptVersion: 'upper-garment-v2', negativePrompt: null, provider: null, modelId: null, generationAspectRatio: null, resolution: null }, image };
         }),
       },
     });
@@ -292,7 +353,7 @@ describe('generation service — Branding integration', () => {
         getForGeneration: vi.fn(async () => {
           const buffer = await readFile(fixture.templatePath);
           const image = validateImageBuffer(buffer, { maxBytes: generationConfig.maxFileSizeBytes, fieldLabel: 'Modelo base 01', fileName: 'model-01.jpeg', expectedMimeType: 'image/jpeg', role: 'template', policy: generationConfig.imagePolicy });
-          return { publicTemplate: { id: 'model-01', label: 'Modelo base 01', valid: true, active: true }, image };
+          return { publicTemplate: { id: 'model-01', label: 'Modelo base 01', valid: true, active: true, prompt: TEMPLATE_PROMPT, promptVersion: 'upper-garment-v2', negativePrompt: null, provider: null, modelId: null, generationAspectRatio: null, resolution: null }, image };
         }),
       },
     });
@@ -331,7 +392,7 @@ describe('generation service — Branding integration', () => {
         getForGeneration: vi.fn(async () => {
           const buffer = await readFile(fixture.templatePath);
           const image = validateImageBuffer(buffer, { maxBytes: generationConfig.maxFileSizeBytes, fieldLabel: 'Modelo base 01', fileName: 'model-01.jpeg', expectedMimeType: 'image/jpeg', role: 'template', policy: generationConfig.imagePolicy });
-          return { publicTemplate: { id: 'model-01', label: 'Modelo base 01', valid: true, active: true }, image };
+          return { publicTemplate: { id: 'model-01', label: 'Modelo base 01', valid: true, active: true, prompt: TEMPLATE_PROMPT, promptVersion: 'upper-garment-v2', negativePrompt: null, provider: null, modelId: null, generationAspectRatio: null, resolution: null }, image };
         }),
       },
     });

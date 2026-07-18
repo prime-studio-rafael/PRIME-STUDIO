@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { generationConfig } from '../config/generationConfig.js';
 import { getModelById } from '../catalogs/models.js';
-import { buildUpperGarmentPrompt, UPPER_GARMENT_PROMPT_VERSION } from '../prompts/upperGarmentPrompt.js';
+import { buildGenerationPrompt } from '../prompts/buildGenerationPrompt.js';
+import { GLOBAL_GENERATION_RULES } from '../prompts/globalGenerationRules.js';
 import { AppError } from '../utils/errors.js';
 import { bufferToDataUrl } from '../utils/imageEncoding.js';
 import { validateImageBuffer, validateUploadedImage } from '../utils/fileValidation.js';
@@ -17,19 +18,30 @@ const DISABLED_BRANDING_METADATA = Object.freeze({
 });
 
 export function createGenerationExecutor({ openRouterClient, resultStorage, templateService, brandingService, config = generationConfig, logger = console, now = () => Date.now(), uuid = randomUUID } = {}) {
-  async function execute({ templateId, modelId, garmentFile, templateSnapshot, batchContext } = {}) {
-    const model = getModelById(modelId);
-    if (!model) throw new AppError('INVALID_MODEL', 'O modelo selecionado não está disponível.', { status: 400 });
+  async function execute({ templateId, modelId, garmentFile, templateSnapshot, additionalInstruction, batchContext } = {}) {
     const garment = validateUploadedImage(garmentFile, config);
     const template = templateSnapshot ? validateSnapshot(templateSnapshot, config) : await resolveTemplate(templateId);
+    if (template.provider && template.provider !== 'openrouter') {
+      throw new AppError('UNSUPPORTED_PROVIDER', 'Este Template está configurado para um provedor de IA não suportado.', { status: 422 });
+    }
+    const model = getModelById(template.modelId || modelId);
+    if (!model) throw new AppError('INVALID_MODEL', 'O modelo selecionado não está disponível.', { status: 400 });
     const generationId = uuid();
     const startedAt = now();
-    const profile = createGenerationProfile({ promptVersion: UPPER_GARMENT_PROMPT_VERSION, model: model.providerModel, requestedAspectRatio: config.requestedAspectRatio, effectiveAspectRatio: config.effectiveAspectRatio || config.aspectRatio, resolution: config.resolution });
+    const effectiveAspectRatio = template.generationAspectRatio || config.effectiveAspectRatio || config.aspectRatio;
+    const effectiveResolution = template.resolution || config.resolution;
+    const prompt = buildGenerationPrompt({
+      templatePrompt: template.prompt,
+      globalRules: GLOBAL_GENERATION_RULES,
+      negativePrompt: template.negativePrompt,
+      additionalInstruction,
+    });
+    const profile = createGenerationProfile({ promptVersion: template.promptVersion, model: model.providerModel, requestedAspectRatio: config.requestedAspectRatio, effectiveAspectRatio, resolution: effectiveResolution });
     const providerResponse = await openRouterClient.generate({
       model: model.providerModel,
-      prompt: buildUpperGarmentPrompt(),
-      resolution: config.resolution,
-      aspectRatio: config.effectiveAspectRatio || config.aspectRatio,
+      prompt,
+      resolution: effectiveResolution,
+      aspectRatio: effectiveAspectRatio,
       inputReferences: [bufferToDataUrl(template.image.buffer, template.image.mimeType), bufferToDataUrl(garment.buffer, garment.mimeType)],
     });
     const generated = parseOpenRouterImageResponse(providerResponse);
@@ -70,14 +82,37 @@ export function createGenerationExecutor({ openRouterClient, resultStorage, temp
   async function resolveTemplate(templateId) {
     if (!templateService?.getForGeneration) throw new AppError('TEMPLATE_SERVICE_UNAVAILABLE', 'O catálogo local de templates não está disponível.', { status: 500 });
     const { publicTemplate, image } = await templateService.getForGeneration(templateId);
-    return { id: publicTemplate.id, label: publicTemplate.label, image };
+    if (!publicTemplate.prompt?.trim()) {
+      throw new AppError('TEMPLATE_PROFILE_INCOMPLETE', 'Este Template ainda não tem um perfil de geração configurado. Configure o prompt antes de gerar.', { status: 422 });
+    }
+    return {
+      id: publicTemplate.id, label: publicTemplate.label, image,
+      prompt: publicTemplate.prompt, negativePrompt: publicTemplate.negativePrompt ?? null,
+      provider: publicTemplate.provider ?? null, modelId: publicTemplate.modelId ?? null,
+      generationAspectRatio: publicTemplate.generationAspectRatio ?? null, resolution: publicTemplate.resolution ?? null,
+      promptVersion: publicTemplate.promptVersion,
+    };
   }
   return Object.freeze({ execute });
 }
 
+// Caminho de lote: nenhum templateSnapshot hoje carrega prompt/negativePrompt/provider/modelId/
+// generationAspectRatio/resolution/promptVersion (a Fase 3 é quem vai congelar o perfil completo
+// no snapshot). Sem evidência persistida de que o Template original tinha um perfil configurado,
+// não há fallback seguro — todo snapshot incompleto é rejeitado antes de qualquer prompt ser
+// montado e antes de qualquer chamada ao provedor, sem tentar completá-lo com o Template atual.
 function validateSnapshot(snapshot, config) {
+  if (!snapshot.prompt?.trim()) {
+    throw new AppError('BATCH_TEMPLATE_PROFILE_INCOMPLETE', 'Este lote foi criado antes dos perfis de geração por Template. Para evitar uma geração incorreta, cancele este lote e crie um novo após configurar o Template.', { status: 422 });
+  }
   const image = validateImageBuffer(snapshot.buffer, { expectedMimeType: snapshot.mimeType, maxBytes: config.maxFileSizeBytes, fieldLabel: 'Snapshot do template', fileName: snapshot.fileName || 'template', role: 'template', policy: config.imagePolicy });
-  return { id: snapshot.id, label: snapshot.label, image };
+  return {
+    id: snapshot.id, label: snapshot.label, image,
+    prompt: snapshot.prompt, negativePrompt: snapshot.negativePrompt ?? null,
+    provider: snapshot.provider ?? null, modelId: snapshot.modelId ?? null,
+    generationAspectRatio: snapshot.generationAspectRatio ?? null, resolution: snapshot.resolution ?? null,
+    promptVersion: snapshot.promptVersion ?? null,
+  };
 }
 function extensionFor(mimeType) { return mimeType === 'image/jpeg' ? 'jpg' : mimeType.split('/')[1] || 'png'; }
 
