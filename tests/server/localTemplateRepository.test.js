@@ -65,7 +65,7 @@ describe('LocalTemplateRepository', () => {
 
     expect(templates.map(({ id }) => id)).toEqual(['model-01', 'model-02']);
     expect(catalog).toEqual(backup);
-    expect(catalog).toMatchObject({ schemaVersion: 2, initialized: true });
+    expect(catalog).toMatchObject({ schemaVersion: 3, initialized: true });
     expect(imageFiles).toHaveLength(2);
     expect(JSON.stringify(catalog)).not.toContain('/Users/');
     expect(JSON.stringify(catalog)).not.toContain('base64');
@@ -123,8 +123,8 @@ describe('LocalTemplateRepository', () => {
 
     const migratedCatalog = JSON.parse(await readFile(fixture.repository.paths.catalogPath, 'utf8'));
     const migratedBackup = JSON.parse(await readFile(fixture.repository.paths.backupPath, 'utf8'));
-    expect(migratedCatalog.schemaVersion).toBe(2);
-    expect(migratedBackup.schemaVersion).toBe(2);
+    expect(migratedCatalog.schemaVersion).toBe(3);
+    expect(migratedBackup.schemaVersion).toBe(3);
   });
 
   it('preserves an already-migrated field (e.g. a real category) instead of overwriting it during migration', async () => {
@@ -293,5 +293,127 @@ describe('LocalTemplateRepository', () => {
 
     const restarted = createLocalTemplateRepository({ templatesDirectory: fixture.templatesDirectory });
     await expect(restarted.list()).rejects.toMatchObject({ code: 'TEMPLATE_CATALOG_CORRUPT' });
+  });
+
+  describe('generation profile (schemaVersion 3)', () => {
+    it('bootstraps model-01/model-02 with the migrated generation profile (prompt, promptVersion and technical defaults)', async () => {
+      const templates = await fixture.repository.list();
+      const byId = Object.fromEntries(templates.map((template) => [template.id, template]));
+      for (const id of ['model-01', 'model-02']) {
+        expect(byId[id].prompt).toBe('Edite exclusivamente a roupa da parte superior do corpo da pessoa da Imagem 1, usando a roupa da Imagem 2 como referência visual.');
+        expect(byId[id].promptVersion).toBe('upper-garment-v2');
+        expect(byId[id].provider).toBe('openrouter');
+        expect(byId[id].modelId).toBe(generationConfig.modelId);
+        expect(byId[id].generationAspectRatio).toBe(generationConfig.effectiveAspectRatio);
+        expect(byId[id].resolution).toBe(generationConfig.resolution);
+        expect(byId[id].negativePrompt).toBeNull();
+      }
+    });
+
+    it('creates a new template without a prompt by default — never inherits another category\'s prompt', async () => {
+      const image = await validImage();
+      await fixture.repository.list();
+      const created = await fixture.repository.create({ label: 'Tenis 9060', description: '', category: 'tenis-masculino', tags: ['casual', 'esportivo'] }, image);
+      expect(created.prompt).toBeNull();
+      expect(created.promptVersion).toBeNull();
+      expect(created.provider).toBeNull();
+      expect(created.modelId).toBeNull();
+
+      const restarted = createLocalTemplateRepository({ templatesDirectory: fixture.templatesDirectory });
+      const templates = await restarted.list();
+      expect(templates.find(({ id }) => id === created.id)).toMatchObject({ prompt: null, promptVersion: null });
+    });
+
+    it('computes a deterministic hash-based promptVersion when a template is created with a prompt', async () => {
+      const image = await validImage();
+      await fixture.repository.list();
+      const created = await fixture.repository.create({ label: 'Tenis 9060', description: '', category: 'tenis-masculino', prompt: 'Edite exclusivamente o calçado da pessoa da Imagem 1.' }, image);
+      expect(created.promptVersion).toMatch(/^template-[0-9a-f]{8}$/);
+      expect(created.promptVersion).not.toBe('upper-garment-v2');
+
+      const again = await fixture.repository.create({ label: 'Tenis 9061', description: '', category: 'tenis-masculino', prompt: 'Edite exclusivamente o calçado da pessoa da Imagem 1.' }, image);
+      expect(again.promptVersion).toBe(created.promptVersion);
+    });
+
+    it('recomputes promptVersion when prompt/negativePrompt change on update, but not on unrelated edits', async () => {
+      const image = await validImage();
+      await fixture.repository.list();
+      const created = await fixture.repository.create({ label: 'Tenis 9060', description: '', category: 'tenis-masculino', prompt: 'Prompt original.' }, image);
+      const firstVersion = created.promptVersion;
+
+      const relabeled = await fixture.repository.update(created.id, { label: 'Tenis 9060 (v2)' });
+      expect(relabeled.promptVersion).toBe(firstVersion);
+
+      const edited = await fixture.repository.update(created.id, { prompt: 'Prompt revisado.' });
+      expect(edited.promptVersion).not.toBe(firstVersion);
+      expect(edited.promptVersion).toMatch(/^template-[0-9a-f]{8}$/);
+    });
+
+    it('migrates a schemaVersion 2 catalog to 3 with null generation-profile defaults for custom templates, without ever assigning them a prompt', async () => {
+      await fixture.repository.list();
+      const v2Catalog = JSON.parse(await readFile(fixture.repository.paths.catalogPath, 'utf8'));
+      v2Catalog.schemaVersion = 2;
+      for (const template of v2Catalog.templates) {
+        delete template.prompt; delete template.negativePrompt; delete template.provider;
+        delete template.modelId; delete template.generationAspectRatio; delete template.resolution; delete template.promptVersion;
+      }
+      const v2Raw = JSON.stringify(v2Catalog);
+      await writeFile(fixture.repository.paths.catalogPath, v2Raw);
+      await writeFile(fixture.repository.paths.backupPath, v2Raw);
+
+      const restarted = createLocalTemplateRepository({ templatesDirectory: fixture.templatesDirectory });
+      const templates = await restarted.list();
+      const model01 = templates.find(({ id }) => id === 'model-01');
+      expect(model01.prompt).toBe('Edite exclusivamente a roupa da parte superior do corpo da pessoa da Imagem 1, usando a roupa da Imagem 2 como referência visual.');
+      expect(model01.promptVersion).toBe('upper-garment-v2');
+
+      const migratedCatalog = JSON.parse(await readFile(fixture.repository.paths.catalogPath, 'utf8'));
+      expect(migratedCatalog.schemaVersion).toBe(3);
+    });
+
+    it('never overwrites a manually configured prompt on model-01/model-02 during migration', async () => {
+      await fixture.repository.list();
+      await fixture.repository.update('model-01', { prompt: 'Prompt customizado pelo usuário.' });
+      const customized = (await fixture.repository.list()).find(({ id }) => id === 'model-01');
+
+      const restarted = createLocalTemplateRepository({ templatesDirectory: fixture.templatesDirectory });
+      const templates = await restarted.list();
+      expect(templates.find(({ id }) => id === 'model-01').prompt).toBe(customized.prompt);
+      expect(templates.find(({ id }) => id === 'model-01').promptVersion).toBe(customized.promptVersion);
+    });
+
+    it('is idempotent: restarting twice after the schemaVersion 3 migration never changes an already-migrated record again', async () => {
+      await fixture.repository.list();
+      const restartedOnce = createLocalTemplateRepository({ templatesDirectory: fixture.templatesDirectory });
+      const first = await restartedOnce.list();
+      const restartedTwice = createLocalTemplateRepository({ templatesDirectory: fixture.templatesDirectory });
+      const second = await restartedTwice.list();
+      expect(second).toEqual(first);
+    });
+
+    it('rejects an invalid generationAspectRatio/modelId/provider stored in the catalog', async () => {
+      await fixture.repository.list();
+      const catalog = JSON.parse(await readFile(fixture.repository.paths.catalogPath, 'utf8'));
+      catalog.templates[0].generationAspectRatio = '16:9';
+      const tampered = JSON.stringify(catalog);
+      await writeFile(fixture.repository.paths.catalogPath, tampered);
+      await writeFile(fixture.repository.paths.backupPath, tampered);
+
+      const restarted = createLocalTemplateRepository({ templatesDirectory: fixture.templatesDirectory });
+      await expect(restarted.list()).rejects.toMatchObject({ code: 'TEMPLATE_CATALOG_CORRUPT' });
+    });
+
+    it('rejects a template with a prompt but no promptVersion (would bypass version tracking)', async () => {
+      await fixture.repository.list();
+      const catalog = JSON.parse(await readFile(fixture.repository.paths.catalogPath, 'utf8'));
+      catalog.templates[0].prompt = 'Prompt sem versão.';
+      catalog.templates[0].promptVersion = null;
+      const tampered = JSON.stringify(catalog);
+      await writeFile(fixture.repository.paths.catalogPath, tampered);
+      await writeFile(fixture.repository.paths.backupPath, tampered);
+
+      const restarted = createLocalTemplateRepository({ templatesDirectory: fixture.templatesDirectory });
+      await expect(restarted.list()).rejects.toMatchObject({ code: 'TEMPLATE_CATALOG_CORRUPT' });
+    });
   });
 });
