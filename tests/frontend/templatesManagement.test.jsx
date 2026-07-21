@@ -36,11 +36,13 @@ const initialTemplates = [
     valid: true, active: true, mimeType: 'image/jpeg', realFormat: 'jpeg', width: 773, height: 1024,
     aspectRatio: 773 / 1024, sizeBytes: 77966, qualityLabel: 'Aceitável com aviso', fourByFiveReady: false,
     warnings: [{ code: 'TEMPLATE_RATIO_NOT_4_5', message: 'A proporção está fora da tolerância 4:5.' }],
+    prompt: 'Prompt de teste.',
   },
   {
     id: 'model-02', label: 'Modelo base 02', description: '', publicUrl: '/api/templates/model-02/image?v=1',
     valid: true, active: true, mimeType: 'image/jpeg', realFormat: 'jpeg', width: 773, height: 1024,
     aspectRatio: 773 / 1024, sizeBytes: 77966, qualityLabel: 'Aceitável com aviso', fourByFiveReady: false, warnings: [],
+    prompt: 'Prompt de teste.',
   },
 ];
 
@@ -127,6 +129,33 @@ describe('local template management UI', () => {
     await screen.findByText('Template criado com sucesso.');
     expect(api.createTemplate).toHaveBeenCalledTimes(1);
     expect(screen.getByText('Modelo editorial')).toBeInTheDocument();
+  });
+
+  it('saves the generation profile fields (prompt, negativePrompt, generationAspectRatio) on create, and shows the pending/configured badge', async () => {
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Templates' }));
+    expect((await screen.findAllByText('Perfil configurado')).length).toBeGreaterThan(0); // fixtures já têm prompt
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Novo template' }));
+    fireEvent.change(screen.getByLabelText('Nome'), { target: { value: 'Tenis 9060' } });
+    fireEvent.change(document.querySelector('#template-image-input'), { target: { files: [createJpegFile('tenis.jpeg')] } });
+    await within(screen.getByRole('dialog')).findByText('Aceitável com aviso');
+    fireEvent.change(screen.getByLabelText(/Prompt principal/), { target: { value: 'Edite exclusivamente o calçado.' } });
+    fireEvent.change(screen.getByLabelText(/Prompt negativo/), { target: { value: 'Não alterar o cadarço.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar template' }));
+
+    await screen.findByText('Template criado com sucesso.');
+    expect(api.createTemplate).toHaveBeenCalledWith(expect.objectContaining({
+      prompt: 'Edite exclusivamente o calçado.',
+      negativePrompt: 'Não alterar o cadarço.',
+    }));
+  });
+
+  it('shows "Perfil de geração pendente" on the card when the Template has no prompt', async () => {
+    store = store.map((template) => template.id === 'model-01' ? { ...template, prompt: null } : template);
+    render(<App />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Templates' }));
+    expect(await screen.findByText(/Perfil de geração pendente/)).toBeInTheDocument();
   });
 
   it('edits and replaces a template image without changing its id', async () => {

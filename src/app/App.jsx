@@ -14,6 +14,7 @@ import useGeneration from '../features/generation/hooks/useGeneration.js';
 import { useObjectUrl } from '../features/generation/utils/imagePreview.js';
 import { inspectGarmentFile, withBlockingError } from '../features/generation/utils/inspectUpload.js';
 import { imagePolicy } from '../../shared/imagePolicy.js';
+import { ADDITIONAL_INSTRUCTION_MAX_LENGTH } from '../../shared/additionalInstructionPolicy.js';
 import TemplatesPage from '../features/templates/components/TemplatesPage.jsx';
 import useTemplates from '../features/templates/hooks/useTemplates.js';
 import ResultsPage from '../features/results/components/ResultsPage.jsx';
@@ -41,6 +42,7 @@ export default function App() {
   const [garmentInspecting, setGarmentInspecting] = useState(false);
   const [garmentError, setGarmentError] = useState('');
   const [confirmPaid, setConfirmPaid] = useState(false);
+  const [additionalInstruction, setAdditionalInstruction] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeView, setActiveView] = useState('generation');
   const templateCatalog = useTemplates();
@@ -88,11 +90,13 @@ export default function App() {
     [selectedTemplateId, templates],
   );
   const selectedTemplateValid = Boolean(selectedTemplate && selectedTemplate.valid !== false && selectedTemplate.active !== false && !templateImageErrors[selectedTemplateId]);
+  const profileIncomplete = Boolean(selectedTemplate && !selectedTemplate.prompt?.trim());
   const isBusy = status === 'preparing' || status === 'generating';
   const canGenerate = Boolean(
     config.keyConfigured
     && selectedTemplateId
     && selectedTemplateValid
+    && !profileIncomplete
     && garmentFile
     && garmentAssessment?.valid
     && !garmentInspecting
@@ -159,6 +163,7 @@ export default function App() {
       garmentAssessment,
       confirmPaid,
       template: selectedTemplate,
+      additionalInstruction: additionalInstruction.trim() || undefined,
     });
   }
 
@@ -246,6 +251,28 @@ export default function App() {
 
             <div className="space-y-6">
               <ModelSummary config={config} />
+
+              {selectedTemplate && profileIncomplete && (
+                <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                  <AlertCircle size={17} className="mt-0.5 shrink-0" />
+                  <p>Este Template ainda não tem um perfil de geração configurado. Configure o prompt antes de gerar.</p>
+                </div>
+              )}
+
+              <label className="block rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_36px_rgba(15,23,42,0.04)]">
+                <span className="text-sm font-semibold text-slate-900">Instrução adicional desta geração <span className="font-normal text-slate-400">(opcional)</span></span>
+                <textarea
+                  value={additionalInstruction}
+                  onChange={(event) => setAdditionalInstruction(event.target.value)}
+                  maxLength={ADDITIONAL_INSTRUCTION_MAX_LENGTH}
+                  rows={3}
+                  disabled={isBusy}
+                  placeholder="Ex.: aplicar acabamento fosco nesta geração."
+                  className="mt-2 w-full resize-y rounded-xl border border-slate-200 px-3.5 py-3 text-sm outline-none transition focus:border-slate-500 disabled:bg-slate-100"
+                />
+                <span className="mt-1 block text-right text-[11px] text-slate-400">{additionalInstruction.length}/{ADDITIONAL_INSTRUCTION_MAX_LENGTH}</span>
+              </label>
+
               <CreditConfirmation checked={confirmPaid} disabled={isBusy} onChange={setConfirmPaid} />
 
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_36px_rgba(15,23,42,0.04)]">

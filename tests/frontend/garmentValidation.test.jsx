@@ -49,6 +49,7 @@ const templates = [{
   label: 'Modelo base 01',
   publicUrl: '/templates/model-01.jpeg',
   valid: true,
+  prompt: 'Prompt de teste.',
   mimeType: 'image/jpeg',
   realFormat: 'jpeg',
   width: 773,

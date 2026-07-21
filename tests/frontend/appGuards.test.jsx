@@ -2,6 +2,7 @@
 import { render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 import App from '../../src/app/App.jsx';
+import { fetchConfig } from '../../src/features/generation/api/generationClient.js';
 
 vi.mock('../../src/features/generation/api/generationClient.js', () => ({
   fetchConfig: vi.fn(async () => ({
@@ -29,5 +30,19 @@ describe('generation page guards', () => {
     render(<App />);
     const button = await screen.findByRole('button', { name: 'Gerar imagem' });
     expect(button).toBeDisabled();
+  });
+});
+
+describe('generation page guards — incomplete Template profile', () => {
+  it('blocks generation client-side and shows an explanatory banner when the selected Template has no prompt', async () => {
+    fetchConfig.mockResolvedValueOnce({
+      keyConfigured: true,
+      model: { id: 'nano-banana-lite', label: 'Nano Banana 2 Lite', providerModel: 'google/gemini-3.1-flash-lite-image' },
+      fixedGeneration: { resolution: '1K', aspectRatio: '1:1' },
+    });
+    render(<App />);
+    const button = await screen.findByRole('button', { name: 'Gerar imagem' });
+    expect(button).toBeDisabled();
+    expect(await screen.findByText('Este Template ainda não tem um perfil de geração configurado. Configure o prompt antes de gerar.')).toBeInTheDocument();
   });
 });

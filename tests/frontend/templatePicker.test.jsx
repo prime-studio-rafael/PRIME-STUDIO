@@ -38,8 +38,8 @@ const configured = {
 };
 
 const templates = [
-  { id: 'model-01', label: 'Modelo base 01', publicUrl: '/templates/model-01.jpeg', valid: true, active: true, mimeType: 'image/jpeg', category: 'moda-masculina', tags: ['casual'], hoverDescription: 'Ideal para roupas casuais' },
-  { id: 'model-02', label: 'Modelo base 02', publicUrl: '/templates/model-02.jpeg', valid: true, active: true, mimeType: 'image/jpeg', category: 'moda-feminina', tags: ['festa'] },
+  { id: 'model-01', label: 'Modelo base 01', publicUrl: '/templates/model-01.jpeg', valid: true, active: true, mimeType: 'image/jpeg', category: 'moda-masculina', tags: ['casual'], hoverDescription: 'Ideal para roupas casuais', prompt: 'Prompt de teste.' },
+  { id: 'model-02', label: 'Modelo base 02', publicUrl: '/templates/model-02.jpeg', valid: true, active: true, mimeType: 'image/jpeg', category: 'moda-feminina', tags: ['festa'], prompt: 'Prompt de teste.' },
 ];
 
 beforeEach(() => {
@@ -108,7 +108,7 @@ describe('TemplatePicker library filters', () => {
 
   it('loads more templates with "Carregar mais" without losing the current selection', async () => {
     const many = Array.from({ length: 10 }, (_, index) => ({
-      id: `bulk-${index + 1}`, label: `Bulk ${String(index + 1).padStart(2, '0')}`, publicUrl: '/templates/model-01.jpeg', valid: true, active: true, mimeType: 'image/jpeg', category: 'moda-masculina', tags: [],
+      id: `bulk-${index + 1}`, label: `Bulk ${String(index + 1).padStart(2, '0')}`, publicUrl: '/templates/model-01.jpeg', valid: true, active: true, mimeType: 'image/jpeg', category: 'moda-masculina', tags: [], prompt: 'Prompt de teste.',
     }));
     mocks.fetchTemplates.mockResolvedValue(many);
     render(<App />);

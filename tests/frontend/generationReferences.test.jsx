@@ -46,8 +46,8 @@ beforeEach(() => {
     clothingScope: 'Roupas superiores',
   });
   mocks.fetchTemplates.mockResolvedValue([
-    { id: 'model-01', label: 'Modelo base 01', publicUrl: '/templates/model-01.jpeg', valid: true, active: true, mimeType: 'image/jpeg', realFormat: 'jpeg', width: 773, height: 1024 },
-    { id: 'model-02', label: 'Modelo base 02', publicUrl: '/templates/model-02.jpeg', valid: true, active: true, mimeType: 'image/jpeg', realFormat: 'jpeg', width: 773, height: 1024 },
+    { id: 'model-01', label: 'Modelo base 01', publicUrl: '/templates/model-01.jpeg', valid: true, active: true, mimeType: 'image/jpeg', realFormat: 'jpeg', width: 773, height: 1024, prompt: 'Prompt de teste.' },
+    { id: 'model-02', label: 'Modelo base 02', publicUrl: '/templates/model-02.jpeg', valid: true, active: true, mimeType: 'image/jpeg', realFormat: 'jpeg', width: 773, height: 1024, prompt: 'Prompt de teste.' },
   ]);
   mocks.generateImage.mockReset();
   globalThis.URL.createObjectURL = vi.fn()

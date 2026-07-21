@@ -139,6 +139,67 @@ describe('template HTTP API', () => {
     }
   });
 
+  it('creates a template with a generation profile via multipart, and updates it via PATCH JSON — including clearing a field back to null', async () => {
+    const server = await startFixture();
+    try {
+      const buffer = await readFile(sourceUrl);
+      const form = new FormData();
+      form.set('label', 'Tenis 9060');
+      form.set('description', '');
+      form.set('templateImage', new Blob([buffer], { type: 'image/jpeg' }), 'modelo.jpeg');
+      form.set('prompt', 'Edite exclusivamente o calçado da pessoa da Imagem 1.');
+      form.set('negativePrompt', 'Não alterar o cadarço.');
+      form.set('generationAspectRatio', '1:1');
+
+      const created = (await (await fetch(`${server.baseUrl}/api/templates`, { method: 'POST', body: form })).json()).template;
+      expect(created).toMatchObject({
+        prompt: 'Edite exclusivamente o calçado da pessoa da Imagem 1.',
+        negativePrompt: 'Não alterar o cadarço.',
+        generationAspectRatio: '1:1',
+        promptVersion: expect.stringMatching(/^template-[0-9a-f]{8}$/),
+      });
+
+      // PATCH JSON com null explícito (o mesmo formato que um <select> "Usar padrão do sistema"
+      // envia) — regressão do bug real onde String(null) virava a string "null".
+      const patched = (await (await fetch(`${server.baseUrl}/api/templates/${created.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ generationAspectRatio: null }),
+      })).json()).template;
+      expect(patched.generationAspectRatio).toBeNull();
+      expect(patched.prompt).toBe('Edite exclusivamente o calçado da pessoa da Imagem 1.'); // não tocado, permanece
+
+      const getResponse = await fetch(`${server.baseUrl}/api/templates`);
+      const listed = (await getResponse.json()).templates.find(({ id }) => id === created.id);
+      expect(listed.generationAspectRatio).toBeNull();
+    } finally {
+      await server.close();
+    }
+  });
+
+  it('leaves the generation profile untouched when the field is not sent at all', async () => {
+    const server = await startFixture();
+    try {
+      const buffer = await readFile(sourceUrl);
+      const form = new FormData();
+      form.set('label', 'Tenis 9061');
+      form.set('description', '');
+      form.set('templateImage', new Blob([buffer], { type: 'image/jpeg' }), 'modelo.jpeg');
+      form.set('prompt', 'Prompt original.');
+
+      const created = (await (await fetch(`${server.baseUrl}/api/templates`, { method: 'POST', body: form })).json()).template;
+      const patched = (await (await fetch(`${server.baseUrl}/api/templates/${created.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ label: 'Tenis 9061 (renomeado)' }),
+      })).json()).template;
+      expect(patched.label).toBe('Tenis 9061 (renomeado)');
+      expect(patched.prompt).toBe('Prompt original.');
+    } finally {
+      await server.close();
+    }
+  });
+
   it('paginates and filters via query params without breaking the plain GET /api/templates contract', async () => {
     const server = await startFixture();
     try {

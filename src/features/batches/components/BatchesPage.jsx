@@ -5,6 +5,7 @@ import BatchSummaryCards from './BatchSummaryCards.jsx';
 import BatchItemRow from './BatchItemRow.jsx';
 import useTemplateCategories from '../../templates/hooks/useTemplateCategories.js';
 import { DEFAULT_TEMPLATE_CATEGORY_ID } from '../../templates/hooks/useTemplateLibraryFilters.js';
+import { ADDITIONAL_INSTRUCTION_MAX_LENGTH } from '../../../../shared/additionalInstructionPolicy.js';
 
 const money = (value) => Number.isFinite(value) ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value) : 'Não informado';
 const terminal = new Set(['completed', 'failed', 'cancelled', 'interrupted']);
@@ -48,19 +49,21 @@ function ProgressHeaderTooltip() {
 export default function BatchesPage({ batchesState, templates, keyConfigured, onOpenResult }) {
   const { batches, selected, select, status, error, submit, action } = batchesState;
   const [formOpen, setFormOpen] = useState(false);
-  const [name, setName] = useState(''); const [templateId, setTemplateId] = useState(''); const [files, setFiles] = useState([]); const [confirmed, setConfirmed] = useState(false); const [submitting, setSubmitting] = useState(false); const [formError, setFormError] = useState(''); const input = useRef();
+  const [name, setName] = useState(''); const [templateId, setTemplateId] = useState(''); const [files, setFiles] = useState([]); const [confirmed, setConfirmed] = useState(false); const [additionalInstruction, setAdditionalInstruction] = useState(''); const [submitting, setSubmitting] = useState(false); const [formError, setFormError] = useState(''); const input = useRef();
   const activeTemplates = templates.filter((template) => template.valid && template.active !== false);
   const templateCategories = useTemplateCategories();
   const templateGroups = useMemo(() => groupTemplatesByCategory(activeTemplates, templateCategories.categories), [activeTemplates, templateCategories.categories]);
   const estimated = files.length * 0.034;
   const selectedTemplate = useMemo(() => activeTemplates.find((template) => template.id === templateId), [activeTemplates, templateId]);
+  const profileIncomplete = Boolean(selectedTemplate && !selectedTemplate.prompt?.trim());
   const runningCount = useMemo(() => batches.filter((batch) => batch.status === 'running').length, [batches]);
 
   async function create(event) {
     event.preventDefault(); setFormError('');
     if (!name.trim() || !templateId || !files.length || !confirmed) { setFormError('Preencha o nome, selecione um template, adicione roupas e confirme os créditos.'); return; }
+    if (profileIncomplete) { setFormError('Este Template ainda não tem um perfil de geração configurado. Configure o prompt antes de criar um lote.'); return; }
     setSubmitting(true);
-    try { await submit({ name, templateId, files }); setName(''); setFiles([]); setConfirmed(false); setFormOpen(false); }
+    try { await submit({ name, templateId, files, additionalInstruction: additionalInstruction.trim() || undefined }); setName(''); setFiles([]); setConfirmed(false); setAdditionalInstruction(''); setFormOpen(false); }
     catch (e) { setFormError(e.message); }
     finally { setSubmitting(false); }
   }
@@ -109,6 +112,23 @@ export default function BatchesPage({ batchesState, templates, keyConfigured, on
                 {templateGroups.map((group) => <optgroup key={group.id} label={group.label}>{group.templates.map((template) => <option key={template.id} value={template.id}>{template.label}</option>)}</optgroup>)}
               </select>
               {selectedTemplate && <span className="mt-1.5 block text-xs text-slate-500">{selectedTemplate.width}×{selectedTemplate.height} · {selectedTemplate.mimeType}</span>}
+              {profileIncomplete && (
+                <span className="mt-1.5 flex items-start gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-800">
+                  <AlertCircle size={13} className="mt-0.5 shrink-0" /> Este Template ainda não tem um perfil de geração configurado.
+                </span>
+              )}
+            </label>
+            <label className="block">
+              <span className="text-sm font-medium text-slate-700">Instrução adicional desta geração <span className="font-normal text-slate-400">(opcional)</span></span>
+              <textarea
+                value={additionalInstruction}
+                onChange={(e) => setAdditionalInstruction(e.target.value)}
+                maxLength={ADDITIONAL_INSTRUCTION_MAX_LENGTH}
+                rows={2}
+                placeholder="Ex.: aplicar acabamento fosco neste lote."
+                className="mt-1.5 w-full resize-y rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-950 focus:ring-2 focus:ring-slate-950/10"
+              />
+              <span className="mt-1 block text-right text-[11px] text-slate-400">{additionalInstruction.length}/{ADDITIONAL_INSTRUCTION_MAX_LENGTH}</span>
             </label>
             <div onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); accept(e.dataTransfer.files); }} className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center">
               <Upload className="mx-auto text-slate-400" size={20} />
@@ -136,7 +156,7 @@ export default function BatchesPage({ batchesState, templates, keyConfigured, on
               Confirmo que o lote poderá consumir créditos.
             </label>
             {(formError || error) && <p role="alert" className="flex items-start gap-2 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700"><AlertCircle size={16} className="mt-0.5 shrink-0" />{formError || error}</p>}
-            <button disabled={submitting || !keyConfigured} className="w-full rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40">{submitting ? 'Criando…' : keyConfigured ? 'Criar lote para revisão' : 'Configure a chave para continuar'}</button>
+            <button disabled={submitting || !keyConfigured || profileIncomplete} className="w-full rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40">{submitting ? 'Criando…' : !keyConfigured ? 'Configure a chave para continuar' : profileIncomplete ? 'Configure o perfil do Template' : 'Criar lote para revisão'}</button>
           </form>
         )}
       </section>

@@ -32,6 +32,7 @@ export function createTemplatesRouter({ templateService }) {
         tags: parseTags(request.body.tags),
         hoverDescription: request.body.hoverDescription,
         file: request.file,
+        ...parseGenerationProfile(request.body),
       });
       response.status(201).json({ template });
     } catch (error) {
@@ -47,6 +48,7 @@ export function createTemplatesRouter({ templateService }) {
         category: request.body?.category,
         tags: request.body?.tags,
         hoverDescription: request.body?.hoverDescription,
+        ...parseGenerationProfile(request.body || {}),
       });
       response.json({ template });
     } catch (error) {
@@ -105,6 +107,23 @@ export function createTemplatesRouter({ templateService }) {
     }
   });
   return router;
+}
+
+const GENERATION_PROFILE_FIELDS = ['prompt', 'negativePrompt', 'provider', 'modelId', 'generationAspectRatio', 'resolution'];
+
+// Repassa somente os campos do perfil de geração realmente enviados pelo cliente (create via
+// multipart, update via JSON) — nunca limpa um campo que o formulário não tocou. Uma string vazia
+// (ex. "Usar padrão do sistema" num <select>) vira `null` explícito, o mesmo valor "sem override"
+// já aceito pelo schema do Template desde a Fase 1.
+function parseGenerationProfile(body) {
+  const profile = {};
+  for (const field of GENERATION_PROFILE_FIELDS) {
+    if (body[field] === undefined) continue;
+    if (body[field] === null) { profile[field] = null; continue; }
+    const value = String(body[field]).trim();
+    profile[field] = value ? value : null;
+  }
+  return profile;
 }
 
 // Campos de tag chegam como texto no multipart (não há JSON body no upload); aceita tanto

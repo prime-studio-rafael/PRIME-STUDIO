@@ -1,4 +1,4 @@
-import { Copy, ImageOff, Pencil, Power, RefreshCw, Trash2 } from 'lucide-react';
+import { Copy, ImageOff, Pencil, Power, RefreshCw, Trash2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import TemplateHoverCard from './TemplateHoverCard.jsx';
 import TemplateTagList from './TemplateTagList.jsx';
@@ -7,6 +7,7 @@ export default function TemplateCard({ template, categories = [], disabled, onEd
   const [imageFailed, setImageFailed] = useState(false);
   const unavailable = !template.valid || imageFailed;
   const category = categories.find((item) => item.id === template.category);
+  const profileIncomplete = !template.prompt?.trim();
 
   useEffect(() => setImageFailed(false), [template.publicUrl]);
 
@@ -48,6 +49,18 @@ export default function TemplateCard({ template, categories = [], disabled, onEd
         {template.warnings?.length > 0 && (
           <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] leading-4 text-amber-800">
             {template.warnings[0].message}
+          </div>
+        )}
+
+        {profileIncomplete ? (
+          <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] leading-4 text-amber-800">
+            <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+            <span>Perfil de geração pendente — configure o prompt para liberar geração e lotes.</span>
+          </div>
+        ) : (
+          <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[10px] leading-4 text-emerald-800">
+            <p className="flex items-center gap-1.5 font-semibold"><CheckCircle2 size={13} /> Perfil configurado</p>
+            <p className="mt-1 text-emerald-700">Modelo: {template.modelId || 'padrão'} · Proporção: {template.generationAspectRatio || 'padrão'}</p>
           </div>
         )}
 

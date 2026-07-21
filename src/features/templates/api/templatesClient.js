@@ -46,7 +46,9 @@ export async function fetchTemplateCategories() {
   return body.categories || [];
 }
 
-export async function createTemplate({ label, description, category, tags, hoverDescription, file }) {
+const GENERATION_PROFILE_FIELDS = ['prompt', 'negativePrompt', 'provider', 'modelId', 'generationAspectRatio', 'resolution'];
+
+export async function createTemplate({ label, description, category, tags, hoverDescription, file, ...generationProfile }) {
   const formData = new FormData();
   formData.append('label', label);
   formData.append('description', description || '');
@@ -54,14 +56,21 @@ export async function createTemplate({ label, description, category, tags, hover
   if (tags !== undefined) formData.append('tags', JSON.stringify(tags));
   if (hoverDescription !== undefined) formData.append('hoverDescription', hoverDescription || '');
   formData.append('templateImage', file);
+  for (const field of GENERATION_PROFILE_FIELDS) {
+    if (generationProfile[field] !== undefined) formData.append(field, generationProfile[field] || '');
+  }
   return (await requestJson('/api/templates', { method: 'POST', body: formData })).template;
 }
 
-export async function updateTemplate(id, { label, description, category, tags, hoverDescription }) {
+export async function updateTemplate(id, { label, description, category, tags, hoverDescription, ...generationProfile }) {
+  const body = { label, description, category, tags, hoverDescription };
+  for (const field of GENERATION_PROFILE_FIELDS) {
+    if (generationProfile[field] !== undefined) body[field] = generationProfile[field];
+  }
   return (await requestJson(`/api/templates/${encodeURIComponent(id)}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ label, description, category, tags, hoverDescription }),
+    body: JSON.stringify(body),
   })).template;
 }
 

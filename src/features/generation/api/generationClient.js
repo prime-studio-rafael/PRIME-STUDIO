@@ -14,12 +14,13 @@ export async function fetchConfig() {
   return requestJson('/api/config');
 }
 
-export async function generateImage({ templateId, modelId, garmentFile, confirmPaid }) {
+export async function generateImage({ templateId, modelId, garmentFile, confirmPaid, additionalInstruction }) {
   const formData = new FormData();
   formData.append('templateId', templateId);
   formData.append('modelId', modelId);
   formData.append('confirmPaid', String(confirmPaid));
   formData.append('garmentImage', garmentFile);
+  if (additionalInstruction) formData.append('additionalInstruction', additionalInstruction);
 
   return requestJson('/api/generations', {
     method: 'POST',

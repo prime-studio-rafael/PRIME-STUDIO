@@ -250,4 +250,14 @@ describe('batches page', () => {
     const groupLabels = within(select).getAllByRole('group').map((group) => group.getAttribute('label'));
     expect(groupLabels).toEqual(['Moda Masculina', 'Moda Feminina']);
   });
+
+  it('blocks batch creation client-side when the selected Template has no prompt, without calling createBatch', async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Produção em Lotes' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Novo lote' }));
+    fireEvent.change(screen.getByLabelText('Nome'), { target: { value: 'Lote sem perfil' } });
+    fireEvent.change(await screen.findByLabelText('Template'), { target: { value: 'model-01' } });
+    expect(await screen.findByText(/Este Template ainda não tem um perfil de geração configurado\./)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Configure o perfil do Template' })).toBeDisabled();
+  });
 });

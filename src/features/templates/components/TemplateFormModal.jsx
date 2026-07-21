@@ -11,12 +11,25 @@ const TITLES = {
   replace: 'Substituir imagem',
 };
 
+// Limites espelhados de server/repositories/localTemplateRepository.js (TEMPLATE_PROMPT_MAX_LENGTH/
+// TEMPLATE_NEGATIVE_PROMPT_MAX_LENGTH) — nunca dois números diferentes entre backend e frontend.
+const PROMPT_MAX_LENGTH = 4000;
+const NEGATIVE_PROMPT_MAX_LENGTH = 2000;
+// Espelha ASPECT_RATIO_VALUES do mesmo arquivo. provider/modelId/resolution têm hoje uma única
+// opção real cada (openrouter / nano-banana-lite / 1K) — por instrução do produto, um campo com
+// uma só opção não vira <select> nesta tela; quando o catálogo tiver 2+ opções, esses controles
+// devem ser adicionados aqui do mesmo jeito que generationAspectRatio já está.
+const ASPECT_RATIO_OPTIONS = ['1:1', '4:5'];
+
 export default function TemplateFormModal({ open, mode, template, policy, categories = [], busy, onClose, onSubmit }) {
   const [label, setLabel] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState(DEFAULT_TEMPLATE_CATEGORY_ID);
   const [tagsInput, setTagsInput] = useState('');
   const [hoverDescription, setHoverDescription] = useState('');
+  const [prompt, setPrompt] = useState('');
+  const [negativePrompt, setNegativePrompt] = useState('');
+  const [generationAspectRatio, setGenerationAspectRatio] = useState('');
   const [file, setFile] = useState(null);
   const [assessment, setAssessment] = useState(null);
   const [inspecting, setInspecting] = useState(false);
@@ -34,6 +47,9 @@ export default function TemplateFormModal({ open, mode, template, policy, catego
     setCategory(template?.category || DEFAULT_TEMPLATE_CATEGORY_ID);
     setTagsInput((template?.tags || []).join(', '));
     setHoverDescription(template?.hoverDescription || '');
+    setPrompt(template?.prompt || '');
+    setNegativePrompt(template?.negativePrompt || '');
+    setGenerationAspectRatio(template?.generationAspectRatio || '');
     setFile(null);
     setAssessment(null);
     setLocalError('');
@@ -79,7 +95,10 @@ export default function TemplateFormModal({ open, mode, template, policy, catego
     try {
       setLocalError('');
       const tags = tagsInput.split(',').map((tag) => tag.trim()).filter(Boolean);
-      await onSubmit({ label: label.trim(), description: description.trim(), category, tags, hoverDescription: hoverDescription.trim(), file });
+      await onSubmit({
+        label: label.trim(), description: description.trim(), category, tags, hoverDescription: hoverDescription.trim(), file,
+        prompt: prompt.trim() || null, negativePrompt: negativePrompt.trim() || null, generationAspectRatio: generationAspectRatio || null,
+      });
     } catch (error) {
       setLocalError(error.message || 'Não foi possível salvar o template.');
     }
@@ -119,6 +138,30 @@ export default function TemplateFormModal({ open, mode, template, policy, catego
                 Texto do tooltip <span className="font-normal text-slate-400">(opcional — aparece ao passar o mouse)</span>
                 <input value={hoverDescription} onChange={(event) => setHoverDescription(event.target.value)} maxLength={160} disabled={busy} className="mt-2 w-full rounded-xl border border-slate-200 px-3.5 py-3 text-sm outline-none transition focus:border-slate-500 disabled:bg-slate-100" />
               </label>
+
+              <div className="border-t border-slate-100 pt-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Perfil de geração</p>
+                <p className="mt-1 text-xs leading-5 text-slate-500">Sem um prompt configurado, este Template fica bloqueado para gerações individuais e lotes.</p>
+              </div>
+              <label className="block text-sm font-semibold text-slate-800">
+                Prompt principal <span className="font-normal text-slate-400">(o que muda nesta categoria de produto)</span>
+                <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} maxLength={PROMPT_MAX_LENGTH} rows={5} disabled={busy} className="mt-2 w-full resize-y rounded-xl border border-slate-200 px-3.5 py-3 text-sm outline-none transition focus:border-slate-500 disabled:bg-slate-100" />
+                <span className="mt-1 block text-right text-[11px] text-slate-400">{prompt.length}/{PROMPT_MAX_LENGTH}</span>
+              </label>
+              <label className="block text-sm font-semibold text-slate-800">
+                Prompt negativo <span className="font-normal text-slate-400">(opcional — restrições próprias deste Template)</span>
+                <textarea value={negativePrompt} onChange={(event) => setNegativePrompt(event.target.value)} maxLength={NEGATIVE_PROMPT_MAX_LENGTH} rows={3} disabled={busy} className="mt-2 w-full resize-y rounded-xl border border-slate-200 px-3.5 py-3 text-sm outline-none transition focus:border-slate-500 disabled:bg-slate-100" />
+                <span className="mt-1 block text-right text-[11px] text-slate-400">{negativePrompt.length}/{NEGATIVE_PROMPT_MAX_LENGTH}</span>
+              </label>
+              {ASPECT_RATIO_OPTIONS.length > 1 && (
+                <label className="block text-sm font-semibold text-slate-800">
+                  Proporção da geração <span className="font-normal text-slate-400">(opcional)</span>
+                  <select value={generationAspectRatio} onChange={(event) => setGenerationAspectRatio(event.target.value)} disabled={busy} className="mt-2 w-full rounded-xl border border-slate-200 px-3.5 py-3 text-sm outline-none transition focus:border-slate-500 disabled:bg-slate-100">
+                    <option value="">Usar padrão do sistema</option>
+                    {ASPECT_RATIO_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                </label>
+              )}
             </>
           )}
 
