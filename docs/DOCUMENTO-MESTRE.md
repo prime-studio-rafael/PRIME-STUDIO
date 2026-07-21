@@ -1,8 +1,8 @@
 # PRIME STUDIO — Documento Mestre
 
-Versão: 1.7
+Versão: 1.8
 Estado: referência oficial do projeto  
-Última consolidação: 17 de julho de 2026 — Fase 6 (Biblioteca Profissional de Templates) **concluída oficialmente**, incluindo a correção de aderência (preview de Branding, nomes profissionais de model-01/model-02, paginação real na interface, lazy loading), validada e aprovada pelo usuário
+Última consolidação: 21 de julho de 2026 — registro oficial do **Perfil Completo de Geração por Template** (5 fases, já implementadas e publicadas) e da **Fase de Consolidação da Documentação** que reorganizou este e outros documentos.
 
 ## 1. Autoridade e controle de escopo
 
@@ -363,11 +363,32 @@ Estado: **concluída oficialmente em 17 de julho de 2026**.
 
 Detalhes: [FASE-6-IMPLEMENTACAO.md](./FASE-6-IMPLEMENTACAO.md).
 
+### Perfil Completo de Geração por Template
+
+Estado: **as 5 fases concluídas e publicadas em `main`** (17-21 de julho de 2026).
+
+Iniciativa estrutural distinta da Fase 6 acima (não é uma melhoria da Biblioteca de Templates, embora tenha sido registrada por engano dentro do mesmo arquivo até a Fase de Consolidação da Documentação). Origem: auditoria real que comprovou que todo Template usava o mesmo prompt fixo (`upper-garment-v2`), sem nenhuma diferenciação por categoria — inclusive um Template real de tênis que recebeu prompt de troca de camiseta.
+
+- **Fase 1** — schema aditivo do Template (`prompt`, `negativePrompt`, `provider`, `modelId`, `generationAspectRatio`, `resolution`, `promptVersion`), migração idempotente `schemaVersion` 2→3;
+- **Fase 2** — compositor central de prompt (`buildGenerationPrompt.js` + `globalGenerationRules.js`, regras universais sem menção a categoria), integração na geração individual, bloqueio de Template incompleto;
+- **Fase 3** — snapshot completo do perfil congelado em `batch.json` na criação do lote, paridade comprovada entre geração individual e lote;
+- **Fase 4** — interface: formulário de edição do perfil no Template, badge "Perfil de geração pendente"/"Perfil configurado", campo "Instrução adicional desta geração", bloqueio client-side do custo;
+- **Fase 5** — metadata completa e auditável no Resultado (`templateCategory`, `inputTemplatePrompt`, `inputTemplateNegativePrompt`, `additionalInstruction`, `provider`, `origin` derivado), correção do bug de refresh da fila "Aguardando aprovação".
+
+Nenhuma regra de segurança, concorrência, retry ou arquitetura foi alterada por esta iniciativa — todas as adições foram aditivas, com compatibilidade total com Templates, lotes e Resultados anteriores.
+
+Detalhes completos, fase por fase: [FASE-TEMPLATE-PROFILE-IMPLEMENTACAO.md](./FASE-TEMPLATE-PROFILE-IMPLEMENTACAO.md). Contrato de dados consolidado (Template, lote, Resultado): [DATA_CONTRACT.md](./DATA_CONTRACT.md).
+
 #### Próximas melhorias aprovadas, ainda não iniciadas
 
-- **download em massa das imagens finais**, ampliando o download em lote já validado na Fase 5.
+- **download em massa das imagens finais**, ampliando o download em lote já validado na Fase 5 (Produção em Lotes).
 
 Nenhuma dessas melhorias foi iniciada; permanecem fora do escopo até aprovação explícita de início.
+
+#### Pendências conhecidas do Perfil Completo de Geração por Template (registradas, sem aprovação de início)
+
+- roteamento real entre múltiplos providers/modelos — hoje só existe um provider (`openrouter`) e um modelo (`nano-banana-lite`), então os campos `provider`/`modelId` do Template não têm o que rotear de fato;
+- possível renomeação de `generationAspectRatio` para `aspectRatio` no Template, hoje bloqueada pela colisão de nome com o campo de proporção da própria imagem.
 
 ## 7. Critérios cumpridos para passagem da Fase 2
 
@@ -400,5 +421,10 @@ A declaração `FASE 2 CONCLUÍDA` foi registrada depois da confirmação de tod
 - [Fase 5 — Produção em Lotes](./FASE-05-IMPLEMENTACAO.md)
 - [Branding/Logo — Aplicação Automática de Marca](./FASE-BRANDING-IMPLEMENTACAO.md)
 - [Fase 6 — Biblioteca Profissional de Templates](./FASE-6-IMPLEMENTACAO.md)
+- [Perfil Completo de Geração por Template (5 fases)](./FASE-TEMPLATE-PROFILE-IMPLEMENTACAO.md)
+- [Contrato de dados — Template, Lote, Resultado](./DATA_CONTRACT.md)
+- [Contexto mestre do projeto para IAs](./PROJECT_MASTER_CONTEXT.md)
+- [Ordem de leitura recomendada](./START_HERE.md)
+- [Regras permanentes para qualquer IA](../AGENTS.md)
 
 Em caso de conflito de escopo, este Documento Mestre prevalece.

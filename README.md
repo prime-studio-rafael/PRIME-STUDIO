@@ -15,8 +15,11 @@ O escopo e a ordem das fases são definidos pelo [Documento Mestre](docs/DOCUMEN
 - Fase 5: **concluída oficialmente em 17 de julho de 2026**.
 - Branding/Logo: **concluído oficialmente (MVP) em 17 de julho de 2026** — ver [FASE-BRANDING-IMPLEMENTACAO.md](docs/FASE-BRANDING-IMPLEMENTACAO.md).
 - Fase 6 — Biblioteca de Templates: **concluída oficialmente em 17 de julho de 2026** — ver [FASE-6-IMPLEMENTACAO.md](docs/FASE-6-IMPLEMENTACAO.md).
+- Perfil Completo de Geração por Template (5 fases): **concluído e publicado entre 17 e 21 de julho de 2026** — ver [FASE-TEMPLATE-PROFILE-IMPLEMENTACAO.md](docs/FASE-TEMPLATE-PROFILE-IMPLEMENTACAO.md).
 
 O encerramento está registrado em [FASE-02-ENCERRAMENTO.md](docs/FASE-02-ENCERRAMENTO.md) e a evolução consolidada do projeto em [HISTORICO.md](docs/HISTORICO.md).
+
+**Para uma IA que nunca viu este projeto**: comece por [docs/START_HERE.md](docs/START_HERE.md), que explica a ordem de leitura de toda a documentação.
 
 ## Requisitos
 
@@ -99,6 +102,16 @@ O catálogo e as imagens são locais e ignorados pelo Git. A arquitetura, os end
 
 Cada template pode ter uma **categoria** (👕 Moda Masculina, 👩 Moda Feminina, 👟 Tênis Masculino, 👟 Tênis Feminino, ⌚ Acessórios, 👜 Bolsas ou Sem categoria), **tags** e um texto de **tooltip** exibido ao passar o mouse ou navegar por teclado. A tela Templates e o seletor de modelo-base na Nova geração mostram uma barra de busca, filtro por categoria e paginação real (busca/categoria são enviadas ao backend; um botão **"Carregar mais"** busca a próxima página, sem baixar o catálogo inteiro para filtrar no navegador). Sem limite máximo de templates codificado. Os dois templates iniciais (`model-01`, `model-02`) têm nomes profissionais e categoria `Moda Masculina` desde a instalação; catálogos já existentes recebem essa correção automaticamente, sem sobrescrever uma personalização já feita pelo usuário. Consulte [FASE-6-IMPLEMENTACAO.md](docs/FASE-6-IMPLEMENTACAO.md) para o schema, a migração e as limitações desta fase.
 
+### Perfil de geração de cada Template
+
+Cada Template pode ter um **prompt principal** (o que muda nessa categoria de produto, ex. "trocar o calçado" para tênis), um **prompt negativo** opcional e uma **proporção de geração**, editáveis diretamente no formulário de Template. Um Template sem prompt configurado mostra o badge **"Perfil de geração pendente"** na tela Templates, na Nova geração e na Produção em Lotes, e fica bloqueado para gerar até ser configurado — evita que um Template de uma categoria (ex. tênis) receba silenciosamente o prompt de outra (ex. camisetas). Tanto a geração individual quanto os itens de lote usam exatamente o mesmo compositor de prompt (`templatePrompt` + regras universais + prompt negativo + instrução adicional, nessa ordem).
+
+### Instrução adicional desta geração
+
+Um campo de texto opcional (até 500 caracteres), disponível tanto na Nova Geração quanto na criação de um lote, para uma instrução pontual que vale só para aquela execução — nunca altera o Template. Fica registrada na metadata do Resultado gerado.
+
+Consulte [FASE-TEMPLATE-PROFILE-IMPLEMENTACAO.md](docs/FASE-TEMPLATE-PROFILE-IMPLEMENTACAO.md) para o histórico completo desta iniciativa (5 fases) e [DATA_CONTRACT.md](docs/DATA_CONTRACT.md) para o contrato de dados atual do Template, do lote e do Resultado.
+
 ## Salvamento
 
 Imagens concluídas e metadata mínimo são salvos automaticamente em:
@@ -122,6 +135,8 @@ storage/results/<generation-id>/
 Resultados anteriores no formato imagem + JSON continuam compatíveis. Abra **Resultados** na sidebar para filtrar, comparar, aprovar, reprovar, baixar ou excluir gerações locais. Referências históricas que nunca foram salvas aparecem como indisponíveis.
 
 Ao aprovar ou reprovar um resultado, o modal avança automaticamente para o próximo resultado com revisão pendente, na mesma ordem da lista (mais recente para o mais antigo). Quando não há mais pendentes, o modal fecha e uma mensagem discreta confirma o fim da revisão. Com o filtro **Aprovados** ativo, o botão **Baixar todas as aprovadas** gera um único ZIP local com os arquivos finais já persistidos, bytes e extensões originais.
+
+O detalhe de cada resultado mostra também, quando existirem, a **categoria** do Template usado, a **origem** (Individual ou Lote, com o identificador do lote) e a **instrução adicional** daquela execução — ver [DATA_CONTRACT.md](docs/DATA_CONTRACT.md) para o contrato completo da metadata.
 
 O diretório ainda não existe enquanto nenhuma geração for concluída; ele será criado automaticamente no primeiro sucesso.
 
@@ -165,7 +180,7 @@ npm test
 npm run build
 ```
 
-Os testes usam respostas simuladas e não acessam o OpenRouter. Estado atual: 38 arquivos e 252 testes aprovados, incluindo os 196 testes anteriores à Fase 6.
+Os testes usam respostas simuladas e não acessam o OpenRouter. Estado atual: 41 arquivos e 309 testes aprovados.
 
 ## Limitações intencionais
 
