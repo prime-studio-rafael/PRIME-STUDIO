@@ -4,6 +4,8 @@ Documento subordinado ao [Documento Mestre](./DOCUMENTO-MESTRE.md).
 
 Estado: **FASE 4 CONCLUÍDA OFICIALMENTE em 16 de julho de 2026**.
 
+> Nota histórica: menções abaixo a lotes ou à Fase 5 como ausentes registram o estado existente no encerramento da Fase 4. A Produção em Lotes foi implementada e concluída posteriormente; o estado atual está no Documento Mestre.
+
 ## Objetivo entregue
 
 A view **Resultados** lista, filtra, compara e avalia as gerações preservadas em `storage/results/`, sem banco, autenticação, React Router ou serviço externo. A leitura do histórico nunca acessa o OpenRouter.

@@ -4,6 +4,8 @@ Documento subordinado ao [Documento Mestre](./DOCUMENTO-MESTRE.md).
 
 Estado: **BRANDING/LOGO OFICIALMENTE CONCLUÍDO (MVP) em 17 de julho de 2026**, validado visualmente pelo usuário com um resultado real e a logo aprovada da PRIME STORE.
 
+> Nota histórica: referências abaixo a uma futura “Fase 6” para tornar posição, escala e margem configuráveis eram uma expectativa registrada no encerramento do Branding. A Fase 6 realizada depois tratou da Biblioteca Profissional de Templates e não tornou esses parâmetros configuráveis. Eles permanecem fixos no estado atual.
+
 ## Objetivo
 
 Permitir escolher uma logo da loja, validar tecnicamente o arquivo, exibir preview para aprovação explícita e aplicar essa logo automaticamente sobre as imagens finais por composição tradicional (overlay), sem uso de IA para interpretar, recriar ou redesenhar a logo.
@@ -97,7 +99,7 @@ Depois da validação visual lado a lado (original vs. com logo) sobre um result
 - preserva a proporção da logo; nunca amplia além da resolução original enviada;
 - nunca corta nem deforma; a imagem final mantém as mesmas dimensões do resultado original.
 
-Nesta fase, **posição, escala e margem são fixas e não configuráveis pela interface** — não há editor visual, slider ou seleção de posição. Essas configurações só se tornarão ajustáveis pelo usuário na **Fase 6**.
+Nesta fase, **posição, escala e margem são fixas e não configuráveis pela interface** — não há editor visual, slider ou seleção de posição. Uma eventual configuração desses parâmetros pertence a uma fase futura ainda não aprovada; não integrou a Fase 6 — Biblioteca Profissional de Templates.
 
 ## Qualidade JPEG/PNG/WebP
 
@@ -184,7 +186,7 @@ A escala de 9% e a margem de 3% foram aprovadas como **padrão definitivo do PRI
 ## Limitações intencionais desta fase
 
 - uma única logo global aprovada por vez (sem múltiplas logos ou perfis de marca);
-- posição, escala e margem fixas em 9%/3%/canto inferior direito — sem editor visual, sem arrastar, sem slider, sem opacidade configurável e sem opção de configuração pela interface nesta fase (essas configurações só se tornarão ajustáveis na Fase 6);
+- posição, escala e margem fixas em 9%/3%/canto inferior direito — sem editor visual, sem arrastar, sem slider, sem opacidade configurável e sem opção de configuração pela interface nesta fase;
 - sem marca-d'água repetida, sem texto personalizado, sem SVG;
 - sem IA para interpretar, recriar ou redesenhar a logo, e sem remoção de fundo por IA;
 - sem aplicação diferente por template ou por lote — o toggle é global;

@@ -2,7 +2,9 @@
 
 Documento subordinado ao [Documento Mestre](./DOCUMENTO-MESTRE.md).
 
-Estado: **FASE 3 TECNICAMENTE CONCLUÍDA em 16 de julho de 2026; aguardando somente autorização separada para commit e push**.
+Estado atual: **FASE 3 CONCLUÍDA, VALIDADA E PUBLICADA em 16 de julho de 2026**.
+
+> Nota histórica: este documento foi redigido antes do commit e do push de encerramento. Menções abaixo a “aguardando autorização”, “Fase 4 não iniciada” ou limitações daquele momento registram o estado existente no fechamento técnico da Fase 3, não o estado atual do projeto.
 
 ## 1. Objetivo entregue
 

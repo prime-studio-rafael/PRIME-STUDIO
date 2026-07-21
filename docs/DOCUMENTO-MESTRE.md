@@ -1,8 +1,8 @@
 # PRIME STUDIO — Documento Mestre
 
-Versão: 1.8
+Versão: 1.9
 Estado: referência oficial do projeto  
-Última consolidação: 21 de julho de 2026 — registro oficial do **Perfil Completo de Geração por Template** (5 fases, já implementadas e publicadas) e da **Fase de Consolidação da Documentação** que reorganizou este e outros documentos.
+Última consolidação: 21 de julho de 2026 — encerramento documental definitivo da **Fase 6**, com alinhamento entre código, README, Histórico, documentos de fase e contexto mestre.
 
 ## 1. Autoridade e controle de escopo
 
@@ -19,7 +19,7 @@ Regras de governança:
 
 ## 2. Objetivo do produto nesta etapa
 
-O PRIME STUDIO é um aplicativo local para validar a troca de roupas superiores em fotografias de modelo por meio do OpenRouter.
+O PRIME STUDIO é um aplicativo local para validar a troca de peças de vestuário e produtos em fotografias de modelo por meio do OpenRouter, conforme o perfil configurado em cada Template.
 
 O objetivo atual é provar, com baixo risco e custo controlado:
 
@@ -39,14 +39,15 @@ O projeto preserva a proposta visual e funcional aprovada no PRIME IA STUDIO do 
 - Vite;
 - Tailwind CSS;
 - JavaScript;
-- uma SPA local com as views Nova geração, Templates, Resultados e Produção em Lotes, sem React Router;
+- uma SPA local com as views Nova geração, Templates, Resultados, Produção em Lotes e Branding, sem React Router;
 - estado mantido em memória durante a sessão.
 
 ### Backend local
 
 - Node.js;
 - Express;
-- upload multipart em memória;
+- upload multipart em memória para geração individual, Templates e Branding;
+- upload temporário em disco para a criação de lotes, removido depois da validação e persistência;
 - serviço de geração separado do cliente OpenRouter;
 - serviço e repositório local de templates;
 - catálogo versionado em JSON com escrita atômica e backup;
@@ -72,7 +73,9 @@ O projeto preserva a proposta visual e funcional aprovada no PRIME IA STUDIO do 
 - roupa somente em memória até a Fase 3;
 - a partir da Fase 4, template e roupa das novas gerações são preservados localmente para comparação histórica;
 - template lido do catálogo local;
-- catálogo e imagens de templates em `storage/templates/`.
+- catálogo e imagens de templates em `storage/templates/`;
+- lotes, snapshots e roupas em `storage/batches/`;
+- configuração e logo aprovada/pendente em `storage/branding/`;
 
 ### Infraestrutura deliberadamente ausente
 

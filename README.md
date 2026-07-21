@@ -1,6 +1,6 @@
 # PRIME IA STUDIO — MVP local
 
-Protótipo local para validar a troca de roupas superiores em fotografias de modelo usando o OpenRouter.
+Protótipo local para validar a troca de peças de vestuário e produtos em fotografias de modelo usando o OpenRouter.
 
 ## Referência oficial e estado do projeto
 
@@ -184,13 +184,12 @@ Os testes usam respostas simuladas e não acessam o OpenRouter. Estado atual: 41
 
 ## Limitações intencionais
 
-- uma aplicação local com as views Nova geração e Templates, sem React Router;
+- uma aplicação local com as views Nova geração, Templates, Resultados, Produção em Lotes e Branding, sem React Router;
 - somente Nano Banana 2 Lite;
-- somente roupas superiores;
+- categorias atuais: moda masculina, moda feminina, tênis, acessórios e bolsas, conforme o perfil configurado em cada Template;
 - proporção efetiva validada em 1:1 na Fase 2; 4:5 é melhoria futura;
 - resolução fixa 1K;
-- sem banco, autenticação ou infraestrutura em nuvem;
-- sem banco, autenticação, fila ou infraestrutura em nuvem;
+- sem banco, autenticação, fila remota ou infraestrutura em nuvem; a fila de lotes é exclusivamente local;
 - sem retry automático;
 - templates atuais são fotografias locais JPEG válidas para a geração 1:1; a futura adoção de 4:5 exigirá templates compatíveis;
 - chave persistida apenas no Chaves do macOS; o `.env` é somente fallback local.

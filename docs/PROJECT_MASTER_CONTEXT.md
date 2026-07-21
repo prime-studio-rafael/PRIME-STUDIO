@@ -20,7 +20,7 @@ Objetivo declarado (ver Documento Mestre, seção 2): provar, com baixo risco e 
 | Build/dev server | Vite | `^8.1.5` |
 | Estilo | Tailwind CSS (`@tailwindcss/vite`) | `^4.3.3` |
 | Backend | Node.js + Express | `^5.2.1` |
-| Upload | `multer` (memória) | `^2.2.0` |
+| Upload | `multer` (memória para geração/Templates/Branding; disco temporário para lotes) | `^2.2.0` |
 | Imagem (overlay de logo) | `sharp` | `^0.35.3` |
 | ZIP de download | `yazl` (gerar) / `yauzl` (dev) | `^3.3.1` / `^3.4.0` |
 | Ícones | `lucide-react` | `^1.24.0` |

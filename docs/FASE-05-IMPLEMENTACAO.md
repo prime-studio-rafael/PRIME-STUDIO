@@ -4,6 +4,8 @@ Documento subordinado ao [Documento Mestre](./DOCUMENTO-MESTRE.md).
 
 Estado: **FASE 5 OFICIALMENTE CONCLUÍDA em 17 de julho de 2026**, validada com lote real e correções de fluxo de revisão aplicadas.
 
+> Nota histórica: as seções deste documento foram escritas em momentos sucessivos da Fase 5. Estados como “aguardando validação” e listas de melhorias “ainda não iniciadas” registram aquele momento. Branding e Fase 6 foram implementados posteriormente; o Documento Mestre contém o estado atual.
+
 ## Arquitetura
 
 `BatchesPage → batchesClient → /api/batches → BatchService → BatchQueue → GenerationExecutor → OpenRouter + LocalResultStorage`.
@@ -88,7 +90,7 @@ Validação: 12 novos testes de frontend (`tests/frontend/batchesManagement.test
 
 ## Refinamento visual adicional — tabela operacional da Produção em Lotes
 
-Estado: **implementado em 17 de julho de 2026, aguardando validação final do usuário**. Não conclui oficialmente esta fase. Melhoria exclusivamente visual sobre o que a Fase 5.1 já entregou — nenhum endpoint, schema, service, hook, `GenerationExecutor`, fila ou regra de concorrência/retry foi alterado.
+Estado naquele momento: **implementado em 17 de julho de 2026 e então aguardando validação final do usuário**. O refinamento foi posteriormente validado e publicado. Melhoria exclusivamente visual sobre o que a Fase 5.1 já entregou — nenhum endpoint, schema, service, hook, `GenerationExecutor`, fila ou regra de concorrência/retry foi alterado.
 
 Escopo implementado, em três etapas sucessivas (auditoria → aprovação → implementação, com validação visual a cada etapa):
 
@@ -102,9 +104,9 @@ Escopo implementado, em três etapas sucessivas (auditoria → aprovação → i
 
 Validação: `tests/frontend/batchesManagement.test.jsx` cresceu de 12 para 22 testes (cobrindo percentual por estágio, traço em cancelled/interrupted, tooltip com o texto exato e acessível por foco, wrapper com scroll horizontal restrito à tabela, ausência de ações de retry/exclusão por item, e os 7 cabeçalhos de coluna sempre presentes). Suíte completa: 261 testes em 38 arquivos, build aprovado, `git diff --check` limpo, em execuções repetidas. Validação manual feita com o lote real de 8 itens já existente, sem nova geração e sem chamada ao OpenRouter.
 
-## Próximas melhorias aprovadas, ainda não iniciadas
+## Próximas melhorias registradas naquele momento
 
 - **Branding/Logo**: upload e validação de logo transparente, aprovação explícita do usuário e aplicação automática por overlay tradicional (sem uso de IA para redesenhar a logo), mantendo sempre a versão original sem logo disponível;
 - **download em massa das imagens finais** (ampliação do download em lote já validado na Fase 5).
 
-Nenhuma dessas melhorias foi iniciada. A Fase 6 também não foi iniciada.
+Naquele momento, nenhuma dessas melhorias havia sido iniciada e a Fase 6 ainda não havia começado. Branding e a Fase 6 foram concluídos posteriormente; o download ZIP das aprovadas também passou a integrar o produto.

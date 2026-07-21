@@ -85,6 +85,12 @@ Iniciativa que deu a cada Template um perfil de geração completo (prompt, prom
 
 ## Fase de Consolidação da Documentação
 
-Estado: **em andamento em 21 de julho de 2026**.
+Estado: **concluída e publicada em 21 de julho de 2026** (`1791def`).
 
 Reorganização e atualização de toda a documentação do projeto (sem nenhuma alteração de código, regra de negócio ou comportamento), para que o repositório seja autossuficiente para qualquer IA continuar o desenvolvimento sem depender de histórico de conversas. Criação de `docs/START_HERE.md`, `AGENTS.md`, `docs/PROJECT_MASTER_CONTEXT.md` e `docs/DATA_CONTRACT.md`; separação do conteúdo do Perfil Completo de Geração por Template para seu próprio documento; atualização de `README.md`, `DOCUMENTO-MESTRE.md` e deste `HISTORICO.md`.
+
+## 21 de julho de 2026 — Encerramento documental definitivo da Fase 6
+
+Estado: **concluído**.
+
+Revisão final sem mudança funcional: alinhamento do escopo atual no README e no Documento Mestre, distinção entre uploads em memória e temporários em disco, atualização do estado da consolidação e identificação explícita de informações históricas superadas nos documentos das Fases 3, 4, 5 e Branding. O diretório gerado `graphify-out/` foi confirmado como artefato local de ferramenta e incluído no `.gitignore`.
