@@ -39,6 +39,8 @@ Só leia estes se precisar entender o histórico ou o raciocínio detalhado por 
 5. [`FASE-BRANDING-IMPLEMENTACAO.md`](./FASE-BRANDING-IMPLEMENTACAO.md) — Branding/Logo
 6. [`FASE-6-IMPLEMENTACAO.md`](./FASE-6-IMPLEMENTACAO.md) — Biblioteca Profissional de Templates
 7. [`FASE-TEMPLATE-PROFILE-IMPLEMENTACAO.md`](./FASE-TEMPLATE-PROFILE-IMPLEMENTACAO.md) — Perfil Completo de Geração por Template (5 fases)
+8. [`FASE-07-IMPLEMENTACAO.md`](./FASE-07-IMPLEMENTACAO.md) — Marketing Studio V1
+9. [`FASE-07-2-IMPLEMENTACAO.md`](./FASE-07-2-IMPLEMENTACAO.md) — Inteligência Operacional do Marketing Studio
 
 **Atenção**: os itens 6 e 7 acima são **iniciativas diferentes**, apesar de nomes parecidos ("Fase 6" ≠ "Fases 1-5 do Perfil de Templates"). Até 21 de julho de 2026, o conteúdo do item 7 estava incorretamente registrado dentro do arquivo do item 6 — já foi separado, mas fique atento se encontrar referências antigas a essa mistura.
 

@@ -2,7 +2,7 @@
 
 Documento subordinado ao [Documento Mestre](./DOCUMENTO-MESTRE.md), que continua sendo a autoridade final em caso de conflito de escopo. Este documento existe para que uma IA (ou pessoa) que nunca viu o projeto entenda o estado atual sem precisar reconstruir meses de conversas ou ler todos os documentos de fase em ordem cronológica.
 
-Última verificação contra o código: 21 de julho de 2026.
+Última verificação contra o código: 21 de julho de 2026 — Marketing Studio V1 concluído; Fases 7.1 e 7.2 aprovadas na validação final.
 
 ---
 
@@ -21,7 +21,7 @@ Objetivo declarado (ver Documento Mestre, seção 2): provar, com baixo risco e 
 | Estilo | Tailwind CSS (`@tailwindcss/vite`) | `^4.3.3` |
 | Backend | Node.js + Express | `^5.2.1` |
 | Upload | `multer` (memória para geração/Templates/Branding; disco temporário para lotes) | `^2.2.0` |
-| Imagem (overlay de logo) | `sharp` | `^0.35.3` |
+| Imagem (overlay de logo e Stories 9:16) | `sharp` | `^0.35.3` |
 | ZIP de download | `yazl` (gerar) / `yauzl` (dev) | `^3.3.1` / `^3.4.0` |
 | Ícones | `lucide-react` | `^1.24.0` |
 | Testes | Vitest + Testing Library + jsdom | `^4.1.10` |
@@ -42,6 +42,7 @@ PRIME-STUDIO/
 │       ├── results/              # Resultados
 │       ├── batches/               # Produção em Lotes
 │       ├── branding/             # Branding/Logo
+│       ├── marketing/            # Planejamento semanal e Stories 9:16
 │       └── settings/             # Configurações (chave OpenRouter)
 ├── server/                       # Backend (Node + Express)
 │   ├── routes/                   # Rotas HTTP finas — nenhuma regra de negócio aqui
@@ -55,8 +56,8 @@ PRIME-STUDIO/
 │   ├── config/                   # Configuração fixa de geração (modelo, resolução, proporção)
 │   └── utils/                    # Validação de imagem, metadata, erros
 ├── shared/                       # Código compartilhado entre frontend e backend (políticas/constantes)
-├── storage/                      # Dados locais em disco (Git-ignorado) — templates, batches, results
-├── tests/{server,frontend}/      # 41 arquivos, 309 testes (Vitest)
+├── storage/                      # Dados locais em disco (Git-ignorado) — templates, batches, results, branding, marketing
+├── tests/{server,frontend}/      # 46 arquivos, 330 testes (Vitest)
 ├── docs/                         # Documentação (este diretório)
 ├── .claude/skills/prime-studio/  # Regras permanentes para o Claude Code (ver AGENTS.md para a versão genérica)
 └── public/templates/             # Imagens seed dos templates model-01/model-02
@@ -77,6 +78,8 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 7. **Fase 6** — Biblioteca Profissional de Templates: categoria, tags, tooltip, paginação real, busca.
 8. **Perfil Completo de Geração por Template** (5 fases) — cada Template ganhou seu próprio prompt/negativePrompt/provider/modelo/proporção/resolução, com compositor central de prompt, snapshot completo em lotes, interface de edição e metadata auditável nos Resultados. Detalhes: [FASE-TEMPLATE-PROFILE-IMPLEMENTACAO.md](./FASE-TEMPLATE-PROFILE-IMPLEMENTACAO.md).
 9. **Fase de Consolidação da Documentação** (esta fase) — sem código novo, só documentação.
+10. **Fase 7.1 — Fundação do Marketing Studio** — planejamento semanal com Resultados aprovados e renderer local 9:16, sem IA.
+11. **Fase 7.2 — Inteligência Operacional** — proposta determinística, prioridade, categorias, estados editoriais e semanas encerradas somente leitura.
 
 ## 5. Fluxo completo (geração individual)
 
@@ -111,6 +114,8 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 | Tela Resultados | `src/features/results/` |
 | Tela Produção em Lotes | `src/features/batches/` |
 | Tela Branding | `src/features/branding/` |
+| Marketing Studio | `src/features/marketing/`, `server/services/marketingService.js`, `server/repositories/localMarketingRepository.js` |
+| Renderer 9:16 | `server/services/storyRenderer.js` |
 
 ## 7. Decisões importantes (por que, não só o quê)
 
@@ -122,6 +127,8 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 - **Nenhum fallback de prompt por suposição** — um Template ou snapshot de lote sem perfil configurado é sempre bloqueado, nunca recebe silenciosamente o prompt de outra categoria (esta foi a causa raiz do bug original que motivou toda a iniciativa do Perfil de Templates).
 - **Categorias fixas, sem CRUD via UI** (Fase 6) — catálogo versionado em código, gestão de categorias fica para uma fase futura.
 - **Branding é composição local, nunca IA** — escala/margem/posição fixas (9%/3%/inferior direita), validadas visualmente, não configuráveis nesta fase.
+- **Marketing preserva a própria fonte** — o `sourceResultId` mantém rastreabilidade, mas cada semana copia o asset aprovado para não quebrar se o Resultado for excluído depois.
+- **Stories são composição local, nunca IA** — três layouts fixos, Sharp no backend, 1080×1920 WebP e zero chamada externa.
 
 ## 8. Regras do projeto (resumo — ver [AGENTS.md](../AGENTS.md) para a versão completa)
 
@@ -144,7 +151,6 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 - Roteamento real entre múltiplos providers/modelos, quando houver um segundo provider de fato.
 - Possível renomeação de `generationAspectRatio`, hoje bloqueada pela colisão de nomes (ver seção 9).
 - CRUD de categorias via UI (hoje fixas em código).
-- Módulo de Marketing — **fora de escopo desta consolidação**; não confundir com nenhuma pendência real do produto atual.
 
 ## 11. Roadmap
 

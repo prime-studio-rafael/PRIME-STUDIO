@@ -1,8 +1,8 @@
 # PRIME STUDIO — Documento Mestre
 
-Versão: 1.9
+Versão: 2.0
 Estado: referência oficial do projeto  
-Última consolidação: 21 de julho de 2026 — encerramento documental definitivo da **Fase 6**, com alinhamento entre código, README, Histórico, documentos de fase e contexto mestre.
+Última consolidação: 21 de julho de 2026 — **Marketing Studio V1 concluído**, com Fases 7.1 e 7.2 aprovadas na validação final.
 
 ## 1. Autoridade e controle de escopo
 
@@ -39,7 +39,7 @@ O projeto preserva a proposta visual e funcional aprovada no PRIME IA STUDIO do 
 - Vite;
 - Tailwind CSS;
 - JavaScript;
-- uma SPA local com as views Nova geração, Templates, Resultados, Produção em Lotes e Branding, sem React Router;
+- uma SPA local com as views Nova geração, Templates, Resultados, Produção em Lotes, Branding e Marketing Studio, sem React Router;
 - estado mantido em memória durante a sessão.
 
 ### Backend local
@@ -76,6 +76,7 @@ O projeto preserva a proposta visual e funcional aprovada no PRIME IA STUDIO do 
 - catálogo e imagens de templates em `storage/templates/`;
 - lotes, snapshots e roupas em `storage/batches/`;
 - configuração e logo aprovada/pendente em `storage/branding/`;
+- semanas, fontes preservadas e Stories 9:16 em `storage/marketing/`;
 
 ### Infraestrutura deliberadamente ausente
 
@@ -382,6 +383,43 @@ Nenhuma regra de segurança, concorrência, retry ou arquitetura foi alterada po
 
 Detalhes completos, fase por fase: [FASE-TEMPLATE-PROFILE-IMPLEMENTACAO.md](./FASE-TEMPLATE-PROFILE-IMPLEMENTACAO.md). Contrato de dados consolidado (Template, lote, Resultado): [DATA_CONTRACT.md](./DATA_CONTRACT.md).
 
+### Fase 7.1 — Fundação do Marketing Studio
+
+Estado: **aprovada tecnicamente em 21 de julho de 2026; preservada integralmente e ainda sem commit/push**.
+
+- módulo independente na SPA, sem alterar os contratos de Template, Lote ou Resultado;
+- utiliza exclusivamente Resultados aprovados como fontes;
+- copia o asset original ou com Branding para a semana, preservando históricos;
+- semanas locais iniciadas na segunda-feira, timezone `America/Sao_Paulo`, com planejamento por dia, horário e ordem;
+- identificação manual por `productLabel` e `productKey`, sem criar entidade Produto;
+- renderer local com `sharp`, sem IA, produzindo WebP 1080×1920 com proporção preservada;
+- três layouts fixos: Produto em destaque, Minimalista e Oferta;
+- logo aprovada obrigatória, textos opcionais e download manual;
+- estados de renderização `pending`, `ready` e `failed`, sem retry;
+- aprovação semanal e retorno automático para `draft` após alteração estrutural;
+- Calendário, Stories, Histórico e próxima publicação enquanto o app estiver aberto;
+- persistência em `storage/marketing/` com escrita atômica, backup e proteção contra path traversal;
+- nenhum OpenRouter, crédito, banco, autenticação, nuvem, publicação automática, editor livre ou drag-and-drop.
+
+Detalhes e evidências: [FASE-07-IMPLEMENTACAO.md](./FASE-07-IMPLEMENTACAO.md).
+
+### Fase 7.2 — Inteligência Operacional
+
+Estado: **concluída e aprovada na validação final em 21 de julho de 2026**.
+
+- proposta semanal automática, determinística e limitada a Resultados aprovados selecionados;
+- prioridade explícita, alternância de categorias e rejeição de Resultado duplicado;
+- estados editoriais `planned`, `ready` e `published`, sem substituir o estado técnico de renderização;
+- card de próxima publicação e indicação de atraso enquanto o aplicativo estiver aberto;
+- acesso ao Resultado original pela operação de Stories;
+- categorias e estados no Calendário;
+- categorias, totais editoriais e data de aprovação no Histórico;
+- estado `closed` para semanas encerradas e bloqueio de mutações;
+- extensão aditiva e compatível com semanas da Fase 7.1;
+- nenhuma IA, OpenRouter, publicação automática, banco ou integração externa.
+
+Detalhes e evidências: [FASE-07-2-IMPLEMENTACAO.md](./FASE-07-2-IMPLEMENTACAO.md).
+
 #### Próximas melhorias aprovadas, ainda não iniciadas
 
 - **download em massa das imagens finais**, ampliando o download em lote já validado na Fase 5 (Produção em Lotes).
@@ -425,6 +463,8 @@ A declaração `FASE 2 CONCLUÍDA` foi registrada depois da confirmação de tod
 - [Branding/Logo — Aplicação Automática de Marca](./FASE-BRANDING-IMPLEMENTACAO.md)
 - [Fase 6 — Biblioteca Profissional de Templates](./FASE-6-IMPLEMENTACAO.md)
 - [Perfil Completo de Geração por Template (5 fases)](./FASE-TEMPLATE-PROFILE-IMPLEMENTACAO.md)
+- [Fase 7 — Marketing Studio V1](./FASE-07-IMPLEMENTACAO.md)
+- [Fase 7.2 — Inteligência Operacional](./FASE-07-2-IMPLEMENTACAO.md)
 - [Contrato de dados — Template, Lote, Resultado](./DATA_CONTRACT.md)
 - [Contexto mestre do projeto para IAs](./PROJECT_MASTER_CONTEXT.md)
 - [Ordem de leitura recomendada](./START_HERE.md)

@@ -16,6 +16,8 @@ O escopo e a ordem das fases são definidos pelo [Documento Mestre](docs/DOCUMEN
 - Branding/Logo: **concluído oficialmente (MVP) em 17 de julho de 2026** — ver [FASE-BRANDING-IMPLEMENTACAO.md](docs/FASE-BRANDING-IMPLEMENTACAO.md).
 - Fase 6 — Biblioteca de Templates: **concluída oficialmente em 17 de julho de 2026** — ver [FASE-6-IMPLEMENTACAO.md](docs/FASE-6-IMPLEMENTACAO.md).
 - Perfil Completo de Geração por Template (5 fases): **concluído e publicado entre 17 e 21 de julho de 2026** — ver [FASE-TEMPLATE-PROFILE-IMPLEMENTACAO.md](docs/FASE-TEMPLATE-PROFILE-IMPLEMENTACAO.md).
+- Fase 7.1 — Fundação do Marketing Studio: **aprovada tecnicamente em 21 de julho de 2026** — ver [FASE-07-IMPLEMENTACAO.md](docs/FASE-07-IMPLEMENTACAO.md).
+- Fase 7.2 — Inteligência Operacional: **concluída e aprovada em 21 de julho de 2026** — ver [FASE-07-2-IMPLEMENTACAO.md](docs/FASE-07-2-IMPLEMENTACAO.md).
 
 O encerramento está registrado em [FASE-02-ENCERRAMENTO.md](docs/FASE-02-ENCERRAMENTO.md) e a evolução consolidada do projeto em [HISTORICO.md](docs/HISTORICO.md).
 
@@ -150,6 +152,18 @@ A tela mostra a contagem de lotes e um indicador discreto quando há lote em exe
 
 Na view **Branding** da sidebar, é possível enviar uma logo PNG com transparência real, revisar a validação técnica (dimensões, transparência, área útil da arte) e aprová-la explicitamente. A mesma tela mostra uma prévia **Original × Com logo** lado a lado, usando uma fotografia local já existente e a composição real (sem IA) — funciona com ou sem logo aprovada, e independente do toggle estar ligado ou desligado. Uma vez aprovada, o toggle **"Aplicar logo nas imagens"** passa a valer tanto para a geração individual quanto para a Produção em Lotes: a logo é aplicada por composição tradicional (sem IA), em **9% da menor dimensão** e **3% de margem** no canto inferior direito — padrão definitivo validado visualmente e fixo por enquanto (posição/escala configuráveis apenas numa fase futura) — preservando sempre a versão original sem logo. Consulte [FASE-BRANDING-IMPLEMENTACAO.md](docs/FASE-BRANDING-IMPLEMENTACAO.md) para a validação, o storage e as limitações desta primeira versão.
 
+## Marketing Studio
+
+Abra **Marketing Studio** na sidebar para planejar semanas locais usando somente Resultados aprovados. É possível adicionar conteúdos manualmente ou selecionar produtos para uma proposta determinística, marcar prioridades e distribuir categorias pela semana. Cada Story mantém categoria, agenda e estado editorial (`Planejado`, `Pronto` ou `Publicado`).
+
+A aba **Stories** renderiza localmente, sem IA, arquivos WebP 1080×1920 em três layouts fixos: Produto em destaque, Minimalista e Oferta. A renderização usa a logo aprovada em Branding, preserva a proporção da fonte com `contain` e permite download manual. Planejamento, fontes e arquivos finais ficam em:
+
+```text
+storage/marketing/weeks/<week-id>/
+```
+
+Sem logo aprovada, a renderização é bloqueada com mensagem clara. Aprovar uma semana exige todos os Stories prontos; qualquer edição posterior retorna a semana para rascunho. Uma semana aprovada pode ser encerrada e passa a ser somente leitura. Não existe publicação automática, IA, editor livre ou integração externa no módulo. Consulte [FASE-07-IMPLEMENTACAO.md](docs/FASE-07-IMPLEMENTACAO.md) e [FASE-07-2-IMPLEMENTACAO.md](docs/FASE-07-2-IMPLEMENTACAO.md).
+
 ## Parar os servidores
 
 No terminal onde `npm run dev` estiver rodando, pressione:
@@ -180,11 +194,11 @@ npm test
 npm run build
 ```
 
-Os testes usam respostas simuladas e não acessam o OpenRouter. Estado atual: 41 arquivos e 309 testes aprovados.
+Os testes usam respostas simuladas e não acessam o OpenRouter. Estado atual: 46 arquivos e 330 testes aprovados.
 
 ## Limitações intencionais
 
-- uma aplicação local com as views Nova geração, Templates, Resultados, Produção em Lotes e Branding, sem React Router;
+- uma aplicação local com as views Nova geração, Templates, Resultados, Produção em Lotes, Branding e Marketing Studio, sem React Router;
 - somente Nano Banana 2 Lite;
 - categorias atuais: moda masculina, moda feminina, tênis, acessórios e bolsas, conforme o perfil configurado em cada Template;
 - proporção efetiva validada em 1:1 na Fase 2; 4:5 é melhoria futura;
@@ -193,3 +207,4 @@ Os testes usam respostas simuladas e não acessam o OpenRouter. Estado atual: 41
 - sem retry automático;
 - templates atuais são fotografias locais JPEG válidas para a geração 1:1; a futura adoção de 4:5 exigirá templates compatíveis;
 - chave persistida apenas no Chaves do macOS; o `.env` é somente fallback local.
+- Marketing Studio sem publicação automática, notificações com o app fechado, editor livre, drag-and-drop, analytics ou entidade completa de Produto.

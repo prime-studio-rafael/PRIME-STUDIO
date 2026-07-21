@@ -22,6 +22,9 @@ import { createResultService } from './services/resultService.js';
 import { createLocalBrandingStorage } from './storage/localBrandingStorage.js';
 import { createBrandingService } from './services/brandingService.js';
 import { createBrandingRouter } from './routes/branding.js';
+import { createLocalMarketingRepository } from './repositories/localMarketingRepository.js';
+import { createMarketingService } from './services/marketingService.js';
+import { createMarketingRouter } from './routes/marketing.js';
 import { createOpenRouterClient } from './providers/openrouter/openrouterClient.js';
 import { createOpenRouterKeyValidator } from './providers/openrouter/openrouterKeyValidator.js';
 import { createOpenRouterKeyStore } from './secrets/openrouterKeyStore.js';
@@ -56,6 +59,8 @@ export function createApp({
   batchQueue,
   brandingStorage = createLocalBrandingStorage(),
   brandingService,
+  marketingRepository,
+  marketingService,
 } = {}) {
   let resolvedGenerationService;
   const resolvedCoordinator = generationCoordinator || createGenerationCoordinator();
@@ -78,6 +83,9 @@ export function createApp({
   const resolvedBatchQueue = batchQueue || createBatchQueue({ batchService: resolvedBatchService, executor: resolvedExecutor, coordinator: resolvedCoordinator });
   resolvedBatchRepository.ensureInitialized().catch((error) => console.error('[batches]', error?.message || error));
   const resolvedResultService = resultService || createResultService({ storage: resultStorage, templateService: resolvedTemplateService, brandingService: resolvedBrandingService });
+  const resolvedMarketingRepository = marketingRepository || createLocalMarketingRepository();
+  const resolvedMarketingService = marketingService || createMarketingService({ repository: resolvedMarketingRepository, resultService: resolvedResultService, brandingService: resolvedBrandingService });
+  resolvedMarketingRepository.ensureInitialized().catch((error) => console.error('[marketing]', error?.message || error));
   const app = express();
   app.disable('x-powered-by');
   app.use(requestLogger);
@@ -91,6 +99,7 @@ export function createApp({
   app.use('/api/batches', createBatchesRouter({ batchService: resolvedBatchService, repository: resolvedBatchRepository }));
   app.use('/api/results', createResultsRouter({ resultService: resolvedResultService }));
   app.use('/api/branding', createBrandingRouter({ brandingService: resolvedBrandingService }));
+  app.use('/api/marketing', createMarketingRouter({ marketingService: resolvedMarketingService }));
 
   app.use((error, _request, response, _next) => {
     if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {

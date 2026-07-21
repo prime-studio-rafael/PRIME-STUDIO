@@ -1,10 +1,10 @@
-# PRIME STUDIO — Contrato de Dados (Template, Lote, Resultado)
+# PRIME STUDIO — Contrato de Dados (Template, Lote, Resultado, Semana de Marketing)
 
 Documento subordinado ao [Documento Mestre](./DOCUMENTO-MESTRE.md). Baseado diretamente no código-fonte na data abaixo — não em memória de conversas.
 
 Última verificação contra o código: 21 de julho de 2026.
 
-Este documento existe porque o contrato real de dados do PRIME STUDIO evoluiu em várias fases (Fase 3, Fase 6, e as 5 fases do Perfil Completo de Geração por Template) e hoje está espalhado entre `server/repositories/localTemplateRepository.js`, `server/repositories/localBatchRepository.js`, `server/services/batchService.js`, `server/services/generationExecutor.js` e `server/services/resultService.js`. Aqui está a visão consolidada.
+Este documento existe porque o contrato real de dados do PRIME STUDIO evoluiu em várias fases e hoje está distribuído entre os repositórios e serviços de Templates, Lotes, Resultados e Marketing. Aqui está a visão consolidada.
 
 ---
 
@@ -129,7 +129,33 @@ Paridade garantida por teste (`tests/server/generationParity.test.js`): para o m
 
 ---
 
-## 5. Onde validar este documento contra o código
+## 5. Semana de Marketing (`week.json`)
+
+Fonte: `server/services/marketingService.js` (regras e montagem) e `server/repositories/localMarketingRepository.js` (persistência). Salvo em `storage/marketing/weeks/<week-id>/week.json`, com último estado válido anterior em `week.json.bak`.
+
+| Campo | Tipo | Regra |
+|---|---|---|
+| `schemaVersion` | number | `1` na V1 |
+| `id` | string | UUID gerado pelo backend |
+| `weekStart` | `YYYY-MM-DD` | obrigatoriamente segunda-feira |
+| `timezone` | string | sempre `America/Sao_Paulo` |
+| `status` | `draft` \| `approved` \| `closed` | edição estrutural sempre volta para `draft`; `closed` bloqueia alterações de conteúdo, mas permite exclusão explícita da semana com confirmação |
+| `createdAt`, `updatedAt` | ISO string | timestamps do backend |
+| `approvedAt` | ISO string \| null | preenchido na aprovação |
+| `closedAt` | ISO string \| null | preenchido no encerramento definitivo da semana |
+| `stories` | array | ordenado por data, horário e `order` |
+
+Cada Story contém: `id`, `sourceResultId`, `sourceAssetVariant` (`original`/`branded`), `sourceAssetFileName`, `productLabel`, `productKey`, `priority`, `category`, `categoryLabel`, `priceText`, `headline`, `ctaText`, `storyTemplateId`, `scheduledDate`, `scheduledTime`, `order`, `renderStatus` (`pending`/`ready`/`failed`), `editorialStatus` (`planned`/`ready`/`published`), `publishedAt`, `renderedAssetFileName`, `renderedAt`, `renderError`, `createdAt` e `updatedAt`. Após renderização válida, inclui `renderedDimensions: { width: 1080, height: 1920 }`.
+
+`renderStatus` continua sendo o estado técnico do arquivo, enquanto `editorialStatus` representa a operação de publicação. Registros da Fase 7.1 sem os campos novos continuam compatíveis: a interface deriva `ready` quando o asset já está pronto e `planned` nos demais casos, sem reescrever obrigatoriamente o JSON antigo.
+
+`sourceAssetFileName` aponta apenas para um nome interno relativo em `assets/sources/`; `renderedAssetFileName`, quando presente, aponta para `assets/stories/`. Nenhum caminho absoluto, Base64, data URL ou buffer é persistido no JSON.
+
+O Marketing referencia `sourceResultId` para auditoria, mas usa a cópia local da fonte como autoridade visual histórica. Assim, excluir posteriormente o Resultado não quebra uma semana já criada e não altera o contrato do Resultado.
+
+---
+
+## 6. Onde validar este documento contra o código
 
 Se este documento e o código divergirem, o código vence. Arquivos a conferir, nesta ordem:
 
@@ -138,3 +164,4 @@ Se este documento e o código divergirem, o código vence. Arquivos a conferir, 
 3. `server/repositories/localBatchRepository.js` — `readTemplate()` (o que chega ao executor).
 4. `server/services/generationExecutor.js` — `execute()`, `resolveTemplate()`, `validateSnapshot()` (metadata do Resultado).
 5. `server/services/resultService.js` — `normalize()` (o que a API/UI realmente expõe).
+6. `server/services/marketingService.js` e `server/repositories/localMarketingRepository.js` — Semana e Story.

@@ -94,3 +94,15 @@ Reorganização e atualização de toda a documentação do projeto (sem nenhuma
 Estado: **concluído**.
 
 Revisão final sem mudança funcional: alinhamento do escopo atual no README e no Documento Mestre, distinção entre uploads em memória e temporários em disco, atualização do estado da consolidação e identificação explícita de informações históricas superadas nos documentos das Fases 3, 4, 5 e Branding. O diretório gerado `graphify-out/` foi confirmado como artefato local de ferramenta e incluído no `.gitignore`.
+
+## Fase 7 — Marketing Studio V1
+
+Estado: **aprovada tecnicamente e renomeada Fase 7.1 — Fundação do Marketing Studio em 21 de julho de 2026; sem commit e push**.
+
+Planejamento semanal local baseado somente em Resultados aprovados, com cópia preservada da fonte, identificação manual de produto, calendário, operação de Stories e histórico. Renderer determinístico com `sharp`, sem IA, gera WebP 1080×1920 em três layouts fixos, usando a logo aprovada e mantendo fonte/final separados. Persistência em `storage/marketing/` com JSON, backup, escrita atômica e proteção de caminhos. A fundação foi aprovada tecnicamente e preservada como base da evolução operacional. Nenhuma chamada ao OpenRouter e zero créditos. Detalhes: [FASE-07-IMPLEMENTACAO.md](./FASE-07-IMPLEMENTACAO.md).
+
+## Fase 7.2 — Inteligência Operacional
+
+Estado: **concluída e aprovada na validação final em 21 de julho de 2026**.
+
+Extensão aditiva da fundação com proposta semanal determinística, prioridade, alternância de categorias, estados editoriais, próxima publicação, acesso ao Resultado, calendário e histórico enriquecidos e encerramento somente leitura. A validação final confirmou thumbnail, três layouts, persistência após reinício, remoção controlada da semana temporária, 330 testes aprovados em 46 arquivos, build e responsividade. Zero chamadas ao OpenRouter. Detalhes: [FASE-07-2-IMPLEMENTACAO.md](./FASE-07-2-IMPLEMENTACAO.md).
