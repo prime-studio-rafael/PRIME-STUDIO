@@ -85,4 +85,41 @@ describe('generation parity — individual vs batch', () => {
     expect(callArgs).not.toHaveProperty('modelId'); // batchQueue.js não injeta mais nenhum modelId
     expect(callArgs.templateSnapshot.modelId).toBe('nano-banana-lite'); // só o congelado no snapshot
   });
+
+  it('persists equivalent generation-profile metadata for individual and batch, differing only by origin/ids/timing fields', async () => {
+    const templateBuffer = await readFile(templateSource);
+    const garmentFile = { buffer: templateBuffer, mimetype: 'image/jpeg', size: templateBuffer.length, originalname: 'garment.jpeg' };
+    const directory = await mkdtemp(path.join(tmpdir(), 'prime-parity-metadata-')); directories.push(directory);
+
+    const individualStorage = createLocalResultStorage({ resultsDir: path.join(directory, 'individual-results') });
+    const individualService = createGenerationService({
+      openRouterClient: providerMock(),
+      resultStorage: individualStorage,
+      templateService: { getForGeneration: vi.fn(async () => ({ publicTemplate: PROFILE, image: { buffer: templateBuffer, mimeType: 'image/jpeg', dimensions: { width: 773, height: 1024 } } })) },
+    });
+    const individualResult = await individualService.generate({ templateId: 'model-01', modelId: 'nano-banana-lite', confirmPaid: true, garmentFile, additionalInstruction: ADDITIONAL_INSTRUCTION });
+    const individualMetadata = JSON.parse(await readFile(path.join(directory, 'individual-results', individualResult.localSave.metadataFilename), 'utf8'));
+
+    const repository = createLocalBatchRepository({ batchesDir: path.join(directory, 'batches') });
+    const batchService = createBatchService({ repository, templateService: { getForGeneration: vi.fn(async () => ({ publicTemplate: PROFILE, image: { buffer: templateBuffer, mimeType: 'image/jpeg', dimensions: { width: 773, height: 1024 } } })) } });
+    const batchResultsDir = path.join(directory, 'batch-results');
+    const executor = createGenerationExecutor({ openRouterClient: providerMock(), resultStorage: createLocalResultStorage({ resultsDir: batchResultsDir }) });
+    const coordinator = createGenerationCoordinator();
+    createBatchQueue({ batchService, executor, coordinator });
+    const batch = await batchService.create({ name: 'Paridade metadata', templateId: 'model-01', files: [{ buffer: templateBuffer, mimetype: 'image/jpeg', originalname: 'garment.jpeg' }], additionalInstruction: ADDITIONAL_INSTRUCTION });
+    await batchService.start(batch.id, { confirmPaid: true });
+    await vi.waitFor(async () => expect((await batchService.get(batch.id)).status).toBe('completed'));
+    const finishedBatch = await batchService.get(batch.id);
+    const batchItemId = finishedBatch.items[0].id;
+    const batchResultId = finishedBatch.items[0].resultId;
+    const batchMetadata = JSON.parse(await readFile(path.join(batchResultsDir, batchResultId, 'metadata.json'), 'utf8'));
+
+    const equivalentFields = ['templateCategory', 'inputTemplatePrompt', 'inputTemplateNegativePrompt', 'additionalInstruction', 'promptVersion', 'provider', 'modelId', 'requestedAspectRatio', 'effectiveAspectRatio', 'resolution'];
+    for (const field of equivalentFields) expect(batchMetadata[field]).toEqual(individualMetadata[field]);
+
+    expect(individualMetadata.batchId).toBeUndefined();
+    expect(individualMetadata.batchItemId).toBeUndefined();
+    expect(batchMetadata.batchId).toBe(batch.id);
+    expect(batchMetadata.batchItemId).toBe(batchItemId);
+  });
 });

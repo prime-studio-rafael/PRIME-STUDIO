@@ -59,6 +59,11 @@ export function createGenerationExecutor({ openRouterClient, resultStorage, temp
       inputTemplateMime: template.image.mimeType,
       inputTemplateDimensions: dimensionsOrNull(template.image.dimensions),
       inputTemplateValidation: imageValidationMetadata(template.image),
+      templateCategory: template.category ?? null,
+      inputTemplatePrompt: template.prompt ?? null,
+      inputTemplateNegativePrompt: template.negativePrompt ?? null,
+      additionalInstruction: additionalInstruction?.trim() || null,
+      provider: template.provider ?? null,
       inputGarmentMime: garment.mimeType,
       inputGarmentDimensions: dimensionsOrNull(garment.dimensions),
       inputGarmentValidation: imageValidationMetadata(garment),
@@ -86,7 +91,7 @@ export function createGenerationExecutor({ openRouterClient, resultStorage, temp
       throw new AppError('TEMPLATE_PROFILE_INCOMPLETE', 'Este Template ainda não tem um perfil de geração configurado. Configure o prompt antes de gerar.', { status: 422 });
     }
     return {
-      id: publicTemplate.id, label: publicTemplate.label, image,
+      id: publicTemplate.id, label: publicTemplate.label, image, category: publicTemplate.category ?? null,
       prompt: publicTemplate.prompt, negativePrompt: publicTemplate.negativePrompt ?? null,
       provider: publicTemplate.provider ?? null, modelId: publicTemplate.modelId ?? null,
       generationAspectRatio: publicTemplate.generationAspectRatio ?? null, resolution: publicTemplate.resolution ?? null,
@@ -107,7 +112,7 @@ function validateSnapshot(snapshot, config) {
   }
   const image = validateImageBuffer(snapshot.buffer, { expectedMimeType: snapshot.mimeType, maxBytes: config.maxFileSizeBytes, fieldLabel: 'Snapshot do template', fileName: snapshot.fileName || 'template', role: 'template', policy: config.imagePolicy });
   return {
-    id: snapshot.id, label: snapshot.label, image,
+    id: snapshot.id, label: snapshot.label, image, category: snapshot.category ?? null,
     prompt: snapshot.prompt, negativePrompt: snapshot.negativePrompt ?? null,
     provider: snapshot.provider ?? null, modelId: snapshot.modelId ?? null,
     generationAspectRatio: snapshot.generationAspectRatio ?? null, resolution: snapshot.resolution ?? null,

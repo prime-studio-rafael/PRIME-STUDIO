@@ -59,6 +59,20 @@ async function normalize(entry, templateService) {
     logoMargin: finiteOrNull(metadata.logoMargin),
     brandingStatus: metadata.brandingStatus ?? 'disabled',
     brandingError: metadata.brandingError ?? null,
+    templateCategory: metadata.templateCategory ?? null,
+    inputTemplatePrompt: metadata.inputTemplatePrompt ?? null,
+    inputTemplateNegativePrompt: metadata.inputTemplateNegativePrompt ?? null,
+    additionalInstruction: metadata.additionalInstruction ?? null,
+    provider: metadata.provider ?? null,
+    batchId: metadata.batchId ?? null,
+    batchItemId: metadata.batchItemId ?? null,
+    // origin nunca é uma segunda fonte de verdade gravada em disco — é derivado aqui, na leitura,
+    // a partir de batchId (já garantido pelo generationExecutor: um Resultado só tem batchId
+    // quando veio de um item de lote). metadata.origin só é respeitado se já vier explicitamente
+    // válido (defensivo, para nunca quebrar caso um Resultado futuro venha a gravá-lo).
+    origin: metadata.origin === 'batch' || metadata.origin === 'individual'
+      ? metadata.origin
+      : metadata.batchId ? 'batch' : 'individual',
     assets: {
       result: `/api/results/${encodeURIComponent(metadata.id)}/assets/result`,
       branded: entry.assets.branded ? `/api/results/${encodeURIComponent(metadata.id)}/assets/branded` : null,

@@ -6,7 +6,11 @@ export default function useResults(enabled) {
   const [selected, setSelected] = useState(null); const [mutationPending, setMutationPending] = useState(false);
   const [reviewMessage, setReviewMessage] = useState(''); const reviewMessageTimer = useRef(null);
   const load = useCallback(async () => { setStatus('loading'); setError(''); try { setResults(await fetchResults()); setStatus('ready'); } catch (nextError) { setError(nextError.message || 'Não foi possível carregar os resultados locais.'); setStatus('error'); throw nextError; } }, []);
-  useEffect(() => { if (enabled && status === 'idle') load().catch(() => {}); }, [enabled, load, status]);
+  // O carregamento em si (inicial, ao reentrar na view, e após uma geração concluir) é disparado
+  // explicitamente por quem usa este hook (App.jsx), comparando a transição real de estado via
+  // refs — evita duplicar aqui um segundo gatilho baseado em `status === 'idle'`, que só dispararia
+  // uma vez e nunca de novo, além do risco de somar-se ao disparo externo e gerar duas requisições
+  // simultâneas na entrada da tela.
   useEffect(() => () => { if (reviewMessageTimer.current) clearTimeout(reviewMessageTimer.current); }, []);
   const dismissReviewMessage = useCallback(() => { if (reviewMessageTimer.current) clearTimeout(reviewMessageTimer.current); setReviewMessage(''); }, []);
   const open = useCallback(async (id) => { setError(''); dismissReviewMessage(); try { const detail = await fetchResult(id); setSelected(detail); return detail; } catch (nextError) { setError(nextError.message); throw nextError; } }, [dismissReviewMessage]);

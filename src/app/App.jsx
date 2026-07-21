@@ -52,6 +52,8 @@ export default function App() {
   const garmentPreviewUrl = useObjectUrl(garmentFile);
   const inspectionSequenceRef = useRef(0);
   const { status, result, error, referenceSnapshot, generate, reset } = useGeneration();
+  const previousActiveViewRef = useRef(activeView);
+  const previousGenerationStatusRef = useRef(status);
 
   useEffect(() => {
     let ignore = false;
@@ -84,6 +86,25 @@ export default function App() {
   useEffect(() => () => {
     inspectionSequenceRef.current += 1;
   }, []);
+
+  // Fluxo determinístico de refresh da fila "Aguardando aprovação" (Fase 5): o hook useResults só
+  // recarrega sozinho uma vez, na primeira montagem (status 'idle' -> 'ready') — voltar para a
+  // view depois disso, ou concluir uma geração, nunca disparava um novo fetch. Em vez de um
+  // useEffect dependente de `status` do próprio useResults (que reintroduziria o risco de loop já
+  // levantado no plano), guardamos a view e o status de geração anteriores em refs e comparamos a
+  // cada render: só chamamos load() nas duas transições reais que importam, nunca em toda
+  // renderização e nunca mais de uma vez por transição.
+  useEffect(() => {
+    const enteringResults = activeView === 'results' && previousActiveViewRef.current !== 'results';
+    previousActiveViewRef.current = activeView;
+    if (enteringResults) resultHistory.load().catch(() => {});
+  }, [activeView, resultHistory]);
+
+  useEffect(() => {
+    const justSucceeded = status === 'success' && previousGenerationStatusRef.current !== 'success';
+    previousGenerationStatusRef.current = status;
+    if (justSucceeded) resultHistory.load().catch(() => {});
+  }, [status, resultHistory]);
 
   const selectedTemplate = useMemo(
     () => templates.find((template) => template.id === selectedTemplateId) || null,

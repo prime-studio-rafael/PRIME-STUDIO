@@ -180,4 +180,82 @@ describe('local results history', () => {
     const assets = await service.listApprovedAssets();
     expect(assets[0].buffer).toEqual(image);
   });
+
+  describe('Fase 5 — Template generation profile metadata', () => {
+    it('normalizes a legacy result (no templateCategory/prompts/additionalInstruction/provider/origin) with null defaults and a derived individual origin, without rewriting the file on disk', async () => {
+      const { storage, directory } = await fixture();
+      const service = createResultService({ storage });
+      const before = await readFile(path.join(directory, 'legacy.json'), 'utf8');
+      const legacy = await service.get('legacy-id');
+      expect(legacy).toMatchObject({
+        templateCategory: null, inputTemplatePrompt: null, inputTemplateNegativePrompt: null,
+        additionalInstruction: null, provider: null, batchId: null, batchItemId: null, origin: 'individual',
+      });
+      const after = await readFile(path.join(directory, 'legacy.json'), 'utf8');
+      expect(after).toBe(before); // leitura nunca regrava o arquivo
+    });
+
+    it('derives origin "batch" from a persisted batchId, without needing an explicit origin field', async () => {
+      const directory = await mkdtemp(path.join(tmpdir(), 'prime-results-batch-origin-'));
+      directories.push(directory);
+      const storage = createLocalResultStorage({ resultsDirectory: directory });
+      await storage({
+        generationId: 'batch-item-1', buffer: image, mimeType: 'image/webp',
+        metadata: metadata('batch-item-1', '2026-01-05T10:00:00.000Z', { batchId: 'batch-1', batchItemId: 'item-1' }),
+        template: { buffer: image, mimeType: 'image/webp' }, garment: { buffer: image, mimeType: 'image/webp' },
+      });
+      const service = createResultService({ storage });
+      const result = await service.get('batch-item-1');
+      expect(result.origin).toBe('batch');
+      expect(result.batchId).toBe('batch-1');
+      expect(result.batchItemId).toBe('item-1');
+      expect(result.reviewStatus).toBe('pending'); // pending de lote aparece na fila igual ao individual
+      const listed = await service.list();
+      expect(listed.find((entry) => entry.id === 'batch-item-1')).toMatchObject({ reviewStatus: 'pending', origin: 'batch' });
+      const approved = await service.setReviewStatus('batch-item-1', 'approved');
+      expect(approved.reviewStatus).toBe('approved');
+      const rejected = await service.setReviewStatus('batch-item-1', 'rejected');
+      expect(rejected.reviewStatus).toBe('rejected');
+    });
+
+    it('respects an explicit metadata.origin when already valid, without recomputing it from batchId', async () => {
+      const directory = await mkdtemp(path.join(tmpdir(), 'prime-results-explicit-origin-'));
+      directories.push(directory);
+      const storage = createLocalResultStorage({ resultsDirectory: directory });
+      await storage({
+        generationId: 'explicit-origin-1', buffer: image, mimeType: 'image/webp',
+        metadata: metadata('explicit-origin-1', '2026-01-06T10:00:00.000Z', { origin: 'individual' }),
+        template: { buffer: image, mimeType: 'image/webp' }, garment: { buffer: image, mimeType: 'image/webp' },
+      });
+      const service = createResultService({ storage });
+      expect((await service.get('explicit-origin-1')).origin).toBe('individual');
+    });
+
+    it('exposes the new generation-profile fields when present in metadata', async () => {
+      const directory = await mkdtemp(path.join(tmpdir(), 'prime-results-profile-'));
+      directories.push(directory);
+      const storage = createLocalResultStorage({ resultsDirectory: directory });
+      await storage({
+        generationId: 'profile-1', buffer: image, mimeType: 'image/webp',
+        metadata: metadata('profile-1', '2026-01-07T10:00:00.000Z', {
+          templateCategory: 'tenis-masculino',
+          inputTemplatePrompt: 'Edite exclusivamente o calçado.',
+          inputTemplateNegativePrompt: 'Não alterar o cadarço.',
+          additionalInstruction: 'Aplicar acabamento fosco.',
+          provider: 'openrouter',
+        }),
+        template: { buffer: image, mimeType: 'image/webp' }, garment: { buffer: image, mimeType: 'image/webp' },
+      });
+      const service = createResultService({ storage });
+      const result = await service.get('profile-1');
+      expect(result).toMatchObject({
+        templateCategory: 'tenis-masculino',
+        inputTemplatePrompt: 'Edite exclusivamente o calçado.',
+        inputTemplateNegativePrompt: 'Não alterar o cadarço.',
+        additionalInstruction: 'Aplicar acabamento fosco.',
+        provider: 'openrouter',
+        origin: 'individual',
+      });
+    });
+  });
 });

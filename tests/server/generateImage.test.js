@@ -40,7 +40,7 @@ function createService({ templatePath, openRouterClient, resultStorage, now = ()
           role: 'template',
           policy: generationConfig.imagePolicy,
         });
-        return { publicTemplate: { id: 'model-01', label: 'Modelo base 01', valid: true, active: true, prompt: TEMPLATE_PROMPT, promptVersion: 'upper-garment-v2', negativePrompt: null, provider: null, modelId: null, generationAspectRatio: null, resolution: null }, image };
+        return { publicTemplate: { id: 'model-01', label: 'Modelo base 01', valid: true, active: true, category: 'moda-masculina', prompt: TEMPLATE_PROMPT, promptVersion: 'upper-garment-v2', negativePrompt: null, provider: null, modelId: null, generationAspectRatio: null, resolution: null }, image };
       }),
     },
   });
@@ -290,6 +290,41 @@ describe('generation service', () => {
     expect(sentPrompt).not.toContain('PROMPT NEGATIVO');
     expect(sentPrompt).not.toContain('INSTRUÇÃO ADICIONAL');
   });
+
+  it('persists complete generation-profile metadata (category, prompts, additionalInstruction, provider) with no Base64/secret/raw payload', async () => {
+    const provider = { generate: vi.fn(async () => ({ body: { data: [{ b64_json: responseBase64, media_type: 'image/png' }], usage: { cost: 0.034 } }, requestId: 'mock-request' })) };
+    const resultsDir = path.join(fixture.directory, 'results');
+    const storage = createLocalResultStorage({ resultsDir });
+    const service = createGenerationService({
+      openRouterClient: provider,
+      resultStorage: storage,
+      templateService: {
+        getForGeneration: vi.fn(async () => {
+          const buffer = await readFile(fixture.templatePath);
+          const image = validateImageBuffer(buffer, { maxBytes: generationConfig.maxFileSizeBytes, fieldLabel: 'Modelo base 01', fileName: 'model-01.jpeg', expectedMimeType: 'image/jpeg', role: 'template', policy: generationConfig.imagePolicy });
+          return { publicTemplate: { id: 'model-01', label: 'Modelo base 01', valid: true, active: true, category: 'tenis-masculino', prompt: 'Edite exclusivamente o calçado.', negativePrompt: 'Não alterar o cadarço.', promptVersion: 'template-aaaaaaaa', provider: 'openrouter', modelId: null, generationAspectRatio: null, resolution: null }, image };
+        }),
+      },
+    });
+
+    const result = await service.generate({ templateId: 'model-01', modelId: generationConfig.modelId, confirmPaid: true, garmentFile, additionalInstruction: 'Aplicar acabamento fosco.' });
+    const metadataRaw = await readFile(path.join(resultsDir, result.localSave.metadataFilename), 'utf8');
+    const metadata = JSON.parse(metadataRaw);
+
+    expect(metadata).toMatchObject({
+      templateCategory: 'tenis-masculino',
+      inputTemplatePrompt: 'Edite exclusivamente o calçado.',
+      inputTemplateNegativePrompt: 'Não alterar o cadarço.',
+      additionalInstruction: 'Aplicar acabamento fosco.',
+      provider: 'openrouter',
+      promptVersion: 'template-aaaaaaaa',
+    });
+    expect(metadata.batchId).toBeUndefined(); // geração individual nunca fabrica IDs de lote
+    expect(metadata.batchItemId).toBeUndefined();
+    for (const forbidden of [/base64/i, /data:image/i, /authorization/i, /bearer /i, /sk-or-/i]) {
+      expect(metadataRaw).not.toMatch(forbidden);
+    }
+  });
 });
 
 describe('generation service — Branding integration', () => {
@@ -340,7 +375,7 @@ describe('generation service — Branding integration', () => {
         getForGeneration: vi.fn(async () => {
           const buffer = await readFile(fixture.templatePath);
           const image = validateImageBuffer(buffer, { maxBytes: generationConfig.maxFileSizeBytes, fieldLabel: 'Modelo base 01', fileName: 'model-01.jpeg', expectedMimeType: 'image/jpeg', role: 'template', policy: generationConfig.imagePolicy });
-          return { publicTemplate: { id: 'model-01', label: 'Modelo base 01', valid: true, active: true, prompt: TEMPLATE_PROMPT, promptVersion: 'upper-garment-v2', negativePrompt: null, provider: null, modelId: null, generationAspectRatio: null, resolution: null }, image };
+          return { publicTemplate: { id: 'model-01', label: 'Modelo base 01', valid: true, active: true, category: 'moda-masculina', prompt: TEMPLATE_PROMPT, promptVersion: 'upper-garment-v2', negativePrompt: null, provider: null, modelId: null, generationAspectRatio: null, resolution: null }, image };
         }),
       },
     });
@@ -365,7 +400,7 @@ describe('generation service — Branding integration', () => {
         getForGeneration: vi.fn(async () => {
           const buffer = await readFile(fixture.templatePath);
           const image = validateImageBuffer(buffer, { maxBytes: generationConfig.maxFileSizeBytes, fieldLabel: 'Modelo base 01', fileName: 'model-01.jpeg', expectedMimeType: 'image/jpeg', role: 'template', policy: generationConfig.imagePolicy });
-          return { publicTemplate: { id: 'model-01', label: 'Modelo base 01', valid: true, active: true, prompt: TEMPLATE_PROMPT, promptVersion: 'upper-garment-v2', negativePrompt: null, provider: null, modelId: null, generationAspectRatio: null, resolution: null }, image };
+          return { publicTemplate: { id: 'model-01', label: 'Modelo base 01', valid: true, active: true, category: 'moda-masculina', prompt: TEMPLATE_PROMPT, promptVersion: 'upper-garment-v2', negativePrompt: null, provider: null, modelId: null, generationAspectRatio: null, resolution: null }, image };
         }),
       },
     });
@@ -404,7 +439,7 @@ describe('generation service — Branding integration', () => {
         getForGeneration: vi.fn(async () => {
           const buffer = await readFile(fixture.templatePath);
           const image = validateImageBuffer(buffer, { maxBytes: generationConfig.maxFileSizeBytes, fieldLabel: 'Modelo base 01', fileName: 'model-01.jpeg', expectedMimeType: 'image/jpeg', role: 'template', policy: generationConfig.imagePolicy });
-          return { publicTemplate: { id: 'model-01', label: 'Modelo base 01', valid: true, active: true, prompt: TEMPLATE_PROMPT, promptVersion: 'upper-garment-v2', negativePrompt: null, provider: null, modelId: null, generationAspectRatio: null, resolution: null }, image };
+          return { publicTemplate: { id: 'model-01', label: 'Modelo base 01', valid: true, active: true, category: 'moda-masculina', prompt: TEMPLATE_PROMPT, promptVersion: 'upper-garment-v2', negativePrompt: null, provider: null, modelId: null, generationAspectRatio: null, resolution: null }, image };
         }),
       },
     });

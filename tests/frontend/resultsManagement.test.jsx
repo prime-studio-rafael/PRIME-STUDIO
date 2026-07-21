@@ -200,4 +200,45 @@ describe('results page', () => {
     expect(within(dialog).queryByRole('button', { name: 'Original' })).not.toBeInTheDocument();
     expect(within(dialog).queryByText(/versão com logo/)).not.toBeInTheDocument();
   });
+
+  it('shows Categoria, Origem and Instrução adicional in the detail modal only when present, without polluting the card', async () => {
+    const withProfile = { ...newest, templateCategory: 'tenis-masculino', origin: 'batch', batchId: 'batch-abc12345', additionalInstruction: 'Aplicar acabamento fosco.' };
+    api.fetchResults.mockResolvedValue([withProfile, middle, approved]);
+    api.fetchResult.mockImplementation(async (id) => ({ ...byId, new: withProfile }[id]));
+    render(<App />); fireEvent.click(screen.getByRole('button', { name: 'Resultados' }));
+    const cards = await screen.findAllByTestId('result-card');
+    expect(cards[0]).not.toHaveTextContent('Aplicar acabamento fosco.'); // card compacto não polui
+    fireEvent.click(cards[0].querySelector('button'));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('tenis-masculino')).toBeInTheDocument();
+    expect(within(dialog).getByText(/Lote/)).toBeInTheDocument();
+    expect(within(dialog).getByText('Aplicar acabamento fosco.')).toBeInTheDocument();
+  });
+
+  it('omits the Instrução adicional row entirely (no "Não informado") when the result has none', async () => {
+    render(<App />); fireEvent.click(screen.getByRole('button', { name: 'Resultados' }));
+    fireEvent.click((await screen.findAllByTestId('result-card'))[0].querySelector('button'));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).queryByText('Instrução adicional')).not.toBeInTheDocument();
+  });
+
+  it('refreshes the results list when re-entering the Resultados view, without a full page reload', async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Resultados' }));
+    await screen.findAllByTestId('result-card');
+    expect(api.fetchResults).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Nova geração' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Resultados' }));
+    await waitFor(() => expect(api.fetchResults).toHaveBeenCalledTimes(2));
+  });
+
+  it('does not issue duplicate fetches while staying on the Resultados view without navigating away', async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Resultados' }));
+    await screen.findAllByTestId('result-card');
+    expect(api.fetchResults).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Aprovados' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Todos' }));
+    expect(api.fetchResults).toHaveBeenCalledTimes(1); // trocar filtro não deve refazer a busca
+  });
 });
