@@ -87,7 +87,19 @@ function StoryAiAssistant({ value, disabled, onChange, onGenerate, onCancel, onA
 export function StoryPreview({ form, sourceUrl, imageState, logoState, onImageLoad, onImageError, onLogoLoad, onLogoError, showSafeArea = false, finalUrl = null }) {
   const layout = getStoryLayout(form.storyTemplateId) || getStoryLayout('product-highlight');
   const styleBox = (box) => ({ left: pct(box.left, 'x'), top: pct(box.top, 'y'), width: pct(box.width, 'x'), height: pct(box.height, 'y') });
-  const textStyle = (position, weight, color) => ({ left: pct(position.x, 'x'), top: pct(position.y - position.fontSize, 'y'), width: pct(position.maxWidth, 'x'), fontSize: `clamp(9px, ${(position.fontSize / STORY_CANVAS.width) * 100}vw, ${(position.fontSize / STORY_CANVAS.width) * 390}px)`, lineHeight: position.lineHeight / position.fontSize, fontWeight: weight, color, textAlign: position.align });
+  const textStyle = (position, weight, color) => ({
+    left: pct(position.x, 'x'),
+    top: pct(position.y - position.fontSize, 'y'),
+    width: pct(position.maxWidth, 'x'),
+    maxWidth: pct(position.maxWidth, 'x'),
+    boxSizing: 'border-box',
+    fontSize: `clamp(9px, ${(position.fontSize / STORY_CANVAS.width) * 100}vw, ${(position.fontSize / STORY_CANVAS.width) * 390}px)`,
+    lineHeight: position.lineHeight / position.fontSize,
+    fontWeight: weight,
+    color,
+    textAlign: position.align,
+    ...(position.align === 'center' ? { transform: 'translateX(-50%)' } : {}),
+  });
   const renderText = (field, position, weight, color) => { const result = layoutStoryText(form[field], field); return result.lines.length ? <p style={textStyle(position, weight, color)} className="absolute m-0 whitespace-pre-line" data-field={field}>{result.lines.join('\n')}</p> : null; };
   return <div><div className="mb-3 flex items-center justify-between"><div><h3 className="text-sm font-semibold text-slate-950">Preview do Story</h3><p className="mt-0.5 text-[11px] text-slate-500">1080 × 1920 · visualização local</p></div><span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700"><Eye size={13}/> Atualizado agora</span></div><div className="mx-auto w-full max-w-[390px] overflow-hidden rounded-[22px] border-[7px] border-slate-950 bg-slate-950 shadow-xl"><div className="relative w-full overflow-hidden" style={{ aspectRatio: '9 / 16', background: layout.background }}>
     {sourceUrl && !finalUrl && <img src={sourceUrl} alt="Imagem selecionada para o Story" onLoad={onImageLoad} onError={onImageError} className="absolute object-contain" style={styleBox(layout.image)}/>} {finalUrl && <img src={finalUrl} alt="Story final renderizado" className="absolute inset-0 h-full w-full object-contain"/>}

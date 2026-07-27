@@ -36,6 +36,13 @@ describe('StoryComposer', () => {
     expect(props.onGenerate).not.toHaveBeenCalled();
   });
 
+  it('keeps the CTA centered inside its button in the local preview', () => {
+    renderComposer();
+    const cta = document.querySelector('[data-field="ctaText"]');
+    expect(cta).toHaveStyle({ transform: 'translateX(-50%)', textAlign: 'center' });
+    expect(cta.style.left).toMatch(/%$/);
+  });
+
   it('shows safe-area guidance, counters, warnings and a closable full-size preview', () => {
     const props = renderComposer();
     prepareAssets();
