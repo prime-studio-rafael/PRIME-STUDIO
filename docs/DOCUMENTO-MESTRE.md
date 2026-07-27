@@ -2,7 +2,7 @@
 
 Versão: 2.0
 Estado: referência oficial do projeto  
-Última consolidação: 27 de julho de 2026 — Fase 7.4 do Marketing Studio implementada e validada tecnicamente, aguardando aprovação para commit e push.
+Última consolidação: 27 de julho de 2026 — Fases 7.3 e 7.4 implementadas, validadas e publicadas no commit `197c8aa`.
 
 ## 1. Autoridade e controle de escopo
 
@@ -16,6 +16,7 @@ Regras de governança:
 - melhorias técnicas aprovadas nas Fases 02A e 02B são permanentes e não devem ser removidas ou simplificadas;
 - documentos de implementação detalham decisões deste Documento Mestre, mas não podem ampliá-lo;
 - planejamentos antigos que ampliem o escopo deixam de ser referência.
+- operações Git que alterem histórico, branch ou remoto obedecem à auditoria obrigatória e à regra de bloqueio registradas em [`AGENTS.md`](../AGENTS.md#81-segurança-obrigatória-para-operações-git); esta é uma regra não negociável de governança do repositório.
 
 ## 2. Objetivo do produto nesta etapa
 
@@ -422,7 +423,7 @@ Detalhes e evidências: [FASE-07-2-IMPLEMENTACAO.md](./FASE-07-2-IMPLEMENTACAO.m
 
 ### Fase 7.3 — Configurações de IA e DeepSeek
 
-Estado: **implementada e validada tecnicamente em 21 de julho de 2026; aguardando aprovação para commit e push**.
+Estado: **concluída, validada e publicada em 27 de julho de 2026**.
 
 - Configurações reúne Visão geral, OpenRouter e DeepSeek na seção Inteligência Artificial;
 - configuração existente do OpenRouter preservada integralmente;
@@ -436,7 +437,7 @@ Detalhes e evidências: [FASE-07-3-CONFIGURACOES-IA.md](./FASE-07-3-CONFIGURACOE
 
 ### Fase 7.4 — Preview Visual e Compositor de Story
 
-Estado: **implementada e validada tecnicamente em 27 de julho de 2026; aguardando aprovação para commit e push**.
+Estado: **concluída, validada e publicada em 27 de julho de 2026**.
 
 - contrato visual canônico compartilhado por React/CSS e Sharp: canvas 1080×1920, área segura, paleta, geometria e limites de texto;
 - preview instantâneo local no compositor, em duas colunas no desktop e uma coluna no mobile, sem renderização nem chamada de backend por tecla;

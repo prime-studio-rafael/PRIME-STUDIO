@@ -80,6 +80,46 @@ Nenhum documento, ferramenta ou recomendação genérica pode substituir uma dec
 - Antes de um commit, revise o escopo (`git status`) e confirme que nada de `storage/`, imagens/arquivos de teste, ZIPs, `.env`, chaves, caminhos pessoais ou arquivos temporários entrou no commit.
 - Commit e push só com autorização explícita do usuário para aquele commit específico — uma aprovação não vale automaticamente para o próximo commit.
 
+### 8.1. Segurança obrigatória para operações Git
+
+Antes de qualquer operação que altere histórico, referência ou remoto — `commit`, `amend`, `merge`, `rebase`, `tag`, `push`, `force push`, alteração de remote, criação/troca/exclusão de branch — execute uma auditoria Git e pare diante de qualquer divergência. Esta regra não é dispensada pela autorização para a operação.
+
+Antes de um commit, confirmar: nome do projeto, diretório absoluto, raiz real do repositório, branch, `origin`, proprietário/repositório, conta GitHub autenticada, working tree, arquivos staged, arquivos não rastreados, mudanças de outra tarefa e se o escopo pertence exclusivamente ao projeto atual.
+
+Antes de um push, confirmar novamente: projeto, diretório, branch, remote, conta autenticada, `HEAD`, `origin/<branch>`, commits à frente/atrás, working tree e o commit exato que será enviado. Apresente obrigatoriamente, antes do push, este resumo:
+
+```text
+CHECKLIST GIT
+Projeto:
+Diretório:
+Branch:
+Remote:
+Repositório:
+Conta autenticada:
+HEAD:
+Origin:
+Commits à frente:
+Commits atrás:
+Working tree:
+Arquivos staged:
+Escopo correto: SIM ou NÃO
+Pronto para push: SIM ou NÃO
+```
+
+Bloqueie a operação e aguarde autorização se houver conta sem permissão ou ambígua, remote/diretório/branch inesperados, proprietário diferente, working tree ou staged não compreendidos, arquivos de outra tarefa, commit divergente ou qualquer diferença entre relatório e estado real. Nunca contorne silenciosamente uma credencial; nunca use outra conta, troque remote ou faça `force push` sem informar e receber autorização explícita.
+
+Referência esperada deste repositório:
+
+```text
+Projeto: PRIME STUDIO
+Diretório: /Users/macbook/Projetos/PRIME-STUDIO
+Branch principal: main
+Repositório: prime-studio-rafael/PRIME-STUDIO
+Conta GitHub: prime-studio-rafael
+```
+
+Se qualquer dado acima divergir, não faça commit ou push: relate a divergência e aguarde instrução do usuário.
+
 ## 9. Regra permanente de sincronização da documentação
 
 Sempre que uma fase importante for concluída, **antes do commit final**:
@@ -92,6 +132,8 @@ Sempre que uma fase importante for concluída, **antes do commit final**:
 6. Atualize [`docs/DATA_CONTRACT.md`](docs/DATA_CONTRACT.md) se a mudança tocar o contrato de Template, Lote ou Resultado.
 
 Nenhuma fase é considerada encerrada enquanto a documentação oficial não refletir exatamente o estado atual do código.
+
+Para reduzir contexto, a leitura inicial padrão é somente `AGENTS.md` e `docs/PHASE_CONTEXT.md`; consulte documentos adicionais apenas conforme o tipo da tarefa. Documentos históricos — `docs/HISTORICO.md` e documentos `docs/FASE-*` — não devem ser relidos automaticamente em novas tarefas. Consulte-os somente para investigar regressão, entender decisão antiga, executar migração ou quando o usuário solicitar explicitamente. O estado vivo deve ser mantido em `docs/PHASE_CONTEXT.md`.
 
 ## 10. O que este documento nunca autoriza sozinho
 
