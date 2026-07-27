@@ -58,4 +58,30 @@ describe('StoryComposer', () => {
     expect(screen.getByLabelText('Subheadline (opcional)')).toHaveValue('');
     expect(screen.getByText('Preview do Story').closest('aside')).toHaveClass('xl:sticky');
   });
+
+  it('applies a selected AI suggestion locally and invalidates the prior rendered preview', async () => {
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn(async () => new Response(JSON.stringify({ suggestions: [{ calloutText: 'Chegou agora', headline: 'Bolsa Prime', subheadline: 'Estilo para acompanhar você', ctaText: 'Saiba mais' }, { calloutText: 'Novo', headline: 'Outra opção', subheadline: 'Texto seguro para Story', ctaText: 'Ver agora' }, { calloutText: 'Destaque', headline: 'Terceira opção', subheadline: 'Texto seguro e elegante', ctaText: 'Conheça' }] }), { status: 200 }));
+    const story = { id: 'story-1', sourceResultId: 'result-1', sourceAssetVariant: 'original', productLabel: 'Legado', priceText: null, headline: null, ctaText: null, storyTemplateId: 'minimal', scheduledDate: '2026-07-20', scheduledTime: '10:00', order: 1, renderStatus: 'ready' };
+    renderComposer({ story });
+    fireEvent.click(screen.getByRole('button', { name: 'Gerar 3 sugestões' }));
+    await screen.findByText('Sugestão 1');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Aplicar esta sugestão' })[0]);
+    expect(screen.getByLabelText('Headline (opcional)')).toHaveValue('Bolsa Prime');
+    expect(screen.queryByAltText('Story final renderizado')).not.toBeInTheDocument();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    global.fetch = originalFetch;
+  });
+
+  it('shows a safe configuration message when the DeepSeek key is absent', async () => {
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn(async () => new Response(JSON.stringify({ error: { code: 'DEEPSEEK_NOT_CONFIGURED', message: 'Configure a chave do DeepSeek.' } }), { status: 409 }));
+    try {
+      renderComposer();
+      fireEvent.change(screen.getByLabelText('Nome ou código do produto'), { target: { value: 'Bolsa Prime' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Gerar 3 sugestões' }));
+      expect(await screen.findByRole('alert')).toHaveTextContent('Configure a chave do DeepSeek');
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+    } finally { global.fetch = originalFetch; }
+  });
 });

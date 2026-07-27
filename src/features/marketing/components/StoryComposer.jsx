@@ -1,8 +1,8 @@
 import { AlertCircle, Check, Eye, Flag, ImageOff, Loader2, Maximize2, Sparkles, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { INSTAGRAM_SAFE_AREA, STORY_CANVAS, STORY_HANDLE, getStoryLayout } from '../../../../shared/storyLayoutSpec.js';
 import { layoutStoryText, storyTextWarnings } from '../../../../shared/storyTextLayout.js';
-import { marketingAssetUrl } from '../api/marketingClient.js';
+import { generateStorySuggestions, marketingAssetUrl } from '../api/marketingClient.js';
 
 const inputClass = 'w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-500 disabled:bg-slate-100';
 
@@ -12,6 +12,8 @@ export default function StoryComposer({ week, sources, layouts, story, busy, onS
   const [showFullSize, setShowFullSize] = useState(false);
   const [imageState, setImageState] = useState('loading');
   const [logoState, setLogoState] = useState('loading');
+  const [assistant, setAssistant] = useState({ marketingGoal: 'novidade', tone: 'premium', additionalInstruction: '', suggestions: [], loading: false, error: '', unavailable: false });
+  const suggestionAbort = useRef(null);
   const selectedSource = sources.find((source) => source.id === form.sourceResultId);
   const sourceUrl = story ? marketingAssetUrl(week.id, story.id, 'source') : form.sourceAssetVariant === 'branded' ? selectedSource?.brandedPreviewUrl : selectedSource?.originalPreviewUrl;
   const dirty = story && JSON.stringify(normalize(story)) !== JSON.stringify(form);
@@ -29,6 +31,26 @@ export default function StoryComposer({ week, sources, layouts, story, busy, onS
   const selectLayout = (id) => setForm((current) => ({ ...current, storyTemplateId: id }));
   const submit = async (event) => { event.preventDefault(); if (!required) return; await onSave(form); };
   const generate = async () => { if (!canRender) return; await onGenerate(form); };
+  const generateSuggestions = async () => {
+    if (!form.productLabel.trim() || assistant.loading) return;
+    const controller = new AbortController();
+    suggestionAbort.current = controller;
+    setAssistant((current) => ({ ...current, loading: true, error: '', unavailable: false, suggestions: [] }));
+    try {
+      const result = await generateStorySuggestions({ productLabel: form.productLabel, sourceCategory: selectedSource?.categoryLabel || '', priceText: form.priceText, marketingGoal: assistant.marketingGoal, tone: assistant.tone, additionalInstruction: assistant.additionalInstruction }, controller.signal);
+      setAssistant((current) => ({ ...current, loading: false, suggestions: result.suggestions || [] }));
+    } catch (error) {
+      if (error?.name === 'AbortError' || error?.code === 'DEEPSEEK_SUGGESTIONS_CANCELLED') return;
+      setAssistant((current) => ({ ...current, loading: false, error: error.message || 'Não foi possível gerar sugestões.', unavailable: error.code === 'DEEPSEEK_NOT_CONFIGURED' }));
+    } finally { suggestionAbort.current = null; }
+  };
+  const cancelSuggestions = () => {
+    suggestionAbort.current?.abort();
+    suggestionAbort.current = null;
+    setAssistant((current) => ({ ...current, loading: false }));
+  };
+  useEffect(() => () => suggestionAbort.current?.abort(), []);
+  const applySuggestion = (suggestion) => setForm((current) => ({ ...current, ...suggestion }));
 
   return <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
     <div className="mb-5 flex items-start justify-between gap-3"><div><h2 className="text-base font-semibold text-slate-950">{story ? 'Editar Story' : 'Criar Story'}</h2><p className="mt-1 text-xs text-slate-500">A prévia é atualizada localmente enquanto você edita.</p></div>{story && <button type="button" onClick={onCancel} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100" aria-label="Cancelar edição"><X size={17}/></button>}</div>
@@ -44,7 +66,7 @@ export default function StoryComposer({ week, sources, layouts, story, busy, onS
         <Field label="Headline (opcional)"><TextControl aria-label="Headline (opcional)" value={form.headline} max={48} onChange={set('headline')} disabled={busy} placeholder="Seu produto em destaque" words={4}/></Field>
         <Field label="Subheadline (opcional)"><TextControl aria-label="Subheadline (opcional)" value={form.subheadline} max={80} onChange={set('subheadline')} disabled={busy} placeholder="Detalhes ou benefício da oferta" words={8}/></Field>
         <Field label="CTA (opcional)"><TextControl aria-label="CTA (opcional)" value={form.ctaText} max={28} onChange={set('ctaText')} disabled={busy} placeholder="Compre agora" words={3}/></Field>
-        <div className="rounded-xl border border-dashed border-indigo-200 bg-indigo-50/60 p-3 text-xs text-indigo-800"><span className="font-semibold">Sugestões com IA</span><p className="mt-1">Em breve: preencher headline, subheadline e CTA com DeepSeek. Nenhuma chamada é feita nesta fase.</p><button type="button" disabled className="mt-2 rounded-lg border border-indigo-200 px-3 py-1.5 text-[11px] font-semibold opacity-60"><Sparkles size={12} className="mr-1 inline"/> Gerar sugestões com IA</button></div>
+        <StoryAiAssistant value={assistant} disabled={busy || !form.productLabel.trim()} onChange={(changes) => setAssistant((current) => ({ ...current, ...changes }))} onGenerate={generateSuggestions} onCancel={cancelSuggestions} onApply={applySuggestion}/>
         {!sources.length && <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-800">Aprove um resultado na tela Resultados para começar.</p>}
         {warnings.length > 0 && <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><p className="font-semibold">Revise os textos antes de gerar.</p><ul className="mt-1 list-disc pl-4">{warnings.map((warning) => <li key={warning.field}>{fieldName(warning.field)}: {warning.warning}</li>)}</ul></div>}
         {imageState === 'error' && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">A imagem selecionada não está disponível. Escolha outro Resultado ou variante.</div>}
@@ -56,6 +78,10 @@ export default function StoryComposer({ week, sources, layouts, story, busy, onS
     </div>
     {showFullSize && <PreviewModal form={form} sourceUrl={sourceUrl} imageState={imageState} onClose={() => setShowFullSize(false)}/>}
   </section>;
+}
+
+function StoryAiAssistant({ value, disabled, onChange, onGenerate, onCancel, onApply }) {
+  return <section className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-4 text-xs text-indigo-950"><div className="flex items-center gap-2"><Sparkles size={15}/><h3 className="font-semibold">Assistente IA</h3></div><p className="mt-1 text-indigo-800">Gera três opções textuais para o Story. Nenhuma sugestão é aplicada automaticamente.</p><div className="mt-3 grid gap-3 sm:grid-cols-2"><Field label="Objetivo de marketing"><select aria-label="Objetivo de marketing" value={value.marketingGoal} onChange={(event) => onChange({ marketingGoal: event.target.value })} disabled={disabled || value.loading} className={inputClass}>{[['novidade', 'Novidade'], ['oferta', 'Oferta'], ['desejo', 'Desejo'], ['qualidade', 'Qualidade'], ['look', 'Look'], ['presente', 'Presente'], ['ultimas-unidades', 'Últimas unidades'], ['whatsapp', 'Chamada para WhatsApp']].map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></Field><Field label="Tom de voz"><select aria-label="Tom de voz" value={value.tone} onChange={(event) => onChange({ tone: event.target.value })} disabled={disabled || value.loading} className={inputClass}>{[['premium', 'Premium'], ['direto', 'Direto'], ['elegante', 'Elegante'], ['urgente', 'Urgente'], ['descontraído', 'Descontraído']].map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></Field></div><Field label="Instrução adicional (opcional)"><textarea aria-label="Instrução adicional para IA" value={value.additionalInstruction} maxLength={300} onChange={(event) => onChange({ additionalInstruction: event.target.value })} disabled={disabled || value.loading} className={`${inputClass} min-h-20 resize-y`} placeholder="Ex.: destaque o estilo versátil"/></Field><div className="mt-3 flex gap-2"><button type="button" onClick={() => onGenerate().catch(() => {})} disabled={disabled || value.loading} className="inline-flex items-center gap-2 rounded-lg bg-indigo-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-45">{value.loading ? <Loader2 size={14} className="animate-spin"/> : <Sparkles size={14}/>} Gerar 3 sugestões</button>{value.loading && <button type="button" onClick={onCancel} className="rounded-lg border border-indigo-200 px-3 py-2 text-xs font-semibold text-indigo-900">Cancelar</button>}</div>{value.unavailable && <p role="alert" className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900">Configure a chave do DeepSeek em Configurações para usar o Assistente IA.</p>}{value.error && !value.unavailable && <p role="alert" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-rose-800">{value.error}</p>}{value.suggestions.length > 0 && <div className="mt-4 space-y-3">{value.suggestions.map((suggestion, index) => <article key={`${suggestion.headline}-${index}`} className="rounded-xl border border-indigo-100 bg-white p-3"><p className="font-semibold text-slate-900">Sugestão {index + 1}</p><dl className="mt-2 space-y-1 text-slate-600"><div><dt className="inline font-medium">Chamada: </dt><dd className="inline">{suggestion.calloutText}</dd></div><div><dt className="inline font-medium">Headline: </dt><dd className="inline">{suggestion.headline}</dd></div><div><dt className="inline font-medium">Subheadline: </dt><dd className="inline">{suggestion.subheadline}</dd></div><div><dt className="inline font-medium">CTA: </dt><dd className="inline">{suggestion.ctaText}</dd></div></dl><button type="button" onClick={() => onApply(suggestion)} className="mt-3 rounded-lg border border-indigo-200 px-3 py-1.5 text-[11px] font-semibold text-indigo-800">Aplicar esta sugestão</button></article>)}</div>}</section>;
 }
 
 export function StoryPreview({ form, sourceUrl, imageState, logoState, onImageLoad, onImageError, onLogoLoad, onLogoError, showSafeArea = false, finalUrl = null }) {

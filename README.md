@@ -19,7 +19,8 @@ O escopo e a ordem das fases são definidos pelo [Documento Mestre](docs/DOCUMEN
 - Fase 7.1 — Fundação do Marketing Studio: **aprovada tecnicamente em 21 de julho de 2026** — ver [FASE-07-IMPLEMENTACAO.md](docs/FASE-07-IMPLEMENTACAO.md).
 - Fase 7.2 — Inteligência Operacional: **concluída e aprovada em 21 de julho de 2026** — ver [FASE-07-2-IMPLEMENTACAO.md](docs/FASE-07-2-IMPLEMENTACAO.md).
 - Fase 7.3 — Configurações de IA e DeepSeek: **implementada e validada tecnicamente em 21 de julho de 2026** — ver [FASE-07-3-CONFIGURACOES-IA.md](docs/FASE-07-3-CONFIGURACOES-IA.md).
-- Fase 7.4 — Preview Visual e Compositor de Story: **implementada e validada tecnicamente em 27 de julho de 2026; aguardando aprovação para commit e push** — ver [FASE-07-4-IMPLEMENTACAO.md](docs/FASE-07-4-IMPLEMENTACAO.md).
+- Fase 7.4 — Preview Visual e Compositor de Story: **concluída tecnicamente em 27 de julho de 2026** — ver [FASE-07-4-IMPLEMENTACAO.md](docs/FASE-07-4-IMPLEMENTACAO.md).
+- Fase 7.5 — Assistente IA para textos de Stories: **implementada e validada funcionalmente em 27 de julho de 2026; aguardando commit e push** — ver [FASE-07-5-IMPLEMENTACAO.md](docs/FASE-07-5-IMPLEMENTACAO.md).
 
 O encerramento está registrado em [FASE-02-ENCERRAMENTO.md](docs/FASE-02-ENCERRAMENTO.md) e a evolução consolidada do projeto em [HISTORICO.md](docs/HISTORICO.md).
 
@@ -82,7 +83,7 @@ O Keychain tem prioridade. Se uma chave estiver salva no Chaves do macOS, ela se
 
 ### DeepSeek
 
-Na aba **DeepSeek**, a chave é guardada exclusivamente no Chaves do macOS com service `PRIME_IA_STUDIO_DEEPSEEK` e account `local-user`. O modelo inicial é `deepseek-v4-flash`. O teste de conexão faz somente uma consulta à listagem de modelos, com timeout e zero retry; ele não gera texto. A Fase 7.3 ainda não utiliza DeepSeek no Marketing Studio.
+Na aba **DeepSeek**, a chave é guardada exclusivamente no Chaves do macOS com service `PRIME_IA_STUDIO_DEEPSEEK` e account `local-user`. O modelo disponível nesta instalação é `deepseek-v4-flash`. O teste de conexão faz somente uma consulta à listagem de modelos, com timeout e zero retry. O Marketing Studio usa essa configuração somente quando o usuário clica em **Gerar 3 sugestões**.
 
 ## Templates locais
 
@@ -170,7 +171,7 @@ Ao gerar explicitamente, o aplicativo cria a partir da mesma composição um Web
 storage/marketing/weeks/<week-id>/
 ```
 
-Sem logo aprovada, a renderização é bloqueada com mensagem clara. Aprovar uma semana exige todos os Stories prontos; qualquer edição posterior retorna a semana para rascunho. Uma semana aprovada pode ser encerrada e passa a ser somente leitura. O controle “Gerar sugestões com IA” é apenas visual e permanece desabilitado. Não existe publicação automática, geração de texto, editor livre ou integração externa no módulo. Consulte [FASE-07-IMPLEMENTACAO.md](docs/FASE-07-IMPLEMENTACAO.md), [FASE-07-2-IMPLEMENTACAO.md](docs/FASE-07-2-IMPLEMENTACAO.md) e [FASE-07-4-IMPLEMENTACAO.md](docs/FASE-07-4-IMPLEMENTACAO.md).
+Sem logo aprovada, a renderização é bloqueada com mensagem clara. Aprovar uma semana exige todos os Stories prontos; qualquer edição posterior retorna a semana para rascunho. Uma semana aprovada pode ser encerrada e passa a ser somente leitura. O Assistente IA gera três sugestões textuais somente após clique explícito, sem enviar imagens e sem aplicar automaticamente uma sugestão. Não existe publicação automática, editor livre ou integração externa no módulo. Consulte [FASE-07-IMPLEMENTACAO.md](docs/FASE-07-IMPLEMENTACAO.md), [FASE-07-2-IMPLEMENTACAO.md](docs/FASE-07-2-IMPLEMENTACAO.md), [FASE-07-4-IMPLEMENTACAO.md](docs/FASE-07-4-IMPLEMENTACAO.md) e [FASE-07-5-IMPLEMENTACAO.md](docs/FASE-07-5-IMPLEMENTACAO.md).
 
 ## Parar os servidores
 
@@ -202,7 +203,7 @@ npm test
 npm run build
 ```
 
-Os testes usam respostas simuladas e não acessam OpenRouter ou DeepSeek. Estado atual: 53 arquivos e 347 testes aprovados.
+Os testes automatizados usam respostas simuladas e não acessam OpenRouter ou DeepSeek. Estado atual: 54 arquivos e 353 testes aprovados. A validação funcional da Fase 7.5 executou uma chamada real de conexão e uma geração controlada de sugestões, sem OpenRouter.
 
 ## Limitações intencionais
 

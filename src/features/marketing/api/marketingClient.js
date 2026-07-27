@@ -3,6 +3,8 @@ const REQUEST_TIMEOUT_MS = 30_000;
 async function requestJson(url, options = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const abort = () => controller.abort();
+  options.signal?.addEventListener('abort', abort, { once: true });
   try {
     const response = await fetch(url, { ...options, signal: controller.signal });
     const body = await response.json().catch(() => ({}));
@@ -13,9 +15,13 @@ async function requestJson(url, options = {}) {
     }
     return body;
   } catch (error) {
-    if (error?.name === 'AbortError') throw new Error('A API local demorou mais que 30 segundos para responder.');
+    if (error?.name === 'AbortError') {
+      const timeoutError = new Error('A API local demorou mais que 30 segundos para responder.');
+      timeoutError.name = 'AbortError';
+      throw timeoutError;
+    }
     throw error;
-  } finally { clearTimeout(timeout); }
+  } finally { clearTimeout(timeout); options.signal?.removeEventListener('abort', abort); }
 }
 
 const json = (method, body) => ({ method, headers: { 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
@@ -34,4 +40,5 @@ export function updateMarketingStory(weekId, storyId, story) { return requestJso
 export function deleteMarketingStory(weekId, storyId) { return requestJson(`/api/marketing/weeks/${encodeURIComponent(weekId)}/stories/${encodeURIComponent(storyId)}`, { method: 'DELETE' }); }
 export function renderMarketingStory(weekId, storyId) { return requestJson(`/api/marketing/weeks/${encodeURIComponent(weekId)}/stories/${encodeURIComponent(storyId)}/render`, json('POST')); }
 export function updateMarketingEditorialStatus(weekId, storyId, editorialStatus) { return requestJson(`/api/marketing/weeks/${encodeURIComponent(weekId)}/stories/${encodeURIComponent(storyId)}/editorial-status`, json('PATCH', { editorialStatus })); }
+export function generateStorySuggestions(payload, signal) { return requestJson('/api/marketing/suggestions', { ...json('POST', payload), signal }); }
 export function marketingAssetUrl(weekId, storyId, kind) { return `/api/marketing/weeks/${encodeURIComponent(weekId)}/stories/${encodeURIComponent(storyId)}/assets/${kind}`; }

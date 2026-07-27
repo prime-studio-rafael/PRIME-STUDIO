@@ -1,11 +1,19 @@
 import { Router } from 'express';
 
-export function createMarketingRouter({ marketingService }) {
+export function createMarketingRouter({ marketingService, storySuggestionsService }) {
   const router = Router();
   router.use((_request, response, next) => { response.set('Cache-Control', 'no-store'); next(); });
 
   router.get('/layouts', (_request, response) => response.json(marketingService.layouts()));
   router.get('/sources', async (_request, response, next) => { try { response.json(await marketingService.listSources()); } catch (error) { next(error); } });
+  router.post('/suggestions', async (request, response, next) => {
+    const controller = new AbortController();
+    const cancel = () => controller.abort();
+    request.once('aborted', cancel);
+    response.once('close', () => { if (!response.writableEnded) cancel(); });
+    try { response.json(await storySuggestionsService.suggest(request.body || {}, { signal: controller.signal })); } catch (error) { next(error); }
+    finally { request.removeListener('aborted', cancel); }
+  });
   router.get('/weeks', async (_request, response, next) => { try { response.json(await marketingService.listWeeks()); } catch (error) { next(error); } });
   router.post('/weeks', async (request, response, next) => { try { response.status(201).json(await marketingService.createWeek(request.body || {})); } catch (error) { next(error); } });
   router.get('/weeks/:weekId', async (request, response, next) => { try { response.json(await marketingService.getWeek(request.params.weekId)); } catch (error) { next(error); } });

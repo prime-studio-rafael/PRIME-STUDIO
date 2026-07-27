@@ -2,7 +2,7 @@
 
 Documento subordinado ao [Documento Mestre](./DOCUMENTO-MESTRE.md), que continua sendo a autoridade final em caso de conflito de escopo. Este documento existe para que uma IA (ou pessoa) que nunca viu o projeto entenda o estado atual sem precisar reconstruir meses de conversas ou ler todos os documentos de fase em ordem cronológica.
 
-Última verificação contra o código: 27 de julho de 2026 — Fase 7.4 do Marketing Studio implementada e validada tecnicamente; aguardando aprovação para commit e push.
+Última verificação contra o código: 27 de julho de 2026 — Fase 7.5 do Marketing Studio implementada e validada funcionalmente; commit aguardando autorização de push.
 
 ---
 
@@ -43,7 +43,7 @@ PRIME-STUDIO/
 │       ├── batches/               # Produção em Lotes
 │       ├── branding/             # Branding/Logo
 │       ├── marketing/            # Planejamento semanal e Stories 9:16
-│       └── settings/             # Configurações (chave OpenRouter)
+│       └── settings/             # Configurações (OpenRouter e DeepSeek)
 ├── server/                       # Backend (Node + Express)
 │   ├── routes/                   # Rotas HTTP finas — nenhuma regra de negócio aqui
 │   ├── services/                 # Regras de negócio (generationExecutor, batchService, etc.)
@@ -57,7 +57,7 @@ PRIME-STUDIO/
 │   └── utils/                    # Validação de imagem, metadata, erros
 ├── shared/                       # Código compartilhado entre frontend e backend (políticas/constantes)
 ├── storage/                      # Dados locais em disco (Git-ignorado) — templates, batches, results, branding, marketing
-├── tests/{server,frontend}/      # 46 arquivos, 330 testes (Vitest)
+├── tests/{server,frontend}/      # 54 arquivos, 353 testes (Vitest)
 ├── docs/                         # Documentação (este diretório)
 ├── .claude/skills/prime-studio/  # Regras permanentes para o Claude Code (ver AGENTS.md para a versão genérica)
 └── public/templates/             # Imagens seed dos templates model-01/model-02
@@ -82,6 +82,7 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 11. **Fase 7.2 — Inteligência Operacional** — proposta determinística, prioridade, categorias, estados editoriais e semanas encerradas somente leitura.
 12. **Fase 7.3 — Configurações de IA e DeepSeek** — painel seguro de provedores, DeepSeek no Keychain e metadata local não sensível; ainda sem geração de textos.
 13. **Fase 7.4 — Preview Visual e Compositor de Story** — contrato visual compartilhado, preview local responsivo e renderização WebP + JPEG dos Stories.
+14. **Fase 7.5 — Assistente IA para textos de Stories** — sugestões textuais estruturadas, aplicação manual no compositor, validação segura e uma chamada explícita por clique usando o modelo configurado do DeepSeek.
 
 ## 5. Fluxo completo (geração individual)
 
@@ -111,6 +112,7 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 | Cliente OpenRouter | `server/providers/openrouter/openrouterClient.js` |
 | Chave do OpenRouter | `server/secrets/` (Chaves do macOS) + `.env` (fallback) |
 | Configurações de IA | `src/features/settings/`, `server/services/aiSettingsService.js`, `server/repositories/localAiSettingsRepository.js` |
+| Assistente de Stories | `src/features/marketing/components/StoryComposer.jsx`, `server/services/storySuggestionsService.js` |
 | Overlay de Branding | `server/services/logoOverlay.js` (nome indicativo — conferir arquivo exato no código) |
 | Tela Nova Geração | `src/app/App.jsx`, `src/features/generation/` |
 | Tela Templates | `src/features/templates/` |
@@ -133,7 +135,7 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 - **Marketing preserva a própria fonte** — o `sourceResultId` mantém rastreabilidade, mas cada semana copia o asset aprovado para não quebrar se o Resultado for excluído depois.
 - **Stories são composição local, nunca IA** — três layouts fixos, especificação visual canônica compartilhada, Sharp no backend e zero chamada externa.
 - **WebP e JPEG vêm da mesma composição** — WebP é o derivado interno; JPEG 1080×1920 é o arquivo para upload manual. Editar um Story invalida os dois, e falha parcial faz limpeza compensatória.
-- **DeepSeek configurável ainda não gera textos** — a Fase 7.3 entrega somente credencial, modelo, status e teste seguro; seu uso no Marketing Studio exige fase posterior aprovada.
+- **Assistente DeepSeek é explícito e textual** — a Fase 7.5 aceita apenas os campos permitidos, não envia imagens, não persiste respostas integrais e não faz retry.
 
 ## 8. Regras do projeto (resumo — ver [AGENTS.md](../AGENTS.md) para a versão completa)
 

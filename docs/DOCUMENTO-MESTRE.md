@@ -2,7 +2,7 @@
 
 Versão: 2.0
 Estado: referência oficial do projeto  
-Última consolidação: 27 de julho de 2026 — Fases 7.3 e 7.4 implementadas, validadas e publicadas no commit `197c8aa`.
+Última consolidação: 27 de julho de 2026 — Fase 7.5 implementada e validada localmente; commit aguardando autorização de push.
 
 ## 1. Autoridade e controle de escopo
 
@@ -449,6 +449,22 @@ Estado: **concluída, validada e publicada em 27 de julho de 2026**.
 
 Detalhes e evidências: [FASE-07-4-IMPLEMENTACAO.md](./FASE-07-4-IMPLEMENTACAO.md).
 
+### Fase 7.5 — Assistente IA para textos de Stories
+
+Estado: **implementada e validada funcionalmente em 27 de julho de 2026; aguardando commit e push**.
+
+- painel de Assistente IA integrado ao Story Composer;
+- entradas exclusivamente textuais e sem envio de imagens ao DeepSeek;
+- uma chamada por clique, zero retry, timeout e cancelamento;
+- resposta estruturada validada com exatamente três sugestões e quatro campos textuais;
+- aplicação manual, preview atualizado e invalidação de render anterior;
+- modelo efetivamente utilizado conforme a configuração da conta: `deepseek-v4-flash`;
+- uma conexão real aprovada após correção do desalinhamento de modelo e uma geração real controlada de sugestões;
+- nenhuma chamada ao OpenRouter e nenhuma resposta integral persistida;
+- cenário temporário removido após validação.
+
+Detalhes e evidências: [FASE-07-5-IMPLEMENTACAO.md](./FASE-07-5-IMPLEMENTACAO.md).
+
 #### Próximas melhorias aprovadas, ainda não iniciadas
 
 - **download em massa das imagens finais**, ampliando o download em lote já validado na Fase 5 (Produção em Lotes).
@@ -496,6 +512,7 @@ A declaração `FASE 2 CONCLUÍDA` foi registrada depois da confirmação de tod
 - [Fase 7.2 — Inteligência Operacional](./FASE-07-2-IMPLEMENTACAO.md)
 - [Fase 7.3 — Configurações de IA e DeepSeek](./FASE-07-3-CONFIGURACOES-IA.md)
 - [Fase 7.4 — Preview Visual e Compositor de Story](./FASE-07-4-IMPLEMENTACAO.md)
+- [Fase 7.5 — Assistente IA para textos de Stories](./FASE-07-5-IMPLEMENTACAO.md)
 - [Contrato de dados — Template, Lote, Resultado](./DATA_CONTRACT.md)
 - [Contexto mestre do projeto para IAs](./PROJECT_MASTER_CONTEXT.md)
 - [Ordem de leitura recomendada](./START_HERE.md)

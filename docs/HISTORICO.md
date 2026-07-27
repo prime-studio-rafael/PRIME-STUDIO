@@ -118,3 +118,9 @@ Configurações passou a reunir uma visão geral dos provedores, OpenRouter e De
 Estado: **implementada e validada tecnicamente em 27 de julho de 2026; aguardando aprovação para commit e push**.
 
 O Marketing Studio ganhou um compositor local responsivo com preview React/CSS, layouts visuais, área segura do Instagram, contadores e avisos determinísticos de texto, além do modal de tamanho real. A especificação visual é compartilhada com o Sharp, que permanece autoritativo e gera WebP interno e JPEG 1080×1920 para upload manual a partir da mesma composição. Os novos campos são aditivos e Stories antigos continuam legíveis; qualquer edição estrutural invalida os dois derivados, e falhas parciais removem os artefatos recém-criados. Validação técnica: 347 testes em 53 arquivos e build aprovados, sem OpenRouter, DeepSeek ou crédito externo. Detalhes: [FASE-07-4-IMPLEMENTACAO.md](./FASE-07-4-IMPLEMENTACAO.md).
+
+## Fase 7.5 — Assistente IA para textos de Stories
+
+Estado: **validada funcionalmente em 27 de julho de 2026; aguardando commit e push**.
+
+O Story Composer passou a oferecer três sugestões textuais por chamada explícita, com objetivo, tom e instrução adicional. O backend valida exatamente quatro campos por sugestão, limites de texto e proíbe condições comerciais inventadas. A validação real encontrou que `deepseek-chat` não estava disponível para a chave configurada; o serviço foi corrigido para consumir o modelo selecionado nas Configurações, `deepseek-v4-flash`, e uma nova conexão foi aprovada. Foi executada exatamente uma geração real de sugestões; nenhuma imagem foi enviada, nenhuma chamada ao OpenRouter foi feita e nenhum cenário temporário permaneceu no storage. Suíte final: 353 testes em 54 arquivos e build aprovados. Detalhes: [FASE-07-5-IMPLEMENTACAO.md](./FASE-07-5-IMPLEMENTACAO.md).

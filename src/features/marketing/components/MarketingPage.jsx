@@ -39,7 +39,7 @@ export default function MarketingPage({ marketing, onOpenResult = () => {} }) {
       </main>
     </div>}
 
-    {confirmDelete && (confirmDelete === 'week' || !readOnly) && <ConfirmDialog title={confirmDelete === 'week' ? 'Excluir esta semana?' : 'Excluir este Story?'} body="Os arquivos locais relacionados também serão removidos. Esta ação não pode ser desfeita." busy={marketing.busy} onCancel={() => setConfirmDelete(null)} onConfirm={() => { const action = confirmDelete === 'week' ? marketing.removeWeek() : marketing.removeStory(confirmDelete); action.then(() => setConfirmDelete(null)).catch(() => {}); }} />}
+    {confirmDelete && (confirmDelete === 'week' || !readOnly) && <ConfirmDialog title={confirmDelete === 'week' ? 'Excluir esta semana?' : 'Excluir este Story?'} body="Os arquivos locais relacionados também serão removidos. Esta ação não pode ser desfeita." busy={marketing.busy} onCancel={() => setConfirmDelete(null)} onConfirm={() => { const isWeek = confirmDelete === 'week'; const action = isWeek ? marketing.removeWeek() : marketing.removeStory(confirmDelete); action.then(() => { if (isWeek) setEditing(null); setConfirmDelete(null); }).catch(() => {}); }} />}
   </>;
 }
 

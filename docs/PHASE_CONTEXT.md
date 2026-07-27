@@ -4,10 +4,10 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 
 ## Estado atual
 
-- Versão: MVP local evoluído até o Marketing Studio V1.
-- Fase atual: infraestrutura de contexto; nenhuma nova fase de produto iniciada.
-- Última fase concluída: Fase 7.4 — Preview Visual e Compositor de Story.
-- Último estado funcional publicado: Fases 7.3 e 7.4 no commit `197c8aa`.
+- Versão: MVP local evoluído até a Fase 7.5 — Assistente IA para textos de Stories.
+- Fase atual: encerramento documental da Fase 7.5; commit aguardando autorização de push.
+- Última fase concluída tecnicamente: Fase 7.5 — Assistente IA para textos de Stories.
+- Último estado funcional publicado: Fases 7.3 e 7.4 no commit `197c8aa`; Fase 7.5 ainda local.
 - Próxima fase: não há fase de produto aprovada para início.
 
 ## Git
@@ -23,8 +23,8 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 
 - Nova geração individual via OpenRouter.
 - Templates, Resultados, Produção em Lotes e Branding locais.
-- Marketing Studio: semanas, Stories, calendário, histórico e compositor visual.
-- Configurações de IA: OpenRouter preservado e DeepSeek configurável, sem geração de texto.
+- Marketing Studio: semanas, Stories, calendário, histórico, compositor visual e Assistente IA textual.
+- Configurações de IA: OpenRouter preservado e DeepSeek configurável; o Assistente usa o modelo selecionado pela configuração.
 
 ## Principais contratos
 
@@ -32,6 +32,7 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 - Semana e Story: `server/services/marketingService.js` e `server/repositories/localMarketingRepository.js`.
 - Contrato visual de Stories: `shared/storyLayoutSpec.js` e `shared/storyTextLayout.js`.
 - WebP interno e JPEG 1080×1920 são derivados da mesma composição Sharp.
+- Sugestões textuais: `server/services/storySuggestionsService.js` e `POST /api/marketing/suggestions`.
 - Contratos existentes são aditivos e compatíveis com registros antigos.
 
 ## Principais endpoints
@@ -60,11 +61,11 @@ React, Vite, Tailwind CSS, Node.js, Express, `sharp`, `multer`, Keychain do macO
 
 ## Pendências aprovadas
 
-Nenhuma pendência de produto aprovada para implementação neste momento. Documentos históricos não autorizam início de trabalho.
+Nenhuma pendência de produto aprovada para implementação neste momento. A Fase 7.5 está tecnicamente validada, aguardando encerramento Git.
 
 ## Fora do escopo
 
-Geração de textos com DeepSeek, publicação automática, Buffer, banco, Supabase, autenticação, nuvem, editor livre, drag-and-drop, roteamento automático entre provedores e novas telas sem aprovação.
+Publicação automática, Buffer, banco, Supabase, autenticação, nuvem, editor livre, drag-and-drop, roteamento automático entre provedores e novas telas sem aprovação.
 
 ## Documentos adicionais por tarefa
 
@@ -80,4 +81,4 @@ Geração de textos com DeepSeek, publicação automática, Buffer, banco, Supab
 
 ## Última sincronização
 
-27 de julho de 2026. Atualizar este arquivo ao concluir fase, alterar arquitetura, contrato, módulo ativo ou pendência aprovada.
+27 de julho de 2026. Fase 7.5 validada localmente; atualizar este arquivo ao concluir fase, alterar arquitetura, contrato, módulo ativo ou pendência aprovada.
