@@ -29,6 +29,11 @@ import { createOpenRouterClient } from './providers/openrouter/openrouterClient.
 import { createOpenRouterKeyValidator } from './providers/openrouter/openrouterKeyValidator.js';
 import { createOpenRouterKeyStore } from './secrets/openrouterKeyStore.js';
 import { createOpenRouterKeyResolver } from './secrets/openrouterKeyResolver.js';
+import { createDeepSeekKeyStore } from './secrets/deepseekKeyStore.js';
+import { createDeepSeekKeyValidator } from './providers/deepseek/deepseekKeyValidator.js';
+import { createLocalAiSettingsRepository } from './repositories/localAiSettingsRepository.js';
+import { createAiSettingsService } from './services/aiSettingsService.js';
+import { createAiSettingsRouter } from './routes/aiSettings.js';
 import { isAppError } from './utils/errors.js';
 import { requestLogger } from './utils/requestLogger.js';
 import { readEnv } from './config/env.js';
@@ -61,6 +66,10 @@ export function createApp({
   brandingService,
   marketingRepository,
   marketingService,
+  aiSettingsRepository,
+  aiSettingsService,
+  deepSeekKeyStore = createDeepSeekKeyStore(),
+  deepSeekKeyValidator,
 } = {}) {
   let resolvedGenerationService;
   const resolvedCoordinator = generationCoordinator || createGenerationCoordinator();
@@ -86,13 +95,22 @@ export function createApp({
   const resolvedMarketingRepository = marketingRepository || createLocalMarketingRepository();
   const resolvedMarketingService = marketingService || createMarketingService({ repository: resolvedMarketingRepository, resultService: resolvedResultService, brandingService: resolvedBrandingService });
   resolvedMarketingRepository.ensureInitialized().catch((error) => console.error('[marketing]', error?.message || error));
+  const resolvedAiSettingsRepository = aiSettingsRepository || createLocalAiSettingsRepository();
+  const resolvedDeepSeekKeyValidator = deepSeekKeyValidator || createDeepSeekKeyValidator({ getApiKey: () => deepSeekKeyStore.getKey() });
+  const resolvedAiSettingsService = aiSettingsService || createAiSettingsService({
+    repository: resolvedAiSettingsRepository,
+    openRouterKeyResolver: keyResolver,
+    deepSeekKeyStore,
+    deepSeekKeyValidator: resolvedDeepSeekKeyValidator,
+  });
   const app = express();
   app.disable('x-powered-by');
   app.use(requestLogger);
   app.use(express.json({ limit: '16kb' }));
   app.use('/api/health', createHealthRouter({ keyResolver }));
   app.use('/api/config', createConfigRouter({ keyResolver }));
-  app.use('/api/secrets/openrouter', createOpenRouterSecretsRouter({ keyStore, keyResolver, keyValidator }));
+  app.use('/api/secrets/openrouter', createOpenRouterSecretsRouter({ keyStore, keyResolver, keyValidator, onTestResult: resolvedAiSettingsService.recordOpenRouterTest }));
+  app.use('/api/ai', createAiSettingsRouter({ service: resolvedAiSettingsService }));
   app.use('/api/templates/categories', createTemplateCategoriesRouter());
   app.use('/api/templates', createTemplatesRouter({ templateService: resolvedTemplateService }));
   app.use('/api/generations', createGenerationsRouter({ generationService: resolvedGenerationService }));

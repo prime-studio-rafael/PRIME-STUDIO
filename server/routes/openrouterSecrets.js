@@ -4,7 +4,7 @@ import { AppError } from '../utils/errors.js';
 const MAX_API_KEY_LENGTH = 512;
 const MIN_API_KEY_LENGTH = 20;
 
-export function createOpenRouterSecretsRouter({ keyStore, keyResolver, keyValidator }) {
+export function createOpenRouterSecretsRouter({ keyStore, keyResolver, keyValidator, onTestResult = async () => {} }) {
   const router = Router();
   router.use(express.json({ limit: '4kb' }));
 
@@ -50,8 +50,11 @@ export function createOpenRouterSecretsRouter({ keyStore, keyResolver, keyValida
 
   router.post('/test', async (_request, response, next) => {
     try {
-      response.json(await keyValidator.validate());
+      const result = await keyValidator.validate();
+      await onTestResult(result.valid);
+      response.json(result);
     } catch (error) {
+      try { await onTestResult(false); } catch { /* o erro original é o relevante */ }
       next(error);
     }
   });

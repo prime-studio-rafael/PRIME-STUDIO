@@ -96,8 +96,9 @@ describe('OpenRouter secret endpoints', () => {
       getOpenRouterApiKey: vi.fn(async () => (source === 'keychain' ? 'server-only-secret' : null)),
     };
     const keyValidator = { validate: vi.fn(async () => ({ valid: true, message: 'Chave válida.' })) };
+    const aiSettingsService = { recordOpenRouterTest: vi.fn(async () => {}) };
     const logSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
-    const app = createApp({ keyStore, keyResolver, keyValidator, generateImage: vi.fn() });
+    const app = createApp({ keyStore, keyResolver, keyValidator, aiSettingsService, generateImage: vi.fn() });
     const server = await startTestServer(app);
 
     try {
@@ -117,6 +118,7 @@ describe('OpenRouter secret endpoints', () => {
       const tested = await fetch(`${server.baseUrl}/api/secrets/openrouter/test`, { method: 'POST' });
       expect(await tested.json()).toEqual({ valid: true, message: 'Chave válida.' });
       expect(keyValidator.validate).toHaveBeenCalledTimes(1);
+      expect(aiSettingsService.recordOpenRouterTest).toHaveBeenCalledWith(true);
 
       const removed = await fetch(`${server.baseUrl}/api/secrets/openrouter`, { method: 'DELETE' });
       expect((await removed.json()).configured).toBe(false);

@@ -2,7 +2,7 @@
 
 Versão: 2.0
 Estado: referência oficial do projeto  
-Última consolidação: 21 de julho de 2026 — **Marketing Studio V1 concluído**, com Fases 7.1 e 7.2 aprovadas na validação final.
+Última consolidação: 27 de julho de 2026 — Fase 7.4 do Marketing Studio implementada e validada tecnicamente, aguardando aprovação para commit e push.
 
 ## 1. Autoridade e controle de escopo
 
@@ -420,6 +420,34 @@ Estado: **concluída e aprovada na validação final em 21 de julho de 2026**.
 
 Detalhes e evidências: [FASE-07-2-IMPLEMENTACAO.md](./FASE-07-2-IMPLEMENTACAO.md).
 
+### Fase 7.3 — Configurações de IA e DeepSeek
+
+Estado: **implementada e validada tecnicamente em 21 de julho de 2026; aguardando aprovação para commit e push**.
+
+- Configurações reúne Visão geral, OpenRouter e DeepSeek na seção Inteligência Artificial;
+- configuração existente do OpenRouter preservada integralmente;
+- DeepSeek preparado para futuros textos criativos de Stories, com modelo único `deepseek-v4-flash`;
+- chave DeepSeek somente no Keychain do macOS, nunca no frontend, JSON, logs, documentação ou Git;
+- metadata não sensível em `storage/settings/`, com escrita atômica e backup;
+- teste de conexão manual por listagem de modelos, exatamente uma chamada, timeout e zero retry;
+- nenhuma geração de texto ou integração com o Marketing Studio nesta fase.
+
+Detalhes e evidências: [FASE-07-3-CONFIGURACOES-IA.md](./FASE-07-3-CONFIGURACOES-IA.md).
+
+### Fase 7.4 — Preview Visual e Compositor de Story
+
+Estado: **implementada e validada tecnicamente em 27 de julho de 2026; aguardando aprovação para commit e push**.
+
+- contrato visual canônico compartilhado por React/CSS e Sharp: canvas 1080×1920, área segura, paleta, geometria e limites de texto;
+- preview instantâneo local no compositor, em duas colunas no desktop e uma coluna no mobile, sem renderização nem chamada de backend por tecla;
+- layouts Produto em destaque, Minimalista e Oferta, com `productLabel`, chamada curta, headline, subheadline, preço e CTA;
+- fonte preservada com `contain`, logo aprovada obrigatória e o Sharp como arquivo final autoritativo;
+- renderização explícita gera, da mesma composição, WebP interno e JPEG para Buffer/Instagram, com escrita atômica e limpeza compensatória;
+- edição estrutural invalida ambos os derivados; Stories antigos continuam legíveis com os novos campos nulos;
+- nenhum uso de OpenRouter, DeepSeek, Buffer ou qualquer provedor externo.
+
+Detalhes e evidências: [FASE-07-4-IMPLEMENTACAO.md](./FASE-07-4-IMPLEMENTACAO.md).
+
 #### Próximas melhorias aprovadas, ainda não iniciadas
 
 - **download em massa das imagens finais**, ampliando o download em lote já validado na Fase 5 (Produção em Lotes).
@@ -465,6 +493,8 @@ A declaração `FASE 2 CONCLUÍDA` foi registrada depois da confirmação de tod
 - [Perfil Completo de Geração por Template (5 fases)](./FASE-TEMPLATE-PROFILE-IMPLEMENTACAO.md)
 - [Fase 7 — Marketing Studio V1](./FASE-07-IMPLEMENTACAO.md)
 - [Fase 7.2 — Inteligência Operacional](./FASE-07-2-IMPLEMENTACAO.md)
+- [Fase 7.3 — Configurações de IA e DeepSeek](./FASE-07-3-CONFIGURACOES-IA.md)
+- [Fase 7.4 — Preview Visual e Compositor de Story](./FASE-07-4-IMPLEMENTACAO.md)
 - [Contrato de dados — Template, Lote, Resultado](./DATA_CONTRACT.md)
 - [Contexto mestre do projeto para IAs](./PROJECT_MASTER_CONTEXT.md)
 - [Ordem de leitura recomendada](./START_HERE.md)

@@ -6,10 +6,10 @@ const week = { id: 'week-1', weekStart: '2026-07-20', timezone: 'America/Sao_Pau
 function marketing(overrides = {}) { return { layouts: [{ id: 'product-highlight', label: 'Produto em destaque' }, { id: 'minimal', label: 'Minimalista' }, { id: 'offer', label: 'Oferta' }], sources: [{ id: 'result-1', templateLabel: 'Modelo aprovado', productHint: 'Produto aprovado', categoryLabel: 'Moda Masculina', brandedAvailable: true }], weeks: [week], selected: week, status: 'ready', error: '', busy: false, load: vi.fn(), select: vi.fn(async () => {}), createWeek: vi.fn(async () => {}), approveWeek: vi.fn(async () => {}), draftWeek: vi.fn(async () => {}), closeWeek: vi.fn(async () => {}), proposeWeek: vi.fn(async () => {}), removeWeek: vi.fn(async () => {}), addStory: vi.fn(async () => {}), updateStory: vi.fn(async () => {}), removeStory: vi.fn(async () => {}), renderStory: vi.fn(async () => {}), setEditorialStatus: vi.fn(async () => {}), ...overrides }; }
 
 describe('Marketing Studio UI', () => {
-  it('creates a planned Story from an approved result using simple controls', () => {
+  it('creates a planned Story from an approved result using the visual composer', () => {
     const state = marketing(); render(<MarketingPage marketing={state}/>);
     fireEvent.change(screen.getByLabelText('Nome ou código do produto'), { target: { value: 'Camisa 01' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Adicionar à semana' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar rascunho' }));
     expect(state.addStory).toHaveBeenCalledWith(expect.objectContaining({ sourceResultId: 'result-1', productLabel: 'Camisa 01', storyTemplateId: 'product-highlight', scheduledDate: '2026-07-20' }));
   });
 
@@ -23,11 +23,12 @@ describe('Marketing Studio UI', () => {
   });
 
   it('shows a ready Story without crop and offers local render/download operations', () => {
-    const readyStory = { id: 'story-1', sourceResultId: 'result-1', sourceAssetVariant: 'original', productLabel: 'Camisa 01', categoryLabel: 'Moda Masculina', storyTemplateId: 'minimal', scheduledDate: '2026-07-20', scheduledTime: '10:00', order: 1, renderStatus: 'ready', editorialStatus: 'ready', renderedAssetFileName: 'story-1.webp' };
+    const readyStory = { id: 'story-1', sourceResultId: 'result-1', sourceAssetVariant: 'original', productLabel: 'Camisa 01', categoryLabel: 'Moda Masculina', storyTemplateId: 'minimal', scheduledDate: '2026-07-20', scheduledTime: '10:00', order: 1, renderStatus: 'ready', editorialStatus: 'ready', renderedAssetFileName: 'story-1.webp', bufferAssetFileName: 'story-1-buffer.jpg' };
     const state = marketing({ weeks: [{ ...week, stories: [readyStory] }], selected: { ...week, stories: [readyStory] } }); render(<MarketingPage marketing={state}/>);
     fireEvent.click(screen.getByRole('button', { name: 'Stories' }));
     expect(screen.getByAltText('Story de Camisa 01')).toHaveClass('object-contain');
-    expect(screen.getByRole('link', { name: 'Download' })).toHaveAttribute('href', '/api/marketing/weeks/week-1/stories/story-1/assets/story');
+    expect(screen.getByRole('link', { name: 'WebP' })).toHaveAttribute('href', '/api/marketing/weeks/week-1/stories/story-1/assets/story');
+    expect(screen.getByRole('link', { name: 'JPEG Buffer' })).toHaveAttribute('href', '/api/marketing/weeks/week-1/stories/story-1/assets/buffer');
     fireEvent.click(screen.getByRole('button', { name: 'Renderizar novamente' }));
     expect(state.renderStory).toHaveBeenCalledWith('story-1');
     fireEvent.click(screen.getByRole('button', { name: 'Marcar publicado' }));
@@ -57,7 +58,7 @@ describe('Marketing Studio UI', () => {
   it('shows only an honest empty source warning when there are no approved results', () => {
     render(<MarketingPage marketing={marketing({ sources: [] })}/>);
     expect(screen.getByText('Aprove um resultado na tela Resultados para começar.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Adicionar à semana' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Salvar rascunho' })).toBeDisabled();
   });
 
   it('normalizes optional null fields when editing without emitting controlled-input warnings', () => {

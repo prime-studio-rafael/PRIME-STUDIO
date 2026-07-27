@@ -7,7 +7,7 @@ import { createMarketingService } from '../../server/services/marketingService.j
 let directory;
 afterEach(async () => { if (directory) await rm(directory, { recursive: true, force: true }); directory = null; });
 
-async function fixture({ approved = true } = {}) {
+async function fixture({ approved = true, repositoryDecorator = (repository) => repository } = {}) {
   directory = await mkdtemp(path.join(tmpdir(), 'prime-marketing-service-'));
   const repository = createLocalMarketingRepository({ marketingDir: directory });
   let index = 0;
@@ -22,8 +22,9 @@ async function fixture({ approved = true } = {}) {
     readAsset: vi.fn(async (_id, type) => ({ buffer: Buffer.from(`bytes-${type}`), mimeType: 'image/jpeg', filename: `${type}.jpg` })),
   };
   const brandingService = { readLogoAsset: vi.fn(async () => ({ buffer: Buffer.from('logo'), mimeType: 'image/png' })) };
-  const renderer = vi.fn(async () => ({ buffer: Buffer.from('rendered'), mimeType: 'image/webp', dimensions: { width: 1080, height: 1920 } }));
-  const service = createMarketingService({ repository, resultService, brandingService, renderStory: renderer, uuid: () => { const value = index++; return value === 0 ? 'week-1' : `story-${value}`; }, now: () => new Date('2026-07-20T12:00:00.000Z') });
+  const renderer = vi.fn(async () => ({ buffer: Buffer.from('rendered'), jpegBuffer: Buffer.from('buffer-jpeg'), mimeType: 'image/webp', jpegMimeType: 'image/jpeg', dimensions: { width: 1080, height: 1920 } }));
+  const serviceRepository = repositoryDecorator(repository);
+  const service = createMarketingService({ repository: serviceRepository, resultService, brandingService, renderStory: renderer, uuid: () => { const value = index++; return value === 0 ? 'week-1' : `story-${value}`; }, now: () => new Date('2026-07-20T12:00:00.000Z') });
   return { service, repository, resultService, renderer };
 }
 
@@ -49,17 +50,18 @@ describe('marketingService', () => {
   });
 
   it('renders locally, requires every Story ready for approval and returns approved weeks to draft after edits', async () => {
-    const { service, renderer } = await fixture();
+    const { service, renderer, repository } = await fixture();
     await service.createWeek({ weekStart: '2026-07-20' });
     await service.addStory('week-1', story);
     await expect(service.approveWeek('week-1')).rejects.toMatchObject({ code: 'MARKETING_STORIES_NOT_READY' });
     const rendered = await service.renderStory('week-1', 'story-1');
     expect(renderer).toHaveBeenCalledTimes(1);
-    expect(rendered.stories[0]).toMatchObject({ renderStatus: 'ready', editorialStatus: 'ready', renderedAssetFileName: 'story-1.webp', renderedDimensions: { width: 1080, height: 1920 } });
+    expect(rendered.stories[0]).toMatchObject({ renderStatus: 'ready', editorialStatus: 'ready', renderedAssetFileName: 'story-1.webp', bufferAssetFileName: 'story-1-buffer.jpg', renderedDimensions: { width: 1080, height: 1920 } });
+    expect(await repository.readAsset('week-1', 'stories', 'story-1-buffer.jpg')).toEqual(Buffer.from('buffer-jpeg'));
     expect((await service.approveWeek('week-1')).status).toBe('approved');
     const edited = await service.updateStory('week-1', 'story-1', { headline: 'Nova chamada' });
     expect(edited.status).toBe('draft');
-    expect(edited.stories[0]).toMatchObject({ renderStatus: 'pending', renderedAssetFileName: null, renderedDimensions: null });
+    expect(edited.stories[0]).toMatchObject({ renderStatus: 'pending', renderedAssetFileName: null, bufferAssetFileName: null, renderedDimensions: null });
   });
 
   it('builds the same balanced proposal every time, with priorities first and no repeated Result', async () => {
@@ -128,7 +130,27 @@ describe('marketingService', () => {
     fixtureValue.renderer.mockRejectedValueOnce(Object.assign(new Error('Falha segura'), { code: 'STORY_RENDER_FAILED' }));
     await expect(fixtureValue.service.renderStory('week-1', 'story-1')).rejects.toThrow('Falha segura');
     expect(fixtureValue.renderer).toHaveBeenCalledTimes(2);
-    expect((await fixtureValue.service.getWeek('week-1')).stories[0]).toMatchObject({ renderStatus: 'failed', renderedAssetFileName: null, renderedDimensions: null, renderError: { code: 'STORY_RENDER_FAILED', message: 'Falha segura' } });
+    expect((await fixtureValue.service.getWeek('week-1')).stories[0]).toMatchObject({ renderStatus: 'failed', renderedAssetFileName: null, bufferAssetFileName: null, renderedDimensions: null, renderError: { code: 'STORY_RENDER_FAILED', message: 'Falha segura' } });
     await expect(fixtureValue.repository.readAsset('week-1', 'stories', 'story-1.webp')).rejects.toMatchObject({ code: 'MARKETING_ASSET_NOT_FOUND' });
+  });
+
+  it('removes both new derivatives if the JPEG write fails after WebP succeeds', async () => {
+    const fixtureValue = await fixture({
+      repositoryDecorator: (repository) => ({
+        ...repository,
+        writeAsset: vi.fn(async (weekId, folder, fileName, buffer) => {
+          if (fileName.endsWith('-buffer.jpg')) throw Object.assign(new Error('JPEG indisponível'), { code: 'MARKETING_ASSET_WRITE_FAILED' });
+          return repository.writeAsset(weekId, folder, fileName, buffer);
+        }),
+      }),
+    });
+    await fixtureValue.service.createWeek({ weekStart: '2026-07-20' });
+    await fixtureValue.service.addStory('week-1', story);
+
+    await expect(fixtureValue.service.renderStory('week-1', 'story-1')).rejects.toThrow('JPEG indisponível');
+    const failed = await fixtureValue.service.getWeek('week-1');
+    expect(failed.stories[0]).toMatchObject({ renderStatus: 'failed', renderedAssetFileName: null, bufferAssetFileName: null });
+    await expect(fixtureValue.repository.readAsset('week-1', 'stories', 'story-1.webp')).rejects.toMatchObject({ code: 'MARKETING_ASSET_NOT_FOUND' });
+    await expect(fixtureValue.repository.readAsset('week-1', 'stories', 'story-1-buffer.jpg')).rejects.toMatchObject({ code: 'MARKETING_ASSET_NOT_FOUND' });
   });
 });

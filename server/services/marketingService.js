@@ -3,6 +3,7 @@ import { AppError } from '../utils/errors.js';
 import { STORY_TEMPLATES, getStoryTemplate } from '../catalogs/storyTemplates.js';
 import { DEFAULT_TEMPLATE_CATEGORY_ID, getTemplateCategoryById } from '../catalogs/templateCategories.js';
 import { renderStory as defaultRenderStory } from './storyRenderer.js';
+import { storyTextWarnings } from '../../shared/storyTextLayout.js';
 
 const SCHEMA_VERSION = 1;
 const TIMEZONE = 'America/Sao_Paulo';
@@ -27,6 +28,8 @@ export function createMarketingService({ repository, resultService, brandingServ
       categoryLabel: categoryLabel(result.templateCategory),
       originalAvailable: Boolean(result.assets?.result),
       brandedAvailable: Boolean(result.assets?.branded),
+      originalPreviewUrl: result.assets?.result || null,
+      brandedPreviewUrl: result.assets?.branded || null,
       previewUrl: result.assets?.branded || result.assets?.result,
       variants: [result.assets?.result ? 'original' : null, result.assets?.branded ? 'branded' : null].filter(Boolean),
     }));
@@ -108,7 +111,7 @@ export function createMarketingService({ repository, resultService, brandingServ
       nextSourceFileName = `${storyId}-${uuid()}.${EXTENSIONS[source.mimeType]}`;
       await repository.writeAsset(weekId, 'sources', nextSourceFileName, source.buffer);
     }
-    const updated = { ...current, ...merged, productKey: normalizeProductKey(merged.productLabel), category: sourceChanged ? sourceCategory(nextSourceResult) : current.category || DEFAULT_TEMPLATE_CATEGORY_ID, categoryLabel: sourceChanged ? categoryLabel(nextSourceResult.templateCategory) : current.categoryLabel || categoryLabel(current.category), sourceAssetFileName: nextSourceFileName, renderedAssetFileName: null, renderedDimensions: null, renderStatus: 'pending', editorialStatus: 'planned', publishedAt: null, renderedAt: null, renderError: null, updatedAt: now().toISOString() };
+    const updated = { ...current, ...merged, productKey: normalizeProductKey(merged.productLabel), category: sourceChanged ? sourceCategory(nextSourceResult) : current.category || DEFAULT_TEMPLATE_CATEGORY_ID, categoryLabel: sourceChanged ? categoryLabel(nextSourceResult.templateCategory) : current.categoryLabel || categoryLabel(current.category), sourceAssetFileName: nextSourceFileName, renderedAssetFileName: null, bufferAssetFileName: null, renderedDimensions: null, renderStatus: 'pending', editorialStatus: 'planned', publishedAt: null, renderedAt: null, renderError: null, updatedAt: now().toISOString() };
     let week;
     try {
       week = await repository.update(weekId, (candidate) => {
@@ -120,7 +123,7 @@ export function createMarketingService({ repository, resultService, brandingServ
       throw error;
     }
     if (sourceChanged && current.sourceAssetFileName !== nextSourceFileName) await repository.deleteAsset(weekId, 'sources', current.sourceAssetFileName);
-    if (current.renderedAssetFileName) await repository.deleteAsset(weekId, 'stories', current.renderedAssetFileName);
+    await Promise.all([repository.deleteAsset(weekId, 'stories', current.renderedAssetFileName), repository.deleteAsset(weekId, 'stories', current.bufferAssetFileName)]);
     return week;
   }
 
@@ -134,6 +137,7 @@ export function createMarketingService({ repository, resultService, brandingServ
     await Promise.all([
       repository.deleteAsset(weekId, 'sources', removed.sourceAssetFileName),
       repository.deleteAsset(weekId, 'stories', removed.renderedAssetFileName),
+      repository.deleteAsset(weekId, 'stories', removed.bufferAssetFileName),
     ]);
     return week;
   }
@@ -147,24 +151,38 @@ export function createMarketingService({ repository, resultService, brandingServ
     const week = await repository.get(weekId);
     assertWeekMutable(week);
     const story = findStory(week, storyId);
+    const renderedAssetFileName = `${story.id}.webp`;
+    const bufferAssetFileName = `${story.id}-buffer.jpg`;
     try {
+      assertStoryFitsLayout(story);
       const [sourceBuffer, logo] = await Promise.all([
         repository.readAsset(weekId, 'sources', story.sourceAssetFileName),
         brandingService.readLogoAsset('approved'),
       ]);
       const output = await renderStory({ sourceBuffer, logoBuffer: logo.buffer, story });
-      const renderedAssetFileName = `${story.id}.webp`;
-      await repository.writeAsset(weekId, 'stories', renderedAssetFileName, output.buffer);
+      if (!output.buffer?.length || !output.jpegBuffer?.length) throw new AppError('STORY_RENDER_FAILED', 'O compositor não retornou os arquivos finais esperados.', { status: 500 });
+      try {
+        await repository.writeAsset(weekId, 'stories', renderedAssetFileName, output.buffer);
+        await repository.writeAsset(weekId, 'stories', bufferAssetFileName, output.jpegBuffer);
+      } catch (error) {
+        await Promise.all([repository.deleteAsset(weekId, 'stories', renderedAssetFileName), repository.deleteAsset(weekId, 'stories', bufferAssetFileName)]);
+        throw error;
+      }
       return repository.update(weekId, (candidate) => ({
         ...touchDraft(candidate, now),
-        stories: candidate.stories.map((item) => item.id === storyId ? { ...item, renderedAssetFileName, renderStatus: 'ready', editorialStatus: 'ready', publishedAt: null, renderedAt: now().toISOString(), renderError: null, renderedDimensions: output.dimensions, updatedAt: now().toISOString() } : item),
+        stories: candidate.stories.map((item) => item.id === storyId ? { ...item, renderedAssetFileName, bufferAssetFileName, renderStatus: 'ready', editorialStatus: 'ready', publishedAt: null, renderedAt: now().toISOString(), renderError: null, renderedDimensions: output.dimensions, updatedAt: now().toISOString() } : item),
       }));
     } catch (error) {
+      await Promise.all([
+        repository.deleteAsset(weekId, 'stories', renderedAssetFileName),
+        repository.deleteAsset(weekId, 'stories', bufferAssetFileName),
+        repository.deleteAsset(weekId, 'stories', story.renderedAssetFileName),
+        repository.deleteAsset(weekId, 'stories', story.bufferAssetFileName),
+      ]);
       await repository.update(weekId, (candidate) => ({
         ...touchDraft(candidate, now),
-        stories: candidate.stories.map((item) => item.id === storyId ? { ...item, renderedAssetFileName: null, renderedDimensions: null, renderStatus: 'failed', editorialStatus: 'planned', publishedAt: null, renderedAt: null, renderError: safeRenderError(error), updatedAt: now().toISOString() } : item),
+        stories: candidate.stories.map((item) => item.id === storyId ? { ...item, renderedAssetFileName: null, bufferAssetFileName: null, renderedDimensions: null, renderStatus: 'failed', editorialStatus: 'planned', publishedAt: null, renderedAt: null, renderError: safeRenderError(error), updatedAt: now().toISOString() } : item),
       }));
-      if (story.renderedAssetFileName) await repository.deleteAsset(weekId, 'stories', story.renderedAssetFileName);
       throw error;
     }
   }
@@ -203,11 +221,11 @@ export function createMarketingService({ repository, resultService, brandingServ
   async function readAsset(weekId, storyId, kind) {
     const week = await repository.get(weekId);
     const story = findStory(week, storyId);
-    const fileName = kind === 'source' ? story.sourceAssetFileName : kind === 'story' ? story.renderedAssetFileName : null;
+    const fileName = kind === 'source' ? story.sourceAssetFileName : kind === 'story' ? story.renderedAssetFileName : kind === 'buffer' ? story.bufferAssetFileName : null;
     if (!fileName) throw new AppError('MARKETING_ASSET_NOT_FOUND', 'O arquivo solicitado ainda não está disponível.', { status: 404 });
     const buffer = await repository.readAsset(weekId, kind === 'source' ? 'sources' : 'stories', fileName);
-    const mimeType = kind === 'story' ? 'image/webp' : mimeFromFileName(fileName);
-    return { buffer, mimeType, fileName: kind === 'story' ? `prime-story-${story.productKey}.webp` : fileName };
+    const mimeType = kind === 'story' ? 'image/webp' : kind === 'buffer' ? 'image/jpeg' : mimeFromFileName(fileName);
+    return { buffer, mimeType, fileName: kind === 'story' ? `prime-story-${story.productKey}.webp` : kind === 'buffer' ? `prime-story-${story.productKey}-buffer.jpg` : fileName };
   }
 
   return Object.freeze({
@@ -244,7 +262,7 @@ function validateStoryInput(input) {
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(scheduledTime)) throw new AppError('INVALID_MARKETING_TIME', 'Informe um horário válido para o Story.', { status: 400 });
   const order = Number(input.order);
   if (!Number.isInteger(order) || order < 1 || order > 999) throw new AppError('INVALID_MARKETING_ORDER', 'A ordem deve ser um número inteiro entre 1 e 999.', { status: 400 });
-  return { sourceResultId, sourceAssetVariant, productLabel, priority: Boolean(input.priority), priceText: text(input.priceText, 'Preço', 40), headline: text(input.headline, 'Chamada', 90), ctaText: text(input.ctaText, 'CTA', 40), storyTemplateId, scheduledDate, scheduledTime, order };
+  return { sourceResultId, sourceAssetVariant, productLabel, priority: Boolean(input.priority), priceText: text(input.priceText, 'Preço', 40), calloutText: text(input.calloutText, 'Chamada curta', 80), headline: text(input.headline, 'Headline', 90), subheadline: text(input.subheadline, 'Subheadline', 120), ctaText: text(input.ctaText, 'CTA', 40), storyTemplateId, scheduledDate, scheduledTime, order };
 }
 
 async function resolveResult(resultService, id) {
@@ -275,7 +293,8 @@ function touchDraft(week, now) { return { ...week, status: 'draft', approvedAt: 
 function assertWeekMutable(week) { if (week.status === 'closed') throw new AppError('MARKETING_WEEK_CLOSED', 'Esta semana está encerrada e disponível somente para leitura.', { status: 409 }); }
 function sourceCategory(result) { return result.templateCategory || DEFAULT_TEMPLATE_CATEGORY_ID; }
 function categoryLabel(id) { const category = getTemplateCategoryById(id || DEFAULT_TEMPLATE_CATEGORY_ID); return category?.label || 'Sem categoria'; }
-function createStoryRecord({ id, input, source, sourceFileName, timestamp }) { return { id, ...input, productKey: normalizeProductKey(input.productLabel), category: sourceCategory(source.result), categoryLabel: categoryLabel(source.result.templateCategory), sourceAssetFileName: sourceFileName, renderedAssetFileName: null, renderedDimensions: null, renderStatus: 'pending', editorialStatus: 'planned', publishedAt: null, renderedAt: null, renderError: null, createdAt: timestamp, updatedAt: timestamp }; }
+function createStoryRecord({ id, input, source, sourceFileName, timestamp }) { return { id, ...input, productKey: normalizeProductKey(input.productLabel), category: sourceCategory(source.result), categoryLabel: categoryLabel(source.result.templateCategory), sourceAssetFileName: sourceFileName, renderedAssetFileName: null, bufferAssetFileName: null, renderedDimensions: null, renderStatus: 'pending', editorialStatus: 'planned', publishedAt: null, renderedAt: null, renderError: null, createdAt: timestamp, updatedAt: timestamp }; }
+function assertStoryFitsLayout(story) { const warnings = storyTextWarnings(story); if (warnings.length) throw new AppError('MARKETING_STORY_TEXT_OVERFLOW', 'Revise os textos destacados: eles não cabem com segurança no layout selecionado.', { status: 422 }); }
 function deterministicProposalOrder(items) {
   const tiers = [items.filter((item) => item.priority), items.filter((item) => !item.priority)];
   const output = [];

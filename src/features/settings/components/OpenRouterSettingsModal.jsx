@@ -6,6 +6,9 @@ import {
   saveOpenRouterKey,
   testOpenRouterKey,
 } from '../api/openRouterSettingsClient.js';
+import useAiSettings from '../hooks/useAiSettings.js';
+import AiProviderOverview from './AiProviderOverview.jsx';
+import DeepSeekSettingsPanel from './DeepSeekSettingsPanel.jsx';
 
 const initialStatus = { configured: false, source: 'none' };
 
@@ -15,7 +18,9 @@ export default function OpenRouterSettingsModal({ open, onClose, onStatusChange,
   const [showKey, setShowKey] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState('openrouter');
+  const [tab, setTab] = useState('ai');
+  const [aiTab, setAiTab] = useState('overview');
+  const aiSettings = useAiSettings();
   const onStatusChangeRef = useRef(onStatusChange);
   onStatusChangeRef.current = onStatusChange;
 
@@ -23,6 +28,7 @@ export default function OpenRouterSettingsModal({ open, onClose, onStatusChange,
     if (!open) return undefined;
     let ignore = false;
     setFeedback(null);
+    aiSettings.load().catch(() => {});
     fetchOpenRouterKeyStatus()
       .then((nextStatus) => {
         if (ignore) return;
@@ -36,7 +42,7 @@ export default function OpenRouterSettingsModal({ open, onClose, onStatusChange,
     return () => {
       ignore = true;
     };
-  }, [open]);
+  }, [open, aiSettings.load]);
 
   if (!open) return null;
 
@@ -55,6 +61,7 @@ export default function OpenRouterSettingsModal({ open, onClose, onStatusChange,
       setStatus(nextStatus);
       setFeedback({ type: 'success', message: nextStatus.message });
       onStatusChange(nextStatus);
+      aiSettings.load().catch(() => {});
     } catch (error) {
       setFeedback({ type: 'error', message: error.message, code: error.code });
     } finally {
@@ -69,6 +76,7 @@ export default function OpenRouterSettingsModal({ open, onClose, onStatusChange,
     try {
       const result = await testOpenRouterKey();
       setFeedback({ type: result.valid ? 'valid' : 'invalid', message: result.message });
+      aiSettings.load().catch(() => {});
     } catch (error) {
       setFeedback({ type: 'error', message: error.message, code: error.code });
     } finally {
@@ -86,6 +94,7 @@ export default function OpenRouterSettingsModal({ open, onClose, onStatusChange,
       setStatus(nextStatus);
       setFeedback({ type: 'success', message: nextStatus.message });
       onStatusChange(nextStatus);
+      aiSettings.load().catch(() => {});
     } catch (error) {
       setFeedback({ type: 'error', message: error.message, code: error.code });
     } finally {
@@ -95,26 +104,35 @@ export default function OpenRouterSettingsModal({ open, onClose, onStatusChange,
 
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-slate-950/35 p-4 backdrop-blur-sm sm:items-center sm:justify-center" role="presentation">
-      <section role="dialog" aria-modal="true" aria-labelledby="openrouter-settings-title" className="w-full max-w-xl rounded-2xl border border-slate-200 bg-[#f7f7f8] shadow-2xl shadow-slate-950/20">
+      <section role="dialog" aria-modal="true" aria-labelledby="openrouter-settings-title" className="max-h-[calc(100vh-2rem)] w-full max-w-xl overflow-y-auto rounded-2xl border border-slate-200 bg-[#f7f7f8] shadow-2xl shadow-slate-950/20">
         <header className="flex items-start justify-between gap-5 border-b border-slate-200 bg-white px-5 py-5 sm:px-6">
           <div className="flex gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-white"><KeyRound size={18} /></span>
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Configurações</p>
-              <h2 id="openrouter-settings-title" className="mt-1 text-lg font-semibold tracking-[-0.025em] text-slate-950">OpenRouter</h2>
-              <p className="mt-1 text-sm leading-5 text-slate-500">A chave é guardada localmente no Chaves do macOS e nunca retorna para o navegador.</p>
+              <h2 id="openrouter-settings-title" className="mt-1 text-lg font-semibold tracking-[-0.025em] text-slate-950">Inteligência Artificial</h2>
+              <p className="mt-1 text-sm leading-5 text-slate-500">Provedores locais com credenciais protegidas no Chaves do macOS.</p>
             </div>
           </div>
           <button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-950" aria-label="Fechar configurações"><X size={18} /></button>
         </header>
 
         <div className="flex gap-1 border-b border-slate-200 bg-white px-5 pt-3 sm:px-6" role="tablist" aria-label="Seções de configurações">
-          <button type="button" role="tab" aria-selected={tab === 'openrouter'} onClick={() => setTab('openrouter')} className={`rounded-t-lg px-3 py-2 text-xs font-semibold ${tab === 'openrouter' ? 'border-b-2 border-slate-950 text-slate-950' : 'text-slate-500'}`}>OpenRouter</button>
+          <button type="button" role="tab" aria-selected={tab === 'ai'} onClick={() => setTab('ai')} className={`rounded-t-lg px-3 py-2 text-xs font-semibold ${tab === 'ai' ? 'border-b-2 border-slate-950 text-slate-950' : 'text-slate-500'}`}>Inteligência Artificial</button>
           <button type="button" role="tab" aria-selected={tab === 'branding'} onClick={() => setTab('branding')} className={`rounded-t-lg px-3 py-2 text-xs font-semibold ${tab === 'branding' ? 'border-b-2 border-slate-950 text-slate-950' : 'text-slate-500'}`}>Branding</button>
         </div>
 
-        {tab === 'openrouter' && (
-          <div className="space-y-5 p-5 sm:p-6">
+        {tab === 'ai' && (
+          <div>
+            <div className="flex gap-1 border-b border-slate-200 bg-[#f7f7f8] px-5 pt-3 sm:px-6" role="tablist" aria-label="Provedores de inteligência artificial">
+              {[['overview', 'Visão geral'], ['openrouter', 'OpenRouter'], ['deepseek', 'DeepSeek']].map(([id, label]) => (
+                <button key={id} type="button" role="tab" aria-selected={aiTab === id} onClick={() => setAiTab(id)} className={`rounded-t-lg px-3 py-2 text-xs font-semibold ${aiTab === id ? 'border-b-2 border-slate-950 text-slate-950' : 'text-slate-500'}`}>{label}</button>
+              ))}
+            </div>
+
+            {aiTab === 'overview' && <AiProviderOverview providers={aiSettings.providers} loading={aiSettings.status === 'loading' || aiSettings.status === 'idle'} error={aiSettings.error} onConfigure={setAiTab} />}
+            {aiTab === 'deepseek' && <DeepSeekSettingsPanel provider={aiSettings.providers.find((provider) => provider.provider === 'deepseek')} onChange={(provider) => { aiSettings.replaceProvider(provider); }} />}
+            {aiTab === 'openrouter' && <div className="space-y-5 p-5 sm:p-6">
             <StatusBanner status={visualStatus} />
 
             <form onSubmit={handleSave} className="rounded-xl border border-slate-200 bg-white p-4">
@@ -153,6 +171,7 @@ export default function OpenRouterSettingsModal({ open, onClose, onStatusChange,
             </div>
 
             {feedback && <FeedbackMessage feedback={feedback} />}
+            </div>}
           </div>
         )}
 

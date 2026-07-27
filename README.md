@@ -18,6 +18,8 @@ O escopo e a ordem das fases são definidos pelo [Documento Mestre](docs/DOCUMEN
 - Perfil Completo de Geração por Template (5 fases): **concluído e publicado entre 17 e 21 de julho de 2026** — ver [FASE-TEMPLATE-PROFILE-IMPLEMENTACAO.md](docs/FASE-TEMPLATE-PROFILE-IMPLEMENTACAO.md).
 - Fase 7.1 — Fundação do Marketing Studio: **aprovada tecnicamente em 21 de julho de 2026** — ver [FASE-07-IMPLEMENTACAO.md](docs/FASE-07-IMPLEMENTACAO.md).
 - Fase 7.2 — Inteligência Operacional: **concluída e aprovada em 21 de julho de 2026** — ver [FASE-07-2-IMPLEMENTACAO.md](docs/FASE-07-2-IMPLEMENTACAO.md).
+- Fase 7.3 — Configurações de IA e DeepSeek: **implementada e validada tecnicamente em 21 de julho de 2026** — ver [FASE-07-3-CONFIGURACOES-IA.md](docs/FASE-07-3-CONFIGURACOES-IA.md).
+- Fase 7.4 — Preview Visual e Compositor de Story: **implementada e validada tecnicamente em 27 de julho de 2026; aguardando aprovação para commit e push** — ver [FASE-07-4-IMPLEMENTACAO.md](docs/FASE-07-4-IMPLEMENTACAO.md).
 
 O encerramento está registrado em [FASE-02-ENCERRAMENTO.md](docs/FASE-02-ENCERRAMENTO.md) e a evolução consolidada do projeto em [HISTORICO.md](docs/HISTORICO.md).
 
@@ -53,7 +55,7 @@ O MVP não executa nenhuma chamada externa ao abrir a tela. A chamada ao OpenRou
 
 ## Configurar a chave pela interface
 
-Na sidebar, abra **Configurações** → **OpenRouter**. Cole a chave no campo protegido e clique em **Salvar chave**.
+Na sidebar, abra **Configurações** → **Inteligência Artificial**. A Visão geral mostra OpenRouter e DeepSeek; use a aba **OpenRouter** para a chave de geração de imagens.
 
 A chave é guardada somente no Chaves do macOS, como uma senha genérica com:
 
@@ -77,6 +79,10 @@ OPENROUTER_API_KEY=COLE_SUA_CHAVE_AQUI
 ```
 
 O Keychain tem prioridade. Se uma chave estiver salva no Chaves do macOS, ela será usada no lugar do `.env`. O `.env` é lido na inicialização; a chave salva pela interface passa a valer imediatamente, sem reiniciar o servidor.
+
+### DeepSeek
+
+Na aba **DeepSeek**, a chave é guardada exclusivamente no Chaves do macOS com service `PRIME_IA_STUDIO_DEEPSEEK` e account `local-user`. O modelo inicial é `deepseek-v4-flash`. O teste de conexão faz somente uma consulta à listagem de modelos, com timeout e zero retry; ele não gera texto. A Fase 7.3 ainda não utiliza DeepSeek no Marketing Studio.
 
 ## Templates locais
 
@@ -156,13 +162,15 @@ Na view **Branding** da sidebar, é possível enviar uma logo PNG com transparê
 
 Abra **Marketing Studio** na sidebar para planejar semanas locais usando somente Resultados aprovados. É possível adicionar conteúdos manualmente ou selecionar produtos para uma proposta determinística, marcar prioridades e distribuir categorias pela semana. Cada Story mantém categoria, agenda e estado editorial (`Planejado`, `Pronto` ou `Publicado`).
 
-A aba **Stories** renderiza localmente, sem IA, arquivos WebP 1080×1920 em três layouts fixos: Produto em destaque, Minimalista e Oferta. A renderização usa a logo aprovada em Branding, preserva a proporção da fonte com `contain` e permite download manual. Planejamento, fontes e arquivos finais ficam em:
+A aba **Stories** reúne formulário e preview instantâneo local em um compositor responsivo. Os três layouts fixos — Produto em destaque, Minimalista e Oferta — compartilham regras canônicas de área segura do Instagram, tipografia, limites e quebras de texto. O preview não renderiza nem faz requisições a cada tecla; o Sharp continua sendo a fonte final de verdade.
+
+Ao gerar explicitamente, o aplicativo cria a partir da mesma composição um WebP interno e um JPEG 1080×1920 para upload manual em Buffer/Instagram. A renderização usa a logo aprovada em Branding, preserva a proporção da fonte com `contain`, não corta nem deforma a imagem e permite download seguro dos dois derivados. Editar fonte, variante, layout ou textos invalida ambos os arquivos e exige nova renderização. Planejamento, fontes e arquivos finais ficam em:
 
 ```text
 storage/marketing/weeks/<week-id>/
 ```
 
-Sem logo aprovada, a renderização é bloqueada com mensagem clara. Aprovar uma semana exige todos os Stories prontos; qualquer edição posterior retorna a semana para rascunho. Uma semana aprovada pode ser encerrada e passa a ser somente leitura. Não existe publicação automática, IA, editor livre ou integração externa no módulo. Consulte [FASE-07-IMPLEMENTACAO.md](docs/FASE-07-IMPLEMENTACAO.md) e [FASE-07-2-IMPLEMENTACAO.md](docs/FASE-07-2-IMPLEMENTACAO.md).
+Sem logo aprovada, a renderização é bloqueada com mensagem clara. Aprovar uma semana exige todos os Stories prontos; qualquer edição posterior retorna a semana para rascunho. Uma semana aprovada pode ser encerrada e passa a ser somente leitura. O controle “Gerar sugestões com IA” é apenas visual e permanece desabilitado. Não existe publicação automática, geração de texto, editor livre ou integração externa no módulo. Consulte [FASE-07-IMPLEMENTACAO.md](docs/FASE-07-IMPLEMENTACAO.md), [FASE-07-2-IMPLEMENTACAO.md](docs/FASE-07-2-IMPLEMENTACAO.md) e [FASE-07-4-IMPLEMENTACAO.md](docs/FASE-07-4-IMPLEMENTACAO.md).
 
 ## Parar os servidores
 
@@ -194,7 +202,7 @@ npm test
 npm run build
 ```
 
-Os testes usam respostas simuladas e não acessam o OpenRouter. Estado atual: 46 arquivos e 330 testes aprovados.
+Os testes usam respostas simuladas e não acessam OpenRouter ou DeepSeek. Estado atual: 53 arquivos e 347 testes aprovados.
 
 ## Limitações intencionais
 

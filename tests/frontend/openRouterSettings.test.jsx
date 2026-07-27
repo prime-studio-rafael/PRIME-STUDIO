@@ -8,9 +8,17 @@ const mocks = vi.hoisted(() => ({
   saveOpenRouterKey: vi.fn(),
   deleteOpenRouterKey: vi.fn(),
   testOpenRouterKey: vi.fn(),
+  fetchAiProviders: vi.fn(),
 }));
 
 vi.mock('../../src/features/settings/api/openRouterSettingsClient.js', () => mocks);
+vi.mock('../../src/features/settings/api/aiSettingsClient.js', () => ({
+  fetchAiProviders: mocks.fetchAiProviders,
+  saveDeepSeekKey: vi.fn(),
+  removeDeepSeekKey: vi.fn(),
+  testDeepSeekKey: vi.fn(),
+  updateDeepSeekSettings: vi.fn(),
+}));
 
 import OpenRouterSettingsModal from '../../src/features/settings/components/OpenRouterSettingsModal.jsx';
 
@@ -29,7 +37,9 @@ beforeEach(() => {
   mocks.saveOpenRouterKey.mockReset();
   mocks.deleteOpenRouterKey.mockReset();
   mocks.testOpenRouterKey.mockReset();
+  mocks.fetchAiProviders.mockReset();
   mocks.fetchOpenRouterKeyStatus.mockResolvedValue({ configured: false, source: 'none' });
+  mocks.fetchAiProviders.mockResolvedValue({ providers: [] });
   globalThis.confirm = vi.fn(() => true);
 });
 
@@ -42,6 +52,7 @@ describe('OpenRouter settings interface', () => {
     });
 
     render(<Harness />);
+    fireEvent.click(await screen.findByRole('tab', { name: 'OpenRouter' }));
     const input = await screen.findByLabelText('API Key do OpenRouter');
     fireEvent.change(input, { target: { value: 'secret-only-in-this-test-value' } });
     fireEvent.click(screen.getByRole('button', { name: 'Salvar chave' }));
@@ -57,6 +68,7 @@ describe('OpenRouter settings interface', () => {
     mocks.testOpenRouterKey.mockResolvedValue({ valid: false, message: 'A chave do OpenRouter não foi aceita.' });
 
     render(<Harness />);
+    fireEvent.click(await screen.findByRole('tab', { name: 'OpenRouter' }));
     const testButton = await screen.findByRole('button', { name: 'Testar conexão' });
     fireEvent.click(testButton);
 

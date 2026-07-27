@@ -145,11 +145,11 @@ Fonte: `server/services/marketingService.js` (regras e montagem) e `server/repos
 | `closedAt` | ISO string \| null | preenchido no encerramento definitivo da semana |
 | `stories` | array | ordenado por data, horário e `order` |
 
-Cada Story contém: `id`, `sourceResultId`, `sourceAssetVariant` (`original`/`branded`), `sourceAssetFileName`, `productLabel`, `productKey`, `priority`, `category`, `categoryLabel`, `priceText`, `headline`, `ctaText`, `storyTemplateId`, `scheduledDate`, `scheduledTime`, `order`, `renderStatus` (`pending`/`ready`/`failed`), `editorialStatus` (`planned`/`ready`/`published`), `publishedAt`, `renderedAssetFileName`, `renderedAt`, `renderError`, `createdAt` e `updatedAt`. Após renderização válida, inclui `renderedDimensions: { width: 1080, height: 1920 }`.
+Cada Story contém: `id`, `sourceResultId`, `sourceAssetVariant` (`original`/`branded`), `sourceAssetFileName`, `productLabel`, `productKey`, `priority`, `category`, `categoryLabel`, `priceText`, `calloutText`, `headline`, `subheadline`, `ctaText`, `storyTemplateId`, `scheduledDate`, `scheduledTime`, `order`, `renderStatus` (`pending`/`ready`/`failed`), `editorialStatus` (`planned`/`ready`/`published`), `publishedAt`, `renderedAssetFileName`, `bufferAssetFileName`, `renderedAt`, `renderError`, `createdAt` e `updatedAt`. Após renderização válida, inclui `renderedDimensions: { width: 1080, height: 1920 }`.
 
 `renderStatus` continua sendo o estado técnico do arquivo, enquanto `editorialStatus` representa a operação de publicação. Registros da Fase 7.1 sem os campos novos continuam compatíveis: a interface deriva `ready` quando o asset já está pronto e `planned` nos demais casos, sem reescrever obrigatoriamente o JSON antigo.
 
-`sourceAssetFileName` aponta apenas para um nome interno relativo em `assets/sources/`; `renderedAssetFileName`, quando presente, aponta para `assets/stories/`. Nenhum caminho absoluto, Base64, data URL ou buffer é persistido no JSON.
+`calloutText`, `subheadline` e `bufferAssetFileName` são extensões aditivas da Fase 7.4: Stories anteriores as leem como `null`, sem migração destrutiva. `sourceAssetFileName` aponta apenas para um nome interno relativo em `assets/sources/`; `renderedAssetFileName` é o WebP interno e `bufferAssetFileName` é o JPEG para download manual, ambos em `assets/stories/`. Nenhum caminho absoluto, Base64, data URL ou buffer é persistido no JSON.
 
 O Marketing referencia `sourceResultId` para auditoria, mas usa a cópia local da fonte como autoridade visual histórica. Assim, excluir posteriormente o Resultado não quebra uma semana já criada e não altera o contrato do Resultado.
 

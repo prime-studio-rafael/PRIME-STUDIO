@@ -106,3 +106,15 @@ Planejamento semanal local baseado somente em Resultados aprovados, com cópia p
 Estado: **concluída e aprovada na validação final em 21 de julho de 2026**.
 
 Extensão aditiva da fundação com proposta semanal determinística, prioridade, alternância de categorias, estados editoriais, próxima publicação, acesso ao Resultado, calendário e histórico enriquecidos e encerramento somente leitura. A validação final confirmou thumbnail, três layouts, persistência após reinício, remoção controlada da semana temporária, 330 testes aprovados em 46 arquivos, build e responsividade. Zero chamadas ao OpenRouter. Detalhes: [FASE-07-2-IMPLEMENTACAO.md](./FASE-07-2-IMPLEMENTACAO.md).
+
+## Fase 7.3 — Configurações de IA e DeepSeek
+
+Estado: **implementada e validada tecnicamente em 21 de julho de 2026; aguardando aprovação para commit e push**.
+
+Configurações passou a reunir uma visão geral dos provedores, OpenRouter e DeepSeek. O OpenRouter foi preservado; o DeepSeek ganhou chave exclusiva no Keychain, modelo único `deepseek-v4-flash`, teste manual sem geração e metadata local sem segredos. A validação aprovou 341 testes em 51 arquivos, build e responsividade desktop/mobile. Nenhuma chave real foi testada, nenhuma chamada externa foi executada e nenhum crédito foi consumido. Detalhes: [FASE-07-3-CONFIGURACOES-IA.md](./FASE-07-3-CONFIGURACOES-IA.md).
+
+## Fase 7.4 — Preview Visual e Compositor de Story
+
+Estado: **implementada e validada tecnicamente em 27 de julho de 2026; aguardando aprovação para commit e push**.
+
+O Marketing Studio ganhou um compositor local responsivo com preview React/CSS, layouts visuais, área segura do Instagram, contadores e avisos determinísticos de texto, além do modal de tamanho real. A especificação visual é compartilhada com o Sharp, que permanece autoritativo e gera WebP interno e JPEG 1080×1920 para upload manual a partir da mesma composição. Os novos campos são aditivos e Stories antigos continuam legíveis; qualquer edição estrutural invalida os dois derivados, e falhas parciais removem os artefatos recém-criados. Validação técnica: 347 testes em 53 arquivos e build aprovados, sem OpenRouter, DeepSeek ou crédito externo. Detalhes: [FASE-07-4-IMPLEMENTACAO.md](./FASE-07-4-IMPLEMENTACAO.md).

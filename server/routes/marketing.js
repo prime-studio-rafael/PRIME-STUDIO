@@ -27,7 +27,7 @@ export function createMarketingRouter({ marketingService }) {
       response.type(asset.mimeType);
       response.set('Content-Length', String(asset.buffer.length));
       response.set('X-Content-Type-Options', 'nosniff');
-      response.set('Content-Disposition', `inline; filename="${asset.fileName}"`);
+      response.set('Content-Disposition', `${request.params.kind === 'buffer' ? 'attachment' : 'inline'}; filename="${asset.fileName}"`);
       response.send(asset.buffer);
     } catch (error) { next(error); }
   });

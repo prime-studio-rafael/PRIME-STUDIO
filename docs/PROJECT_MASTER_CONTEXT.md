@@ -2,7 +2,7 @@
 
 Documento subordinado ao [Documento Mestre](./DOCUMENTO-MESTRE.md), que continua sendo a autoridade final em caso de conflito de escopo. Este documento existe para que uma IA (ou pessoa) que nunca viu o projeto entenda o estado atual sem precisar reconstruir meses de conversas ou ler todos os documentos de fase em ordem cronológica.
 
-Última verificação contra o código: 21 de julho de 2026 — Marketing Studio V1 concluído; Fases 7.1 e 7.2 aprovadas na validação final.
+Última verificação contra o código: 27 de julho de 2026 — Fase 7.4 do Marketing Studio implementada e validada tecnicamente; aguardando aprovação para commit e push.
 
 ---
 
@@ -80,6 +80,8 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 9. **Fase de Consolidação da Documentação** (esta fase) — sem código novo, só documentação.
 10. **Fase 7.1 — Fundação do Marketing Studio** — planejamento semanal com Resultados aprovados e renderer local 9:16, sem IA.
 11. **Fase 7.2 — Inteligência Operacional** — proposta determinística, prioridade, categorias, estados editoriais e semanas encerradas somente leitura.
+12. **Fase 7.3 — Configurações de IA e DeepSeek** — painel seguro de provedores, DeepSeek no Keychain e metadata local não sensível; ainda sem geração de textos.
+13. **Fase 7.4 — Preview Visual e Compositor de Story** — contrato visual compartilhado, preview local responsivo e renderização WebP + JPEG dos Stories.
 
 ## 5. Fluxo completo (geração individual)
 
@@ -108,6 +110,7 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 | Persistência de Resultados | `server/storage/localResultStorage.js`, `server/services/resultService.js` |
 | Cliente OpenRouter | `server/providers/openrouter/openrouterClient.js` |
 | Chave do OpenRouter | `server/secrets/` (Chaves do macOS) + `.env` (fallback) |
+| Configurações de IA | `src/features/settings/`, `server/services/aiSettingsService.js`, `server/repositories/localAiSettingsRepository.js` |
 | Overlay de Branding | `server/services/logoOverlay.js` (nome indicativo — conferir arquivo exato no código) |
 | Tela Nova Geração | `src/app/App.jsx`, `src/features/generation/` |
 | Tela Templates | `src/features/templates/` |
@@ -115,7 +118,7 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 | Tela Produção em Lotes | `src/features/batches/` |
 | Tela Branding | `src/features/branding/` |
 | Marketing Studio | `src/features/marketing/`, `server/services/marketingService.js`, `server/repositories/localMarketingRepository.js` |
-| Renderer 9:16 | `server/services/storyRenderer.js` |
+| Renderer 9:16 | `server/services/storyRenderer.js`, `shared/storyLayoutSpec.js`, `shared/storyTextLayout.js` |
 
 ## 7. Decisões importantes (por que, não só o quê)
 
@@ -128,7 +131,9 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 - **Categorias fixas, sem CRUD via UI** (Fase 6) — catálogo versionado em código, gestão de categorias fica para uma fase futura.
 - **Branding é composição local, nunca IA** — escala/margem/posição fixas (9%/3%/inferior direita), validadas visualmente, não configuráveis nesta fase.
 - **Marketing preserva a própria fonte** — o `sourceResultId` mantém rastreabilidade, mas cada semana copia o asset aprovado para não quebrar se o Resultado for excluído depois.
-- **Stories são composição local, nunca IA** — três layouts fixos, Sharp no backend, 1080×1920 WebP e zero chamada externa.
+- **Stories são composição local, nunca IA** — três layouts fixos, especificação visual canônica compartilhada, Sharp no backend e zero chamada externa.
+- **WebP e JPEG vêm da mesma composição** — WebP é o derivado interno; JPEG 1080×1920 é o arquivo para upload manual. Editar um Story invalida os dois, e falha parcial faz limpeza compensatória.
+- **DeepSeek configurável ainda não gera textos** — a Fase 7.3 entrega somente credencial, modelo, status e teste seguro; seu uso no Marketing Studio exige fase posterior aprovada.
 
 ## 8. Regras do projeto (resumo — ver [AGENTS.md](../AGENTS.md) para a versão completa)
 

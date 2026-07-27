@@ -11,7 +11,9 @@ describe('marketing HTTP API', () => {
       createWeek: vi.fn(async () => week), getWeek: vi.fn(async () => week), updateWeek: vi.fn(async () => week), approveWeek: vi.fn(async () => ({ ...week, status: 'approved' })), returnToDraft: vi.fn(async () => week), closeWeek: vi.fn(async () => ({ ...week, status: 'closed' })), proposeWeek: vi.fn(async () => week), deleteWeek: vi.fn(async () => ({ deleted: true })),
       addStory: vi.fn(async () => week), updateStory: vi.fn(async () => week), deleteStory: vi.fn(async () => week), renderStory: vi.fn(async () => week),
       setEditorialStatus: vi.fn(async () => week),
-      readAsset: vi.fn(async () => ({ buffer: Buffer.from('webp'), mimeType: 'image/webp', fileName: 'story.webp' })),
+      readAsset: vi.fn(async (_weekId, _storyId, kind) => (kind === 'buffer'
+        ? { buffer: Buffer.from('jpeg'), mimeType: 'image/jpeg', fileName: 'story-buffer.jpg' }
+        : { buffer: Buffer.from('webp'), mimeType: 'image/webp', fileName: 'story.webp' })),
     };
     const app = express(); app.use(express.json()); app.use('/api/marketing', createMarketingRouter({ marketingService: service }));
     const { baseUrl, close } = await startTestServer(app);
@@ -29,6 +31,11 @@ describe('marketing HTTP API', () => {
       expect(asset.headers.get('content-type')).toContain('image/webp');
       expect(asset.headers.get('content-length')).toBe('4');
       expect(asset.headers.get('x-content-type-options')).toBe('nosniff');
+      const bufferAsset = await fetch(`${baseUrl}/api/marketing/weeks/week-1/stories/story-1/assets/buffer`);
+      expect(bufferAsset.headers.get('content-type')).toContain('image/jpeg');
+      expect(bufferAsset.headers.get('content-disposition')).toBe('attachment; filename="story-buffer.jpg"');
+      expect(bufferAsset.headers.get('content-length')).toBe('4');
+      expect(bufferAsset.headers.get('x-content-type-options')).toBe('nosniff');
       expect(service.renderStory).toHaveBeenCalledTimes(1);
     } finally { await close(); }
   });
