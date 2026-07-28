@@ -20,7 +20,8 @@ O escopo e a ordem das fases são definidos pelo [Documento Mestre](docs/DOCUMEN
 - Fase 7.2 — Inteligência Operacional: **concluída e aprovada em 21 de julho de 2026** — ver [FASE-07-2-IMPLEMENTACAO.md](docs/FASE-07-2-IMPLEMENTACAO.md).
 - Fase 7.3 — Configurações de IA e DeepSeek: **implementada e validada tecnicamente em 21 de julho de 2026** — ver [FASE-07-3-CONFIGURACOES-IA.md](docs/FASE-07-3-CONFIGURACOES-IA.md).
 - Fase 7.4 — Preview Visual e Compositor de Story: **concluída tecnicamente em 27 de julho de 2026** — ver [FASE-07-4-IMPLEMENTACAO.md](docs/FASE-07-4-IMPLEMENTACAO.md).
-- Fase 7.5 — Assistente IA para textos de Stories: **implementada e validada funcionalmente em 27 de julho de 2026; aguardando commit e push** — ver [FASE-07-5-IMPLEMENTACAO.md](docs/FASE-07-5-IMPLEMENTACAO.md).
+- Fase 7.5 — Assistente IA para textos de Stories: **concluída e publicada em 27 de julho de 2026** — ver [FASE-07-5-IMPLEMENTACAO.md](docs/FASE-07-5-IMPLEMENTACAO.md).
+- Fase 7.6 — Branding Inteligente: **concluída tecnicamente em 27 de julho de 2026; publicação aguardando autorização explícita** — ver [FASE-07-6-IMPLEMENTACAO.md](docs/FASE-07-6-IMPLEMENTACAO.md).
 
 O encerramento está registrado em [FASE-02-ENCERRAMENTO.md](docs/FASE-02-ENCERRAMENTO.md) e a evolução consolidada do projeto em [HISTORICO.md](docs/HISTORICO.md).
 
@@ -157,7 +158,7 @@ A tela mostra a contagem de lotes e um indicador discreto quando há lote em exe
 
 ## Branding/Logo
 
-Na view **Branding** da sidebar, é possível enviar uma logo PNG com transparência real, revisar a validação técnica (dimensões, transparência, área útil da arte) e aprová-la explicitamente. A mesma tela mostra uma prévia **Original × Com logo** lado a lado, usando uma fotografia local já existente e a composição real (sem IA) — funciona com ou sem logo aprovada, e independente do toggle estar ligado ou desligado. Uma vez aprovada, o toggle **"Aplicar logo nas imagens"** passa a valer tanto para a geração individual quanto para a Produção em Lotes: a logo é aplicada por composição tradicional (sem IA), em **9% da menor dimensão** e **3% de margem** no canto inferior direito — padrão definitivo validado visualmente e fixo por enquanto (posição/escala configuráveis apenas numa fase futura) — preservando sempre a versão original sem logo. Consulte [FASE-BRANDING-IMPLEMENTACAO.md](docs/FASE-BRANDING-IMPLEMENTACAO.md) para a validação, o storage e as limitações desta primeira versão.
+Na view **Branding** da sidebar, é possível enviar e aprovar, de forma independente, a **logo principal** e a **logo branca**, ambas PNGs com transparência real. A mesma tela mostra uma prévia **Original × Com logo** lado a lado, usando composição local sem IA. A logo principal continua sendo a referência da geração individual e dos lotes; no Marketing Studio, cada Story permite selecionar logo **Automática**, **Principal** ou **Branca**, e tamanho **Pequeno**, **Médio** ou **Grande**. O modo automático usa a principal em layouts claros e a branca no layout Oferta; se a branca ainda não existir, há fallback explícito para a principal. Selecionar Branca manualmente sem asset aprovado bloqueia a renderização com mensagem clara. A posição continua fixa e a proporção é preservada. Consulte [FASE-07-6-IMPLEMENTACAO.md](docs/FASE-07-6-IMPLEMENTACAO.md) para o contrato e a validação.
 
 ## Marketing Studio
 
@@ -165,7 +166,7 @@ Abra **Marketing Studio** na sidebar para planejar semanas locais usando somente
 
 A aba **Stories** reúne formulário e preview instantâneo local em um compositor responsivo. Os três layouts fixos — Produto em destaque, Minimalista e Oferta — compartilham regras canônicas de área segura do Instagram, tipografia, limites e quebras de texto. O preview não renderiza nem faz requisições a cada tecla; o Sharp continua sendo a fonte final de verdade.
 
-Ao gerar explicitamente, o aplicativo cria a partir da mesma composição um WebP interno e um JPEG 1080×1920 para upload manual em Buffer/Instagram. A renderização usa a logo aprovada em Branding, preserva a proporção da fonte com `contain`, não corta nem deforma a imagem e permite download seguro dos dois derivados. Editar fonte, variante, layout ou textos invalida ambos os arquivos e exige nova renderização. Planejamento, fontes e arquivos finais ficam em:
+Ao gerar explicitamente, o aplicativo cria a partir da mesma composição um WebP interno e um JPEG 1080×1920 para upload manual em Buffer/Instagram. A renderização usa a variante e o tamanho de logo selecionados, preserva a proporção da fonte com `contain`, não corta nem deforma a imagem e permite download seguro dos dois derivados. Editar fonte, variante, layout, textos, modo ou tamanho da logo invalida ambos os arquivos e exige nova renderização. Planejamento, fontes e arquivos finais ficam em:
 
 ```text
 storage/marketing/weeks/<week-id>/
@@ -203,7 +204,7 @@ npm test
 npm run build
 ```
 
-Os testes automatizados usam respostas simuladas e não acessam OpenRouter ou DeepSeek. Estado atual: 54 arquivos e 353 testes aprovados. A validação funcional da Fase 7.5 executou uma chamada real de conexão e uma geração controlada de sugestões, sem OpenRouter.
+Os testes automatizados usam respostas simuladas e não acessam OpenRouter ou DeepSeek. Estado atual: 54 arquivos e 358 testes aprovados. A validação funcional da Fase 7.5 executou uma chamada real de conexão e uma geração controlada de sugestões, sem OpenRouter.
 
 ## Limitações intencionais
 

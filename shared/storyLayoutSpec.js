@@ -2,6 +2,12 @@ export const STORY_CANVAS = Object.freeze({ width: 1080, height: 1920 });
 export const INSTAGRAM_SAFE_AREA = Object.freeze({ left: 60, right: 60, top: 250, bottom: 250 });
 export const STORY_HANDLE = '@primestore.udi';
 
+export const STORY_LOGO_SIZES = Object.freeze({
+  small: Object.freeze({ id: 'small', label: 'Pequena', scale: 0.75 }),
+  medium: Object.freeze({ id: 'medium', label: 'Média', scale: 1 }),
+  large: Object.freeze({ id: 'large', label: 'Grande', scale: 1.25 }),
+});
+
 export const STORY_TEXT_LIMITS = Object.freeze({
   productLabel: Object.freeze({ maxChars: 32, maxLines: 2 }),
   calloutText: Object.freeze({ maxChars: 48, maxWords: 6, maxLines: 2 }),
@@ -41,3 +47,22 @@ export const STORY_LAYOUT_SPEC = Object.freeze({
 
 export const STORY_LAYOUTS = Object.freeze(Object.values(STORY_LAYOUT_SPEC));
 export function getStoryLayout(id) { return STORY_LAYOUT_SPEC[id] || null; }
+export function getStoryLogoBox(layout, size = 'medium') {
+  const scale = STORY_LOGO_SIZES[size]?.scale || STORY_LOGO_SIZES.medium.scale;
+  const width = Math.round(layout.logo.width * scale);
+  const height = Math.round(layout.logo.height * scale);
+  return Object.freeze({
+    left: Math.round(layout.logo.left + (layout.logo.width - width) / 2),
+    top: Math.round(layout.logo.top + (layout.logo.height - height) / 2),
+    width,
+    height,
+  });
+}
+export function resolveStoryLogoVariant(layout, logoMode = 'auto', hasWhite = false) {
+  if (logoMode === 'primary') return Object.freeze({ variant: 'primary', fallback: false });
+  if (logoMode === 'white') return hasWhite ? Object.freeze({ variant: 'white', fallback: false }) : Object.freeze({ variant: null, fallback: false });
+  const wantsWhite = layout.id === 'offer';
+  return wantsWhite && hasWhite
+    ? Object.freeze({ variant: 'white', fallback: false })
+    : Object.freeze({ variant: 'primary', fallback: wantsWhite });
+}

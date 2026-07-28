@@ -1,4 +1,4 @@
-import { STORY_CANVAS, STORY_LAYOUTS } from '../../shared/storyLayoutSpec.js';
+import { STORY_CANVAS, STORY_LAYOUTS, getStoryLogoBox, resolveStoryLogoVariant } from '../../shared/storyLayoutSpec.js';
 import { layoutStoryText, storyTextWarnings } from '../../shared/storyTextLayout.js';
 
 describe('shared Story visual contract', () => {
@@ -20,5 +20,16 @@ describe('shared Story visual contract', () => {
     expect(layoutStoryText('compre agora mesmo', 'ctaText')).toMatchObject({ blocked: false });
     expect(layoutStoryText('compre agora mesmo hoje', 'ctaText')).toMatchObject({ blocked: true });
     expect(storyTextWarnings({ headline: 'uma headline com cinco palavras agora' })[0]).toMatchObject({ field: 'headline', blocked: true });
+  });
+
+  it('resolves logo variants and sizes deterministically inside each layout box', () => {
+    const offer = STORY_LAYOUTS.find((layout) => layout.id === 'offer');
+    const light = STORY_LAYOUTS.find((layout) => layout.id === 'minimal');
+    expect(resolveStoryLogoVariant(light, 'auto', true)).toMatchObject({ variant: 'primary', fallback: false });
+    expect(resolveStoryLogoVariant(offer, 'auto', true)).toMatchObject({ variant: 'white', fallback: false });
+    expect(resolveStoryLogoVariant(offer, 'auto', false)).toMatchObject({ variant: 'primary', fallback: true });
+    expect(resolveStoryLogoVariant(offer, 'white', false).variant).toBeNull();
+    expect(getStoryLogoBox(offer, 'small').width).toBeLessThan(getStoryLogoBox(offer, 'medium').width);
+    expect(getStoryLogoBox(offer, 'large').width).toBeGreaterThan(getStoryLogoBox(offer, 'medium').width);
   });
 });

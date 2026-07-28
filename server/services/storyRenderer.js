@@ -1,7 +1,7 @@
 import sharp from 'sharp';
 import { AppError } from '../utils/errors.js';
 import { getStoryLayout } from '../catalogs/storyTemplates.js';
-import { INSTAGRAM_SAFE_AREA, STORY_CANVAS, STORY_HANDLE } from '../../shared/storyLayoutSpec.js';
+import { INSTAGRAM_SAFE_AREA, STORY_CANVAS, STORY_HANDLE, getStoryLogoBox } from '../../shared/storyLayoutSpec.js';
 import { layoutStoryText } from '../../shared/storyTextLayout.js';
 
 export async function renderStory({ sourceBuffer, logoBuffer, story }) {
@@ -13,13 +13,14 @@ export async function renderStory({ sourceBuffer, logoBuffer, story }) {
   try {
     const source = await sharp(sourceBuffer).rotate().resize({ width: layout.image.width, height: layout.image.height, fit: 'contain', withoutEnlargement: false }).toBuffer();
     const sourceMeta = await sharp(source).metadata();
-    const logo = await sharp(logoBuffer).resize({ width: layout.logo.width, height: layout.logo.height, fit: 'inside', withoutEnlargement: true }).png().toBuffer();
+    const logoBox = getStoryLogoBox(layout, story.logoSize || 'medium');
+    const logo = await sharp(logoBuffer).resize({ width: logoBox.width, height: logoBox.height, fit: 'inside', withoutEnlargement: true }).png().toBuffer();
     const logoMeta = await sharp(logo).metadata();
     const composed = await sharp({ create: { width: STORY_CANVAS.width, height: STORY_CANVAS.height, channels: 4, background: layout.background } })
       .composite([
         { input: source, left: layout.image.left + Math.floor((layout.image.width - sourceMeta.width) / 2), top: layout.image.top + Math.floor((layout.image.height - sourceMeta.height) / 2) },
         { input: Buffer.from(textSvg(story, layout)), left: 0, top: 0 },
-        { input: logo, left: layout.logo.left + Math.floor((layout.logo.width - logoMeta.width) / 2), top: layout.logo.top + Math.floor((layout.logo.height - logoMeta.height) / 2) },
+        { input: logo, left: logoBox.left + Math.floor((logoBox.width - logoMeta.width) / 2), top: logoBox.top + Math.floor((logoBox.height - logoMeta.height) / 2) },
       ])
       .png()
       .toBuffer();

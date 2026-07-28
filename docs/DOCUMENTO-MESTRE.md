@@ -2,7 +2,7 @@
 
 Versão: 2.0
 Estado: referência oficial do projeto  
-Última consolidação: 27 de julho de 2026 — Fase 7.5 implementada e validada localmente; commit aguardando autorização de push.
+Última consolidação: 27 de julho de 2026 — Fase 7.6 Branding Inteligente implementada e validada localmente; publicação aguardando autorização de push.
 
 ## 1. Autoridade e controle de escopo
 
@@ -451,7 +451,7 @@ Detalhes e evidências: [FASE-07-4-IMPLEMENTACAO.md](./FASE-07-4-IMPLEMENTACAO.m
 
 ### Fase 7.5 — Assistente IA para textos de Stories
 
-Estado: **implementada e validada funcionalmente em 27 de julho de 2026; aguardando commit e push**.
+Estado: **concluída e publicada em 27 de julho de 2026**.
 
 - painel de Assistente IA integrado ao Story Composer;
 - entradas exclusivamente textuais e sem envio de imagens ao DeepSeek;
@@ -464,6 +464,19 @@ Estado: **implementada e validada funcionalmente em 27 de julho de 2026; aguarda
 - cenário temporário removido após validação.
 
 Detalhes e evidências: [FASE-07-5-IMPLEMENTACAO.md](./FASE-07-5-IMPLEMENTACAO.md).
+
+### Fase 7.6 — Branding Inteligente
+
+Estado: **concluída tecnicamente em 27 de julho de 2026; publicação aguardando autorização explícita**.
+
+- Branding mantém duas variantes independentes: `primary` e `white`, cada uma com ciclo próprio de upload, pendência, aprovação, remoção e metadata;
+- o Story aceita `logoMode` (`auto`, `primary`, `white`) e `logoSize` (`small`, `medium`, `large`) de modo aditivo;
+- `auto` escolhe a principal em layouts claros e a branca no layout Oferta; na ausência da branca, usa a principal com fallback visível; seleção manual branca sem asset bloqueia com mensagem clara;
+- React/CSS e Sharp usam a mesma especificação de variante, tamanho, posição fixa, proporção e área segura;
+- editar modo ou tamanho invalida WebP/JPEG; Stories antigos continuam legíveis como `auto` + `medium`; `variant=approved` preserva o significado histórico de logo principal;
+- quatro cenários validados, WebP/JPEG 1080×1920 e downloads seguros aprovados; zero chamadas ao OpenRouter/DeepSeek e zero créditos externos.
+
+Detalhes e evidências: [FASE-07-6-IMPLEMENTACAO.md](./FASE-07-6-IMPLEMENTACAO.md).
 
 #### Próximas melhorias aprovadas, ainda não iniciadas
 
@@ -513,6 +526,7 @@ A declaração `FASE 2 CONCLUÍDA` foi registrada depois da confirmação de tod
 - [Fase 7.3 — Configurações de IA e DeepSeek](./FASE-07-3-CONFIGURACOES-IA.md)
 - [Fase 7.4 — Preview Visual e Compositor de Story](./FASE-07-4-IMPLEMENTACAO.md)
 - [Fase 7.5 — Assistente IA para textos de Stories](./FASE-07-5-IMPLEMENTACAO.md)
+- [Fase 7.6 — Branding Inteligente](./FASE-07-6-IMPLEMENTACAO.md)
 - [Contrato de dados — Template, Lote, Resultado](./DATA_CONTRACT.md)
 - [Contexto mestre do projeto para IAs](./PROJECT_MASTER_CONTEXT.md)
 - [Ordem de leitura recomendada](./START_HERE.md)

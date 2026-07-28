@@ -15,13 +15,15 @@ export function createBrandingRouter({ brandingService }) {
   router.post('/logo', upload.single('logo'), async (request, response, next) => {
     try {
       if (!request.file) throw new AppError('BRANDING_LOGO_MISSING', 'Envie um arquivo de logo.', { status: 400 });
-      const record = await brandingService.uploadLogo({ buffer: request.file.buffer, mimetype: request.file.mimetype, originalname: request.file.originalname });
+      const variant = request.query.variant;
+      if (!variant) throw new AppError('BRANDING_VARIANT_REQUIRED', 'Informe a variante primary ou white para enviar a logo.', { status: 400 });
+      const record = await brandingService.uploadLogo({ buffer: request.file.buffer, mimetype: request.file.mimetype, originalname: request.file.originalname, variant });
       response.status(201).json(record);
     } catch (error) { next(error); }
   });
 
   router.post('/approve', async (_request, response, next) => {
-    try { response.json(await brandingService.approveLogo()); } catch (error) { next(error); }
+    try { response.json(await brandingService.approveLogo(_request.query.variant || 'primary')); } catch (error) { next(error); }
   });
 
   router.patch('/config', async (request, response, next) => {
@@ -41,7 +43,7 @@ export function createBrandingRouter({ brandingService }) {
 
   router.get('/logo', async (request, response, next) => {
     try {
-      const variant = request.query.variant === 'pending' ? 'pending' : 'approved';
+      const variant = request.query.variant || 'approved';
       const asset = await brandingService.readLogoAsset(variant);
       response.type(asset.mimeType);
       response.set('X-Content-Type-Options', 'nosniff');
@@ -51,7 +53,7 @@ export function createBrandingRouter({ brandingService }) {
   });
 
   router.delete('/logo', async (_request, response, next) => {
-    try { response.json(await brandingService.deleteLogo()); } catch (error) { next(error); }
+    try { response.json(await brandingService.deleteLogo(_request.query.variant || 'primary')); } catch (error) { next(error); }
   });
 
   return router;

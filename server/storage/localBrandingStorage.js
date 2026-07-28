@@ -4,7 +4,7 @@ import { mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
 import { AppError } from '../utils/errors.js';
 import { serializeJson, writeFileAtomically } from '../utils/atomicJsonStorage.js';
 
-const DEFAULT_METADATA = Object.freeze({ pending: null, approved: null });
+const DEFAULT_METADATA = Object.freeze({ pending: null, approved: null, whitePending: null, whiteApproved: null });
 const DEFAULT_CONFIG = Object.freeze({ enabled: false });
 
 export function createLocalBrandingStorage({
@@ -15,6 +15,8 @@ export function createLocalBrandingStorage({
   const paths = Object.freeze({
     approvedLogo: () => resolveChild('logo.png'),
     pendingLogo: () => resolveChild('pending-logo.png'),
+    whiteApprovedLogo: () => resolveChild('white.png'),
+    whitePendingLogo: () => resolveChild('white.pending.png'),
     metadata: () => resolveChild('metadata.json'),
     metadataBackup: () => resolveChild('metadata.json.bak'),
     config: () => resolveChild('config.json'),
@@ -89,6 +91,38 @@ export function createLocalBrandingStorage({
     await safeUnlink(paths.approvedLogo());
   }
 
+  function variantPaths(variant) {
+    if (variant === 'primary') return { pending: paths.pendingLogo(), approved: paths.approvedLogo() };
+    if (variant === 'white') return { pending: paths.whitePendingLogo(), approved: paths.whiteApprovedLogo() };
+    throw new AppError('BRANDING_INVALID_VARIANT', 'Variante de logo inválida.', { status: 400 });
+  }
+
+  async function readLogo(variant, stage = 'approved') {
+    return readOptionalBuffer(variantPaths(variant)[stage]);
+  }
+
+  async function savePendingLogoVariant(variant, buffer) {
+    await ensureDir();
+    await writeAtomic(variantPaths(variant).pending, buffer, 'Não foi possível salvar a logo enviada.', 'BRANDING_LOGO_SAVE_FAILED');
+  }
+
+  async function promotePendingToApprovedVariant(variant) {
+    await ensureDir();
+    const { pending: pendingPath, approved: approvedPath } = variantPaths(variant);
+    const temporaryPath = `${approvedPath}.${uuid()}.tmp`;
+    try {
+      const pendingBuffer = await fsImpl.readFile(pendingPath);
+      await fsImpl.writeFile(temporaryPath, pendingBuffer);
+      await fsImpl.rename(temporaryPath, approvedPath);
+    } catch (error) {
+      await safeUnlink(temporaryPath);
+      throw new AppError('BRANDING_APPROVE_FAILED', 'Não foi possível aprovar a logo.', { status: 500, cause: error });
+    }
+    await safeUnlink(pendingPath);
+  }
+
+  async function deleteApprovedLogoVariant(variant) { await safeUnlink(variantPaths(variant).approved); }
+
   async function readOptionalBuffer(filePath) {
     try {
       return await fsImpl.readFile(filePath);
@@ -145,6 +179,10 @@ export function createLocalBrandingStorage({
     savePendingLogo,
     promotePendingToApproved,
     deleteApprovedLogo,
+    readLogo,
+    savePendingLogoVariant,
+    promotePendingToApprovedVariant,
+    deleteApprovedLogoVariant,
     paths: Object.freeze({ brandingDirectory: root }),
   });
 }

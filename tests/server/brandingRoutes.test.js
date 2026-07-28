@@ -45,7 +45,7 @@ describe('branding HTTP API', () => {
       const buffer = await pngBuffer();
       const form = new FormData();
       form.set('logo', new Blob([buffer], { type: 'image/png' }), 'logo.png');
-      const uploadResponse = await fetch(`${baseUrl}/api/branding/logo`, { method: 'POST', body: form });
+      const uploadResponse = await fetch(`${baseUrl}/api/branding/logo?variant=primary`, { method: 'POST', body: form });
       expect(uploadResponse.status).toBe(201);
       const record = await uploadResponse.json();
       expect(record.quality).toBe('adequate');
@@ -59,6 +59,18 @@ describe('branding HTTP API', () => {
     } finally { await close(); }
   });
 
+  it('rejects an upload with no explicit variant', async () => {
+    const { app } = await fixtureApp();
+    const { baseUrl, close } = await startTestServer(app);
+    try {
+      const form = new FormData();
+      form.set('logo', new Blob([await pngBuffer()], { type: 'image/png' }), 'logo.png');
+      const response = await fetch(`${baseUrl}/api/branding/logo`, { method: 'POST', body: form });
+      expect(response.status).toBe(400);
+      expect((await response.json()).error.code).toBe('BRANDING_VARIANT_REQUIRED');
+    } finally { await close(); }
+  });
+
   it('approves a pending logo and exposes it as the approved variant', async () => {
     const { app } = await fixtureApp();
     const { baseUrl, close } = await startTestServer(app);
@@ -66,7 +78,7 @@ describe('branding HTTP API', () => {
       const buffer = await pngBuffer();
       const form = new FormData();
       form.set('logo', new Blob([buffer], { type: 'image/png' }), 'logo.png');
-      await fetch(`${baseUrl}/api/branding/logo`, { method: 'POST', body: form });
+      await fetch(`${baseUrl}/api/branding/logo?variant=primary`, { method: 'POST', body: form });
       const approveResponse = await fetch(`${baseUrl}/api/branding/approve`, { method: 'POST' });
       expect(approveResponse.status).toBe(200);
       const approved = await approveResponse.json();
@@ -76,6 +88,29 @@ describe('branding HTTP API', () => {
       expect(approvedAsset.status).toBe(200);
       const receivedBuffer = Buffer.from(await approvedAsset.arrayBuffer());
       expect(receivedBuffer.equals(buffer)).toBe(true);
+    } finally { await close(); }
+  });
+
+  it('keeps primary intact while white is uploaded and approved independently', async () => {
+    const { app } = await fixtureApp();
+    const { baseUrl, close } = await startTestServer(app);
+    try {
+      const primary = await pngBuffer();
+      const white = await pngBuffer({ width: 640, height: 512 });
+      const primaryForm = new FormData(); primaryForm.set('logo', new Blob([primary], { type: 'image/png' }), 'primary.png');
+      await fetch(`${baseUrl}/api/branding/logo?variant=primary`, { method: 'POST', body: primaryForm });
+      await fetch(`${baseUrl}/api/branding/approve`, { method: 'POST' });
+      const whiteForm = new FormData(); whiteForm.set('logo', new Blob([white], { type: 'image/png' }), 'white.png'); whiteForm.set('variant', 'white');
+      expect((await fetch(`${baseUrl}/api/branding/logo?variant=white`, { method: 'POST', body: whiteForm })).status).toBe(201);
+      const pending = await (await fetch(`${baseUrl}/api/branding`)).json();
+      expect(pending.approved.fileName).toBe('primary.png');
+      expect(pending.variants.white.pending.fileName).toBe('white.png');
+      expect((await fetch(`${baseUrl}/api/branding/logo?variant=white-pending`)).status).toBe(200);
+      expect((await fetch(`${baseUrl}/api/branding/approve?variant=white`, { method: 'POST' })).status).toBe(200);
+      const final = await (await fetch(`${baseUrl}/api/branding`)).json();
+      expect(final.approved.fileName).toBe('primary.png');
+      expect(final.variants.white.approved.fileName).toBe('white.png');
+      expect((await fetch(`${baseUrl}/api/branding/logo?variant=white`)).status).toBe(200);
     } finally { await close(); }
   });
 
@@ -91,7 +126,7 @@ describe('branding HTTP API', () => {
       const buffer = await pngBuffer();
       const form = new FormData();
       form.set('logo', new Blob([buffer], { type: 'image/png' }), 'logo.png');
-      await fetch(`${baseUrl}/api/branding/logo`, { method: 'POST', body: form });
+      await fetch(`${baseUrl}/api/branding/logo?variant=primary`, { method: 'POST', body: form });
       await fetch(`${baseUrl}/api/branding/approve`, { method: 'POST' });
 
       const after = await fetch(`${baseUrl}/api/branding/config`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: true }) });
@@ -106,7 +141,7 @@ describe('branding HTTP API', () => {
     try {
       const form = new FormData();
       form.set('logo', new Blob([Buffer.from('not a png')], { type: 'image/png' }), 'logo.png');
-      const response = await fetch(`${baseUrl}/api/branding/logo`, { method: 'POST', body: form });
+      const response = await fetch(`${baseUrl}/api/branding/logo?variant=primary`, { method: 'POST', body: form });
       expect(response.status).toBe(400);
       const body = await response.json();
       expect(body.error.code).toBe('BRANDING_LOGO_INVALID_SIGNATURE');
@@ -129,7 +164,7 @@ describe('branding HTTP API', () => {
       const buffer = await pngBuffer();
       const form = new FormData();
       form.set('logo', new Blob([buffer], { type: 'image/png' }), 'logo.png');
-      await fetch(`${baseUrl}/api/branding/logo`, { method: 'POST', body: form });
+      await fetch(`${baseUrl}/api/branding/logo?variant=primary`, { method: 'POST', body: form });
       await fetch(`${baseUrl}/api/branding/approve`, { method: 'POST' });
 
       const brandedAfter = await fetch(`${baseUrl}/api/branding/preview?variant=branded`);
@@ -148,7 +183,7 @@ describe('branding HTTP API', () => {
       const buffer = await pngBuffer();
       const form = new FormData();
       form.set('logo', new Blob([buffer], { type: 'image/png' }), 'logo.png');
-      await fetch(`${baseUrl}/api/branding/logo`, { method: 'POST', body: form });
+      await fetch(`${baseUrl}/api/branding/logo?variant=primary`, { method: 'POST', body: form });
       await fetch(`${baseUrl}/api/branding/approve`, { method: 'POST' });
       const deleteResponse = await fetch(`${baseUrl}/api/branding/logo`, { method: 'DELETE' });
       expect(deleteResponse.status).toBe(200);

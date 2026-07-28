@@ -4,6 +4,7 @@ import { STORY_TEMPLATES, getStoryTemplate } from '../catalogs/storyTemplates.js
 import { DEFAULT_TEMPLATE_CATEGORY_ID, getTemplateCategoryById } from '../catalogs/templateCategories.js';
 import { renderStory as defaultRenderStory } from './storyRenderer.js';
 import { storyTextWarnings } from '../../shared/storyTextLayout.js';
+import { resolveStoryLogoVariant } from '../../shared/storyLayoutSpec.js';
 
 const SCHEMA_VERSION = 1;
 const TIMEZONE = 'America/Sao_Paulo';
@@ -12,6 +13,8 @@ const VARIANTS = new Set(['original', 'branded']);
 const EDITORIAL_STATUSES = new Set(['planned', 'ready', 'published']);
 const PROPOSAL_TIMES = Object.freeze(['10:00', '15:00', '19:00']);
 const MAX_PROPOSAL_ITEMS = 21;
+const LOGO_MODES = new Set(['auto', 'primary', 'white']);
+const LOGO_SIZES = new Set(['small', 'medium', 'large']);
 
 export function createMarketingService({ repository, resultService, brandingService, renderStory = defaultRenderStory, uuid = randomUUID, now = () => new Date() } = {}) {
   if (!repository || !resultService || !brandingService) throw new TypeError('MarketingService requires repository, resultService and brandingService.');
@@ -155,9 +158,13 @@ export function createMarketingService({ repository, resultService, brandingServ
     const bufferAssetFileName = `${story.id}-buffer.jpg`;
     try {
       assertStoryFitsLayout(story);
+      const layout = getStoryTemplate(story.storyTemplateId);
+      const branding = brandingService.getState ? await brandingService.getState() : null;
+      const logoChoice = resolveStoryLogoVariant(layout, story.logoMode || 'auto', Boolean(branding?.variants?.white?.approved));
+      if (!logoChoice.variant) throw new AppError('MARKETING_WHITE_LOGO_REQUIRED', 'A logo branca não está configurada. Selecione Automática ou Principal.', { status: 422 });
       const [sourceBuffer, logo] = await Promise.all([
         repository.readAsset(weekId, 'sources', story.sourceAssetFileName),
-        brandingService.readLogoAsset('approved'),
+        brandingService.readLogoAsset(branding ? logoChoice.variant : 'approved'),
       ]);
       const output = await renderStory({ sourceBuffer, logoBuffer: logo.buffer, story });
       if (!output.buffer?.length || !output.jpegBuffer?.length) throw new AppError('STORY_RENDER_FAILED', 'O compositor não retornou os arquivos finais esperados.', { status: 500 });
@@ -262,7 +269,11 @@ function validateStoryInput(input) {
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(scheduledTime)) throw new AppError('INVALID_MARKETING_TIME', 'Informe um horário válido para o Story.', { status: 400 });
   const order = Number(input.order);
   if (!Number.isInteger(order) || order < 1 || order > 999) throw new AppError('INVALID_MARKETING_ORDER', 'A ordem deve ser um número inteiro entre 1 e 999.', { status: 400 });
-  return { sourceResultId, sourceAssetVariant, productLabel, priority: Boolean(input.priority), priceText: text(input.priceText, 'Preço', 40), calloutText: text(input.calloutText, 'Chamada curta', 80), headline: text(input.headline, 'Headline', 90), subheadline: text(input.subheadline, 'Subheadline', 120), ctaText: text(input.ctaText, 'CTA', 40), storyTemplateId, scheduledDate, scheduledTime, order };
+  const logoMode = String(input.logoMode || 'auto');
+  const logoSize = String(input.logoSize || 'medium');
+  if (!LOGO_MODES.has(logoMode)) throw new AppError('INVALID_MARKETING_LOGO_MODE', 'Selecione uma opção de logo válida.', { status: 400 });
+  if (!LOGO_SIZES.has(logoSize)) throw new AppError('INVALID_MARKETING_LOGO_SIZE', 'Selecione um tamanho de logo válido.', { status: 400 });
+  return { sourceResultId, sourceAssetVariant, productLabel, priority: Boolean(input.priority), priceText: text(input.priceText, 'Preço', 40), calloutText: text(input.calloutText, 'Chamada curta', 80), headline: text(input.headline, 'Headline', 90), subheadline: text(input.subheadline, 'Subheadline', 120), ctaText: text(input.ctaText, 'CTA', 40), logoMode, logoSize, storyTemplateId, scheduledDate, scheduledTime, order };
 }
 
 async function resolveResult(resultService, id) {

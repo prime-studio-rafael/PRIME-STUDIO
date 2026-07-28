@@ -121,6 +121,12 @@ O Marketing Studio ganhou um compositor local responsivo com preview React/CSS, 
 
 ## Fase 7.5 — Assistente IA para textos de Stories
 
-Estado: **validada funcionalmente em 27 de julho de 2026; aguardando commit e push**.
+Estado: **concluída e publicada em 27 de julho de 2026**.
 
 O Story Composer passou a oferecer três sugestões textuais por chamada explícita, com objetivo, tom e instrução adicional. O backend valida exatamente quatro campos por sugestão, limites de texto e proíbe condições comerciais inventadas. A validação real encontrou que `deepseek-chat` não estava disponível para a chave configurada; o serviço foi corrigido para consumir o modelo selecionado nas Configurações, `deepseek-v4-flash`, e uma nova conexão foi aprovada. Foi executada exatamente uma geração real de sugestões; nenhuma imagem foi enviada, nenhuma chamada ao OpenRouter foi feita e nenhum cenário temporário permaneceu no storage. Suíte final: 353 testes em 54 arquivos e build aprovados. Detalhes: [FASE-07-5-IMPLEMENTACAO.md](./FASE-07-5-IMPLEMENTACAO.md).
+
+## Fase 7.6 — Branding Inteligente
+
+Estado: **concluída tecnicamente em 27 de julho de 2026; publicação aguardando autorização explícita**.
+
+Branding passou a manter logos principal e branca de forma independente. O compositor ganhou escolha de variante (`auto`, `primary`, `white`) e tamanho (`small`, `medium`, `large`), com seleção automática contextual, fallback seguro, bloqueio manual sem logo branca e compatibilidade completa com Stories e assets antigos. As quatro combinações de validação produziram WebP/JPEG 1080×1920, preservando proporção, posição fixa e área segura. Suíte final: 358 testes em 54 arquivos e build aprovados; zero OpenRouter, DeepSeek ou créditos externos. Detalhes: [FASE-07-6-IMPLEMENTACAO.md](./FASE-07-6-IMPLEMENTACAO.md).

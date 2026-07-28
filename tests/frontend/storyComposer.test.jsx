@@ -2,6 +2,12 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import StoryComposer from '../../src/features/marketing/components/StoryComposer.jsx';
 
+vi.mock('../../src/features/branding/api/brandingClient.js', () => ({
+  fetchBrandingState: vi.fn(async () => ({ approved: { id: 'primary' }, variants: { primary: { approved: { id: 'primary' } }, white: { approved: null } } })),
+  BRANDING_APPROVED_LOGO_URL: '/api/branding/logo?variant=approved',
+  BRANDING_WHITE_LOGO_URL: '/api/branding/logo?variant=white',
+}));
+
 const week = { id: 'week-1', weekStart: '2026-07-20', stories: [] };
 const sources = [{ id: 'result-1', templateLabel: 'Resultado aprovado', originalPreviewUrl: '/result-1.jpg', brandedPreviewUrl: '/result-1-branded.jpg', brandedAvailable: true }];
 const layouts = [

@@ -29,10 +29,13 @@ export function createBrandingService({ storage } = {}) {
 
   async function getState() {
     const [config, metadata] = await Promise.all([storage.readConfig(), storage.readMetadata()]);
-    return { config, pending: metadata.pending, approved: metadata.approved };
+    const state = { config, pending: metadata.pending, approved: metadata.approved };
+    if (metadata.whitePending || metadata.whiteApproved) state.variants = { primary: { pending: metadata.pending, approved: metadata.approved }, white: { pending: metadata.whitePending, approved: metadata.whiteApproved } };
+    return state;
   }
 
-  async function uploadLogo({ buffer, mimetype, originalname }) {
+  async function uploadLogo({ buffer, mimetype, originalname, variant = 'primary' }) {
+    const resolvedVariant = normalizeLogoVariant(variant);
     assertBasics(buffer, mimetype);
     assertSignatureAndNaming(buffer, mimetype, originalname);
 
@@ -72,19 +75,21 @@ export function createBrandingService({ storage } = {}) {
       uploadedAt: new Date().toISOString(),
     };
 
-    await storage.savePendingLogo(buffer);
+    await savePending(resolvedVariant, buffer);
     const metadata = await storage.readMetadata();
-    await storage.writeMetadata({ ...metadata, pending: pendingRecord });
+    await storage.writeMetadata(writeVariantRecord(metadata, resolvedVariant, 'pending', pendingRecord));
     return pendingRecord;
   }
 
-  async function approveLogo() {
+  async function approveLogo(variant = 'primary') {
+    const resolvedVariant = normalizeLogoVariant(variant);
     const metadata = await storage.readMetadata();
-    if (!metadata.pending) throw new AppError('BRANDING_NO_PENDING_LOGO', 'Envie uma logo antes de aprovar.', { status: 400 });
-    if (metadata.pending.quality === 'inadequate') throw new AppError('BRANDING_LOGO_INADEQUATE', 'Esta logo foi classificada como inadequada e não pode ser aprovada.', { status: 400 });
-    await storage.promotePendingToApproved();
-    const approved = { ...metadata.pending, approvedAt: new Date().toISOString() };
-    await storage.writeMetadata({ ...metadata, approved, pending: null });
+    const pending = variantRecord(metadata, resolvedVariant, 'pending');
+    if (!pending) throw new AppError('BRANDING_NO_PENDING_LOGO', 'Envie uma logo antes de aprovar.', { status: 400 });
+    if (pending.quality === 'inadequate') throw new AppError('BRANDING_LOGO_INADEQUATE', 'Esta logo foi classificada como inadequada e não pode ser aprovada.', { status: 400 });
+    await promotePending(resolvedVariant);
+    const approved = { ...pending, approvedAt: new Date().toISOString() };
+    await storage.writeMetadata(writeVariantRecord(writeVariantRecord(metadata, resolvedVariant, 'approved', approved), resolvedVariant, 'pending', null));
     return approved;
   }
 
@@ -97,18 +102,19 @@ export function createBrandingService({ storage } = {}) {
     return next;
   }
 
-  async function deleteLogo() {
-    await storage.deleteApprovedLogo();
+  async function deleteLogo(variant = 'primary') {
+    const resolvedVariant = normalizeLogoVariant(variant);
+    await deleteApproved(resolvedVariant);
     const metadata = await storage.readMetadata();
-    await storage.writeMetadata({ ...metadata, approved: null });
+    await storage.writeMetadata(writeVariantRecord(metadata, resolvedVariant, 'approved', null));
     const config = await storage.readConfig();
-    await storage.writeConfig({ ...config, enabled: false });
+    if (resolvedVariant === 'primary') await storage.writeConfig({ ...config, enabled: false });
     return { deleted: true };
   }
 
   async function readLogoAsset(variant = 'approved') {
-    if (!['approved', 'pending'].includes(variant)) throw new AppError('BRANDING_INVALID_VARIANT', 'Variante de logo inválida.', { status: 400 });
-    const buffer = variant === 'approved' ? await storage.readApprovedLogo() : await storage.readPendingLogo();
+    const { logoVariant, stage } = parseReadVariant(variant);
+    const buffer = await readLogo(logoVariant, stage);
     if (!buffer) throw new AppError('BRANDING_LOGO_NOT_FOUND', 'Nenhuma logo disponível para esta variante.', { status: 404 });
     return { buffer, mimeType: 'image/png' };
   }
@@ -145,7 +151,24 @@ export function createBrandingService({ storage } = {}) {
   }
 
   return Object.freeze({ getState, uploadLogo, approveLogo, setConfig, deleteLogo, readLogoAsset, getPreviewAsset, getActiveBranding });
+
+  async function readLogo(variant, stage) { return storage.readLogo ? storage.readLogo(variant, stage) : stage === 'approved' ? storage.readApprovedLogo() : storage.readPendingLogo(); }
+  async function savePending(variant, buffer) { return storage.savePendingLogoVariant ? storage.savePendingLogoVariant(variant, buffer) : storage.savePendingLogo(buffer); }
+  async function promotePending(variant) { return storage.promotePendingToApprovedVariant ? storage.promotePendingToApprovedVariant(variant) : storage.promotePendingToApproved(); }
+  async function deleteApproved(variant) { return storage.deleteApprovedLogoVariant ? storage.deleteApprovedLogoVariant(variant) : storage.deleteApprovedLogo(); }
 }
+
+function normalizeLogoVariant(variant) {
+  if (!['primary', 'white', 'approved'].includes(String(variant))) throw new AppError('BRANDING_INVALID_VARIANT', 'Variante de logo inválida.', { status: 400 });
+  return variant === 'approved' ? 'primary' : variant;
+}
+function parseReadVariant(variant) {
+  if (variant === 'pending') return { logoVariant: 'primary', stage: 'pending' };
+  if (variant === 'white-pending') return { logoVariant: 'white', stage: 'pending' };
+  return { logoVariant: normalizeLogoVariant(variant), stage: 'approved' };
+}
+function variantRecord(metadata, variant, stage) { return variant === 'primary' ? metadata[stage === 'approved' ? 'approved' : 'pending'] : metadata[stage === 'approved' ? 'whiteApproved' : 'whitePending']; }
+function writeVariantRecord(metadata, variant, stage, value) { return variant === 'primary' ? { ...metadata, [stage === 'approved' ? 'approved' : 'pending']: value } : { ...metadata, [stage === 'approved' ? 'whiteApproved' : 'whitePending']: value }; }
 
 function assertBasics(buffer, mimetype) {
   if (!buffer || buffer.length === 0) throw new AppError('BRANDING_LOGO_EMPTY', 'A logo enviada está vazia.', { status: 400 });

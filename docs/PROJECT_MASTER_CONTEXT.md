@@ -2,7 +2,7 @@
 
 Documento subordinado ao [Documento Mestre](./DOCUMENTO-MESTRE.md), que continua sendo a autoridade final em caso de conflito de escopo. Este documento existe para que uma IA (ou pessoa) que nunca viu o projeto entenda o estado atual sem precisar reconstruir meses de conversas ou ler todos os documentos de fase em ordem cronológica.
 
-Última verificação contra o código: 27 de julho de 2026 — Fase 7.5 do Marketing Studio implementada e validada funcionalmente; commit aguardando autorização de push.
+Última verificação contra o código: 27 de julho de 2026 — Fase 7.6 Branding Inteligente implementada e validada; publicação aguardando autorização de push.
 
 ---
 
@@ -82,7 +82,8 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 11. **Fase 7.2 — Inteligência Operacional** — proposta determinística, prioridade, categorias, estados editoriais e semanas encerradas somente leitura.
 12. **Fase 7.3 — Configurações de IA e DeepSeek** — painel seguro de provedores, DeepSeek no Keychain e metadata local não sensível; ainda sem geração de textos.
 13. **Fase 7.4 — Preview Visual e Compositor de Story** — contrato visual compartilhado, preview local responsivo e renderização WebP + JPEG dos Stories.
-14. **Fase 7.5 — Assistente IA para textos de Stories** — sugestões textuais estruturadas, aplicação manual no compositor, validação segura e uma chamada explícita por clique usando o modelo configurado do DeepSeek.
+14. **Fase 7.5 — Assistente IA para textos de Stories** — concluída e publicada; sugestões textuais estruturadas, aplicação manual no compositor, validação segura e uma chamada explícita por clique usando o modelo configurado do DeepSeek.
+15. **Fase 7.6 — Branding Inteligente** — duas logos independentes, seleção automática/manual e tamanhos controlados no compositor, sem alterar a geração.
 
 ## 5. Fluxo completo (geração individual)
 
@@ -121,6 +122,7 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 | Tela Branding | `src/features/branding/` |
 | Marketing Studio | `src/features/marketing/`, `server/services/marketingService.js`, `server/repositories/localMarketingRepository.js` |
 | Renderer 9:16 | `server/services/storyRenderer.js`, `shared/storyLayoutSpec.js`, `shared/storyTextLayout.js` |
+| Branding Inteligente | `src/features/branding/`, `server/services/brandingService.js`, `server/storage/localBrandingStorage.js` |
 
 ## 7. Decisões importantes (por que, não só o quê)
 
@@ -136,6 +138,7 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 - **Stories são composição local, nunca IA** — três layouts fixos, especificação visual canônica compartilhada, Sharp no backend e zero chamada externa.
 - **WebP e JPEG vêm da mesma composição** — WebP é o derivado interno; JPEG 1080×1920 é o arquivo para upload manual. Editar um Story invalida os dois, e falha parcial faz limpeza compensatória.
 - **Assistente DeepSeek é explícito e textual** — a Fase 7.5 aceita apenas os campos permitidos, não envia imagens, não persiste respostas integrais e não faz retry.
+- **Branding do Story é determinístico** — `auto` usa a principal em fundos claros e a branca em Oferta; sem branca, há fallback explícito para a principal. Modo/tamanho alterados invalidam ambos os derivados finais.
 
 ## 8. Regras do projeto (resumo — ver [AGENTS.md](../AGENTS.md) para a versão completa)
 

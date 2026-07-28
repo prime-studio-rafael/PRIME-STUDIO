@@ -15,16 +15,16 @@ export default function useBranding(enabled) {
 
   useEffect(() => { if (enabled && status === 'idle') load().catch(() => {}); }, [enabled, load, status]);
 
-  const upload = useCallback(async (file) => {
+  const upload = useCallback(async (file, variant = 'primary') => {
     setMutationPending(true); setError('');
-    try { await uploadBrandingLogo(file); await load(); }
+    try { await uploadBrandingLogo(file, variant); await load(); }
     catch (nextError) { setError(nextError.message); throw nextError; }
     finally { setMutationPending(false); }
   }, [load]);
 
-  const approve = useCallback(async () => {
+  const approve = useCallback(async (variant = 'primary') => {
     setMutationPending(true); setError('');
-    try { await approveBrandingLogo(); await load(); }
+    try { await approveBrandingLogo(variant); await load(); }
     catch (nextError) { setError(nextError.message); throw nextError; }
     finally { setMutationPending(false); }
   }, [load]);
@@ -36,9 +36,9 @@ export default function useBranding(enabled) {
     finally { setMutationPending(false); }
   }, [load]);
 
-  const remove = useCallback(async () => {
+  const remove = useCallback(async (variant = 'primary') => {
     setMutationPending(true); setError('');
-    try { await deleteBrandingLogo(); await load(); }
+    try { await deleteBrandingLogo(variant); await load(); }
     catch (nextError) { setError(nextError.message); throw nextError; }
     finally { setMutationPending(false); }
   }, [load]);

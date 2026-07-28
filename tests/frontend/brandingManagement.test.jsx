@@ -11,6 +11,7 @@ vi.mock('../../src/features/branding/api/brandingClient.js', () => ({
   deleteBrandingLogo: vi.fn(),
   BRANDING_PENDING_LOGO_URL: '/api/branding/logo?variant=pending',
   BRANDING_APPROVED_LOGO_URL: '/api/branding/logo?variant=approved',
+  BRANDING_WHITE_LOGO_URL: '/api/branding/logo?variant=white',
   BRANDING_PREVIEW_ORIGINAL_URL: '/api/branding/preview?variant=original',
   BRANDING_PREVIEW_BRANDED_URL: '/api/branding/preview?variant=branded',
 }));
@@ -59,10 +60,24 @@ describe('BrandingPage', () => {
     await screen.findByText('Nenhuma logo enviada ainda');
     const input = document.querySelector('input[type="file"]');
     fireEvent.change(input, { target: { files: [pngFile()] } });
-    await waitFor(() => expect(api.uploadBrandingLogo).toHaveBeenCalledWith(expect.any(File)));
+    await waitFor(() => expect(api.uploadBrandingLogo).toHaveBeenCalledWith(expect.any(File), 'primary'));
     expect(await screen.findByText('Logo enviada, aguardando aprovação')).toBeInTheDocument();
     expect(screen.getByText('512×512 · 20 KB')).toBeInTheDocument();
     expect(screen.getByText('Adequada')).toBeInTheDocument();
+  });
+
+  it('sends the white variant and refreshes its pending card without changing primary', async () => {
+    const primary = { ...approvedRecord, fileName: 'primary.png' };
+    const white = { ...pendingAdequate, fileName: 'white.png' };
+    api.uploadBrandingLogo.mockResolvedValue(white);
+    api.fetchBrandingState.mockResolvedValueOnce({ ...emptyState, approved: primary }).mockResolvedValueOnce({ ...emptyState, approved: primary, variants: { primary: { approved: primary, pending: null }, white: { approved: null, pending: white } } });
+    render(<BrandingPage open />);
+    await screen.findByText('Logo ativa (aprovada)');
+    fireEvent.change(document.querySelectorAll('input[type="file"]')[1], { target: { files: [pngFile('white.png')] } });
+    await waitFor(() => expect(api.uploadBrandingLogo).toHaveBeenCalledWith(expect.any(File), 'white'));
+    expect(await screen.findByText('Pendente de aprovação')).toBeInTheDocument();
+    expect(screen.getByText('Logo ativa (aprovada)')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Aprovar logo branca' })).toBeInTheDocument();
   });
 
   it('shows validation errors and blocks approval for an inadequate logo', async () => {

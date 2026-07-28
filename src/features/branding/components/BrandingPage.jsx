@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { AlertCircle, BadgeCheck, Check, ImageOff, Loader2, ShieldCheck, Trash2, Upload } from 'lucide-react';
-import { BRANDING_APPROVED_LOGO_URL, BRANDING_PENDING_LOGO_URL, BRANDING_PREVIEW_BRANDED_URL, BRANDING_PREVIEW_ORIGINAL_URL } from '../api/brandingClient.js';
+import { BRANDING_APPROVED_LOGO_URL, BRANDING_PENDING_LOGO_URL, BRANDING_PREVIEW_BRANDED_URL, BRANDING_PREVIEW_ORIGINAL_URL, BRANDING_WHITE_LOGO_URL } from '../api/brandingClient.js';
 import useBranding from '../hooks/useBranding.js';
 
 const QUALITY = {
@@ -12,6 +12,7 @@ const QUALITY = {
 export default function BrandingPage({ open, variant = 'panel' }) {
   const branding = useBranding(open);
   const inputRef = useRef();
+  const whiteInputRef = useRef();
   const [fileError, setFileError] = useState('');
 
   if (branding.status === 'loading' && !branding.state) {
@@ -23,6 +24,8 @@ export default function BrandingPage({ open, variant = 'panel' }) {
 
   const state = branding.state || { config: { enabled: false }, pending: null, approved: null };
   const { pending, approved, config } = state;
+  const whitePending = state.variants?.white?.pending || null;
+  const whiteApproved = state.variants?.white?.approved || null;
 
   async function handleFileChange(event) {
     const file = event.target.files?.[0];
@@ -30,6 +33,12 @@ export default function BrandingPage({ open, variant = 'panel' }) {
     if (!file) return;
     setFileError('');
     try { await branding.upload(file); } catch (error) { setFileError(error.message); }
+  }
+  async function handleWhiteFileChange(event) {
+    const file = event.target.files?.[0]; event.target.value = '';
+    if (!file) return;
+    setFileError('');
+    try { await branding.upload(file, 'white'); } catch (error) { setFileError(error.message); }
   }
 
   return (
@@ -46,6 +55,9 @@ export default function BrandingPage({ open, variant = 'panel' }) {
         <p className="mt-1 text-xs leading-5 text-slate-500">Envie um PNG com transparência real. Depois de aprovada, a logo pode ser aplicada automaticamente (canto inferior direito) sobre as imagens finais, sem uso de IA.</p>
       </div>
 
+      <div className="grid gap-5 lg:grid-cols-2">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="mb-4"><h3 className="text-base font-semibold text-slate-950">Logo principal</h3><p className="mt-1 text-xs text-slate-500">Logo colorida usada em fundos claros e como padrão da loja.</p></div>
       {!pending && !approved && (
         <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-300 py-8 text-center">
           <ImageOff size={24} className="text-slate-400" />
@@ -100,6 +112,17 @@ export default function BrandingPage({ open, variant = 'panel' }) {
           {branding.mutationPending ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />} {approved || pending ? 'Enviar outra logo (PNG)' : 'Enviar logo (PNG)'}
         </button>
         {(fileError || branding.error) && <p className="mt-2 flex items-start gap-1.5 text-xs text-rose-700"><AlertCircle size={13} className="mt-0.5 shrink-0" />{fileError || branding.error}</p>}
+      </div>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="mb-4"><h3 className="text-base font-semibold text-slate-950">Logo branca</h3><p className="mt-1 text-xs text-slate-500">Logo para fundos escuros e layouts de maior contraste.</p></div>
+        {!whiteApproved && !whitePending && <div className="flex min-h-40 flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 text-center"><ImageOff size={24} className="text-slate-400"/><p className="mt-2 text-sm font-semibold text-slate-700">Ainda não cadastrada</p><p className="mt-1 text-xs text-slate-500">Envie uma logo branca transparente para habilitar essa variante.</p></div>}
+        {whiteApproved && <div className="rounded-xl border border-emerald-200 bg-slate-950 p-4 text-white"><p className="text-sm font-semibold text-emerald-300">Aprovada</p><img src={`${BRANDING_WHITE_LOGO_URL}&t=${encodeURIComponent(whiteApproved.approvedAt || '')}`} alt="Logo branca aprovada" className="mx-auto mt-4 h-24 w-full object-contain"/><button type="button" disabled={branding.mutationPending} onClick={() => branding.remove('white').catch(() => {})} className="mt-4 rounded-lg border border-white/30 px-3 py-2 text-xs font-semibold">Remover</button></div>}
+        {whitePending && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="text-sm font-semibold text-amber-800">Pendente de aprovação</p><img src="/api/branding/logo?variant=white-pending" alt="Preview da logo branca pendente" className="mx-auto mt-4 h-24 w-full object-contain"/><button type="button" disabled={branding.mutationPending || whitePending.quality === 'inadequate'} onClick={() => branding.approve('white').catch(() => {})} className="mt-4 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">Aprovar logo branca</button></div>}
+        <input ref={whiteInputRef} type="file" accept="image/png" className="hidden" onChange={handleWhiteFileChange} />
+        <button type="button" disabled={branding.mutationPending} onClick={() => whiteInputRef.current?.click()} className="mt-4 inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs font-semibold text-slate-700"><Upload size={14} />{whiteApproved || whitePending ? 'Substituir logo branca' : 'Enviar logo branca'}</button>
+      </section>
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-4">
