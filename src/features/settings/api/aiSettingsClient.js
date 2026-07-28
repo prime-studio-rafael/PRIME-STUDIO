@@ -27,3 +27,5 @@ export const saveDeepSeekKey = (apiKey) => requestJson('/api/ai/providers/deepse
 export const removeDeepSeekKey = () => requestJson('/api/ai/providers/deepseek/key', { method: 'DELETE' });
 export const testDeepSeekKey = () => requestJson('/api/ai/providers/deepseek/test', { method: 'POST' });
 export const updateDeepSeekSettings = (modelId) => requestJson('/api/ai/providers/deepseek/settings', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ modelId }) });
+export const fetchDashboardSettings = () => requestJson('/api/ai/providers/dashboard-settings');
+export const updateDashboardSettings = (usdToBrlRate) => requestJson('/api/ai/providers/dashboard-settings', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usdToBrlRate }) });

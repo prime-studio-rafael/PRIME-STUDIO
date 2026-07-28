@@ -33,5 +33,16 @@ describe('local AI settings repository', () => {
     await expect(repository.get('deepseek')).resolves.toMatchObject({ modelId: 'deepseek-v4-flash' });
     const migrated = JSON.parse(await readFile(repository.paths.filePath, 'utf8'));
     expect(migrated.providers[0].modelId).toBe('deepseek-v4-flash');
+    expect(migrated.dashboard).toEqual({ usdToBrlRate: 5.5 });
+  });
+
+  it('persists the manual USD to BRL rate with the same atomic settings store', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'prime-ai-settings-'));
+    directories.push(directory);
+    const repository = createLocalAiSettingsRepository({ settingsDir: directory });
+    await repository.updateDashboardSettings(() => ({ usdToBrlRate: 5.4321 }));
+    await expect(repository.getDashboardSettings()).resolves.toEqual({ usdToBrlRate: 5.4321 });
+    const primary = JSON.parse(await readFile(repository.paths.filePath, 'utf8'));
+    expect(primary.dashboard).toEqual({ usdToBrlRate: 5.4321 });
   });
 });

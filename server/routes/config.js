@@ -2,11 +2,14 @@ import { Router } from 'express';
 import { generationConfig } from '../config/generationConfig.js';
 import { listModels } from '../catalogs/models.js';
 
-export function createConfigRouter({ keyResolver }) {
+export function createConfigRouter({ keyResolver, aiSettingsService }) {
   const router = Router();
   router.get('/', async (_request, response, next) => {
     try {
-      const keyStatus = await keyResolver.getStatus();
+      const [keyStatus, dashboardSettings] = await Promise.all([
+        keyResolver.getStatus(),
+        aiSettingsService?.getDashboardSettings?.() || { usdToBrlRate: 5.5 },
+      ]);
     response.json({
       keyConfigured: keyStatus.configured,
       model: { ...listModels()[0], name: listModels()[0].label, technicalId: listModels()[0].providerModel },
@@ -29,6 +32,7 @@ export function createConfigRouter({ keyResolver }) {
       imagePolicy: generationConfig.imagePolicy,
       maxFileSizeBytes: generationConfig.imagePolicy.maxFileSizeBytes,
       allowedMimeTypes: generationConfig.imagePolicy.allowedMimeTypes,
+      dashboardSettings,
     });
     } catch (error) {
       next(error);

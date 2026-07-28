@@ -120,7 +120,7 @@ export function createApp({
   app.use(requestLogger);
   app.use(express.json({ limit: '16kb' }));
   app.use('/api/health', createHealthRouter({ keyResolver }));
-  app.use('/api/config', createConfigRouter({ keyResolver }));
+  app.use('/api/config', createConfigRouter({ keyResolver, aiSettingsService: resolvedAiSettingsService }));
   app.use('/api/secrets/openrouter', createOpenRouterSecretsRouter({ keyStore, keyResolver, keyValidator, onTestResult: resolvedAiSettingsService.recordOpenRouterTest }));
   app.use('/api/ai', createAiSettingsRouter({ service: resolvedAiSettingsService }));
   app.use('/api/templates/categories', createTemplateCategoriesRouter());

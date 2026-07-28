@@ -9,12 +9,15 @@ function createRepository() {
     ['openrouter', { provider: 'openrouter', modelId: null, lastTestedAt: null, lastTestStatus: 'never' }],
     ['deepseek', { provider: 'deepseek', modelId: 'deepseek-v4-flash', lastTestedAt: null, lastTestStatus: 'never' }],
   ]);
+  let dashboard = { usdToBrlRate: 5.5 };
   return {
     getAll: vi.fn(async () => ({ schemaVersion: 1, providers: [...records.values()] })),
     get: vi.fn(async (provider) => ({ ...records.get(provider) })),
     update: vi.fn(async (provider, updater) => {
       const next = await updater({ ...records.get(provider) }); records.set(provider, next); return { ...next };
     }),
+    getDashboardSettings: vi.fn(async () => ({ ...dashboard })),
+    updateDashboardSettings: vi.fn(async (updater) => { dashboard = await updater({ ...dashboard }); return { ...dashboard }; }),
   };
 }
 
@@ -77,5 +80,13 @@ describe('AI settings service', () => {
     const saved = await repository.get('deepseek');
     expect(saved).toMatchObject({ lastTestedAt: '2026-07-21T20:00:00.000Z', lastTestStatus: 'failed' });
     expect(validator.validate).toHaveBeenCalledTimes(2);
+  });
+
+  it('stores only a valid manual exchange rate separately from providers', async () => {
+    const repository = createRepository();
+    const service = createAiSettingsService({ repository, openRouterKeyResolver: { getStatus: async () => ({ configured: false }) }, deepSeekKeyStore: { hasKey: async () => false }, deepSeekKeyValidator: { validate: vi.fn() } });
+    await expect(service.updateDashboardSettings(5.4321)).resolves.toEqual({ usdToBrlRate: 5.4321 });
+    await expect(service.updateDashboardSettings(0)).rejects.toMatchObject({ code: 'INVALID_USD_TO_BRL_RATE' });
+    await expect(service.updateDashboardSettings(-1)).rejects.toMatchObject({ code: 'INVALID_USD_TO_BRL_RATE' });
   });
 });

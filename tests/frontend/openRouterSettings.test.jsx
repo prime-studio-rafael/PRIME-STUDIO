@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   deleteOpenRouterKey: vi.fn(),
   testOpenRouterKey: vi.fn(),
   fetchAiProviders: vi.fn(),
+  updateDashboardSettings: vi.fn(),
 }));
 
 vi.mock('../../src/features/settings/api/openRouterSettingsClient.js', () => mocks);
@@ -18,6 +19,7 @@ vi.mock('../../src/features/settings/api/aiSettingsClient.js', () => ({
   removeDeepSeekKey: vi.fn(),
   testDeepSeekKey: vi.fn(),
   updateDeepSeekSettings: vi.fn(),
+  updateDashboardSettings: mocks.updateDashboardSettings,
 }));
 
 import OpenRouterSettingsModal from '../../src/features/settings/components/OpenRouterSettingsModal.jsx';
@@ -38,6 +40,7 @@ beforeEach(() => {
   mocks.deleteOpenRouterKey.mockReset();
   mocks.testOpenRouterKey.mockReset();
   mocks.fetchAiProviders.mockReset();
+  mocks.updateDashboardSettings.mockReset();
   mocks.fetchOpenRouterKeyStatus.mockResolvedValue({ configured: false, source: 'none' });
   mocks.fetchAiProviders.mockResolvedValue({ providers: [] });
   globalThis.confirm = vi.fn(() => true);

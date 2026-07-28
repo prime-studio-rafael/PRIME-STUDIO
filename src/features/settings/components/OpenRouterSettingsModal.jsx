@@ -9,10 +9,11 @@ import {
 import useAiSettings from '../hooks/useAiSettings.js';
 import AiProviderOverview from './AiProviderOverview.jsx';
 import DeepSeekSettingsPanel from './DeepSeekSettingsPanel.jsx';
+import DashboardSettingsPanel from './DashboardSettingsPanel.jsx';
 
 const initialStatus = { configured: false, source: 'none' };
 
-export default function OpenRouterSettingsModal({ open, onClose, onStatusChange, onNavigateToBranding }) {
+export default function OpenRouterSettingsModal({ open, onClose, onStatusChange, onNavigateToBranding, dashboardSettings, onDashboardSettingsChange }) {
   const [status, setStatus] = useState(initialStatus);
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
@@ -119,6 +120,7 @@ export default function OpenRouterSettingsModal({ open, onClose, onStatusChange,
 
         <div className="flex gap-1 border-b border-slate-200 bg-white px-5 pt-3 sm:px-6" role="tablist" aria-label="Seções de configurações">
           <button type="button" role="tab" aria-selected={tab === 'ai'} onClick={() => setTab('ai')} className={`rounded-t-lg px-3 py-2 text-xs font-semibold ${tab === 'ai' ? 'border-b-2 border-slate-950 text-slate-950' : 'text-slate-500'}`}>Inteligência Artificial</button>
+          <button type="button" role="tab" aria-selected={tab === 'dashboard'} onClick={() => setTab('dashboard')} className={`rounded-t-lg px-3 py-2 text-xs font-semibold ${tab === 'dashboard' ? 'border-b-2 border-slate-950 text-slate-950' : 'text-slate-500'}`}>Dashboard</button>
           <button type="button" role="tab" aria-selected={tab === 'branding'} onClick={() => setTab('branding')} className={`rounded-t-lg px-3 py-2 text-xs font-semibold ${tab === 'branding' ? 'border-b-2 border-slate-950 text-slate-950' : 'text-slate-500'}`}>Branding</button>
         </div>
 
@@ -174,6 +176,8 @@ export default function OpenRouterSettingsModal({ open, onClose, onStatusChange,
             </div>}
           </div>
         )}
+
+        {tab === 'dashboard' && <DashboardSettingsPanel settings={dashboardSettings} onChange={onDashboardSettingsChange}/>}
 
         {tab === 'branding' && (
           <div className="p-5 sm:p-6">

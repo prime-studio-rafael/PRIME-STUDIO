@@ -2,7 +2,7 @@
 
 Documento subordinado ao [Documento Mestre](./DOCUMENTO-MESTRE.md), que continua sendo a autoridade final em caso de conflito de escopo. Este documento existe para que uma IA (ou pessoa) que nunca viu o projeto entenda o estado atual sem precisar reconstruir meses de conversas ou ler todos os documentos de fase em ordem cronológica.
 
-Última verificação contra o código: 28 de julho de 2026 — Fase 8.0 Recomendação Inteligente de Estilo Visual encerrada localmente; push aguarda autorização explícita.
+Última verificação contra o código: 28 de julho de 2026 — Fase 8.1A Dashboard Premium Mock Visual encerrada localmente; push aguarda autorização explícita.
 
 ---
 
@@ -88,6 +88,7 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 17. **Fase 7.8 — Arquitetura dos Layouts Premium** — catálogo visual compartilhado com cinco layouts e paridade estrutural entre Preview e Sharp.
 18. **Fase 7.9 — Estilos Visuais** — cinco combinações fechadas sobre os layouts da Fase 7.8; estado oficial derivado ou `Personalizado`, sem novo campo persistido.
 19. **Fase 8.0 — Recomendação Inteligente de Estilo Visual** — ranking local obrigatório e DeepSeek opcional, limitados ao catálogo visual e sem persistência de recomendação.
+20. **Fase 8.1A — Dashboard Premium Mock Visual** — dashboard inicial com dados demonstrativos e cotação USD→BRL manual local, sem analytics ou integração financeira.
 
 ## 5. Fluxo completo (geração individual)
 
@@ -117,6 +118,7 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 | Cliente OpenRouter | `server/providers/openrouter/openrouterClient.js` |
 | Chave do OpenRouter | `server/secrets/` (Chaves do macOS) + `.env` (fallback) |
 | Configurações de IA | `src/features/settings/`, `server/services/aiSettingsService.js`, `server/repositories/localAiSettingsRepository.js` |
+| Dashboard e cotação local | `src/features/dashboard/`, `DashboardSettingsPanel.jsx`, `localAiSettingsRepository.js` |
 | Assistente e recomendação de Stories | `src/features/marketing/components/StoryComposer.jsx`, `server/services/storySuggestionsService.js`, `server/services/storyStyleRecommendationService.js` |
 | Overlay de Branding | `server/services/logoOverlay.js` (nome indicativo — conferir arquivo exato no código) |
 | Tela Nova Geração | `src/app/App.jsx`, `src/features/generation/` |

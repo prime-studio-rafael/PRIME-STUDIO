@@ -23,6 +23,7 @@ O escopo e a ordem das fases são definidos pelo [Documento Mestre](docs/DOCUMEN
 - Fase 7.5 — Assistente IA para textos de Stories: **concluída e publicada em 27 de julho de 2026** — ver [FASE-07-5-IMPLEMENTACAO.md](docs/FASE-07-5-IMPLEMENTACAO.md).
 - Fase 7.6 — Branding Inteligente: **concluída e publicada em 27 de julho de 2026** — ver [FASE-07-6-IMPLEMENTACAO.md](docs/FASE-07-6-IMPLEMENTACAO.md).
 - Fase 7.7 — Sistema Tipográfico Premium: **implementada e validada tecnicamente em 28 de julho de 2026; commit e publicação aguardam autorização explícita** — ver [FASE-07-7-IMPLEMENTACAO.md](docs/FASE-07-7-IMPLEMENTACAO.md).
+- Fase 8.1A — Dashboard Premium Mock Visual: **encerrada localmente em 28 de julho de 2026; publicação remota aguarda autorização explícita** — ver [FASE-08-1A-IMPLEMENTACAO.md](docs/FASE-08-1A-IMPLEMENTACAO.md).
 
 O encerramento está registrado em [FASE-02-ENCERRAMENTO.md](docs/FASE-02-ENCERRAMENTO.md) e a evolução consolidada do projeto em [HISTORICO.md](docs/HISTORICO.md).
 
@@ -86,6 +87,10 @@ O Keychain tem prioridade. Se uma chave estiver salva no Chaves do macOS, ela se
 ### DeepSeek
 
 Na aba **DeepSeek**, a chave é guardada exclusivamente no Chaves do macOS com service `PRIME_IA_STUDIO_DEEPSEEK` e account `local-user`. O modelo disponível nesta instalação é `deepseek-v4-flash`. O teste de conexão faz somente uma consulta à listagem de modelos, com timeout e zero retry. O Marketing Studio usa essa configuração somente por ação explícita: **Gerar 3 sugestões** ou **Recomendar estilo**. Sem chave, a recomendação de estilo continua disponível como Sugestão local.
+
+### Dashboard e cotação manual
+
+O Dashboard é a tela inicial e apresenta uma visualização premium com dados demonstrativos nesta fase. Em **Configurações → Dashboard**, informe a **Cotação do dólar** manualmente (padrão `5,50`) para converter o custo mockado em USD para BRL. A cotação é salva localmente, não consulta API de câmbio e não altera o custo USD original.
 
 ## Templates locais
 

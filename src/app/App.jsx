@@ -24,16 +24,18 @@ import useBatches from '../features/batches/hooks/useBatches.js';
 import BrandingPage from '../features/branding/components/BrandingPage.jsx';
 import MarketingPage from '../features/marketing/components/MarketingPage.jsx';
 import useMarketing from '../features/marketing/hooks/useMarketing.js';
+import DashboardPage from '../features/dashboard/components/DashboardPage.jsx';
 
 const initialConfig = {
   keyConfigured: false,
   model: null,
   fixedGeneration: { resolution: '1K', aspectRatio: '1:1' },
+  dashboardSettings: { usdToBrlRate: 5.5 },
   clothingScope: 'Roupas superiores',
   imagePolicy,
 };
 
-export default function App() {
+export default function App({ initialView = 'generation' }) {
   const [config, setConfig] = useState(initialConfig);
   const [bootstrapState, setBootstrapState] = useState('loading');
   const [bootstrapError, setBootstrapError] = useState('');
@@ -46,7 +48,7 @@ export default function App() {
   const [confirmPaid, setConfirmPaid] = useState(false);
   const [additionalInstruction, setAdditionalInstruction] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [activeView, setActiveView] = useState('generation');
+  const [activeView, setActiveView] = useState(initialView);
   const templateCatalog = useTemplates();
   const resultHistory = useResults(activeView === 'results');
   const batchesState = useBatches(activeView === 'batches');
@@ -197,7 +199,9 @@ export default function App() {
 
   return (
     <AppShell keyConfigured={config.keyConfigured} activeView={activeView} onNavigate={setActiveView} onOpenSettings={() => setSettingsOpen(true)}>
-      {activeView === 'templates' ? (
+      {activeView === 'dashboard' ? (
+        <DashboardPage onNavigate={setActiveView} usdToBrlRate={config.dashboardSettings?.usdToBrlRate} quoteStatus={bootstrapState} />
+      ) : activeView === 'templates' ? (
         <TemplatesPage catalog={templateCatalog} policy={config.imagePolicy || imagePolicy} generationBusy={isBusy} />
       ) : activeView === 'results' ? (
         <ResultsPage history={resultHistory} />
@@ -365,6 +369,8 @@ export default function App() {
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         onStatusChange={handleKeyStatusChange}
+        dashboardSettings={config.dashboardSettings}
+        onDashboardSettingsChange={(dashboardSettings) => setConfig((current) => ({ ...current, dashboardSettings }))}
         onNavigateToBranding={() => { setSettingsOpen(false); setActiveView('branding'); }}
       />
     </AppShell>

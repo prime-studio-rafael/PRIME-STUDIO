@@ -154,3 +154,9 @@ Foi incluída uma camada compartilhada de orquestração sobre a arquitetura da 
 Estado: **encerrada localmente em 28 de julho de 2026; publicação remota aguarda autorização explícita**.
 
 O Marketing Studio passou a recomendar estilos com ranking local obrigatório e DeepSeek opcional, sempre limitado ao catálogo oficial. A IA recebe apenas texto sanitizado e estilos elegíveis; respostas inválidas, ausência de chave, rede ou timeout retornam uma Sugestão local segura. A aplicação continua manual e somente preenche os quatro campos visuais já existentes, sem persistir `visualStyleId`, origem ou justificativa e sem alterar o Sharp. Validação final: 409 testes em 57 arquivos, build, links e `git diff --check` aprovados; zero chamadas reais ao DeepSeek/OpenRouter e zero créditos externos. Detalhes: [FASE-08-0-IMPLEMENTACAO.md](./FASE-08-0-IMPLEMENTACAO.md).
+
+## Fase 8.1A — Dashboard Premium Mock Visual
+
+Estado: **encerrada localmente em 28 de julho de 2026; publicação remota aguarda autorização explícita**.
+
+Dashboard premium implementado como tela inicial, com KPIs, produção por dia, timeline, donuts, saúde, fila, insights e atalhos usando somente dados demonstrativos. A preferência local de cotação USD→BRL ganhou campo pt-BR em Configurações e persiste no mesmo armazenamento atômico de configurações, com backup. O custo USD permanece separado; o BRL é conversão local manual, sem API de câmbio, banco, OpenRouter ou DeepSeek. Validação direcionada: 26 testes em 8 arquivos e `git diff --check` aprovados. Detalhes: [FASE-08-1A-IMPLEMENTACAO.md](./FASE-08-1A-IMPLEMENTACAO.md).

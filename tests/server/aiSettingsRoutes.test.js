@@ -23,6 +23,7 @@ describe('AI settings routes', () => {
       removeDeepSeekKey: vi.fn(async () => ({ ...safeProvider, configured: false })),
       testDeepSeek: vi.fn(async () => ({ valid: true, message: 'Conexão confirmada.', provider: safeProvider })),
       updateDeepSeekSettings: vi.fn(async () => safeProvider), recordOpenRouterTest: vi.fn(),
+      getDashboardSettings: vi.fn(async () => ({ usdToBrlRate: 5.5 })), updateDashboardSettings: vi.fn(async (rate) => ({ usdToBrlRate: rate })),
     };
     const app = createApp(dependencies(service));
     const server = await startTestServer(app);
@@ -36,6 +37,11 @@ describe('AI settings routes', () => {
       expect(JSON.stringify(body)).not.toContain('server-only-secret');
       await fetch(`${server.baseUrl}/api/ai/providers/deepseek/test`, { method: 'POST' });
       expect(service.testDeepSeek).toHaveBeenCalledTimes(1);
+      const dashboard = await fetch(`${server.baseUrl}/api/ai/providers/dashboard-settings`);
+      expect(await dashboard.json()).toEqual({ usdToBrlRate: 5.5 });
+      const updated = await fetch(`${server.baseUrl}/api/ai/providers/dashboard-settings`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usdToBrlRate: 5.5 }) });
+      expect(await updated.json()).toEqual({ usdToBrlRate: 5.5 });
+      expect(service.updateDashboardSettings).toHaveBeenCalledWith(5.5);
     } finally { await server.close(); }
   });
 });

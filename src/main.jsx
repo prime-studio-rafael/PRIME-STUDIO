@@ -5,6 +5,6 @@ import './styles/index.css';
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <App />
+    <App initialView="dashboard" />
   </React.StrictMode>,
 );

@@ -52,6 +52,11 @@ export function createAiSettingsService({ repository, openRouterKeyResolver, dee
   }
 
   async function recordOpenRouterTest(valid) { return recordTest('openrouter', valid); }
+  async function getDashboardSettings() { return repository.getDashboardSettings(); }
+  async function updateDashboardSettings(usdToBrlRate) {
+    validateUsdToBrlRate(usdToBrlRate);
+    return repository.updateDashboardSettings(() => ({ usdToBrlRate }));
+  }
   async function recordTest(provider, valid) {
     return repository.update(provider, (current) => ({
       ...current,
@@ -60,7 +65,7 @@ export function createAiSettingsService({ repository, openRouterKeyResolver, dee
     }));
   }
 
-  return Object.freeze({ list, getDeepSeek, saveDeepSeekKey, removeDeepSeekKey, updateDeepSeekSettings, testDeepSeek, recordOpenRouterTest });
+  return Object.freeze({ list, getDeepSeek, saveDeepSeekKey, removeDeepSeekKey, updateDeepSeekSettings, testDeepSeek, recordOpenRouterTest, getDashboardSettings, updateDashboardSettings });
 }
 
 function present(definition, metadata = {}, configured = false) {
@@ -83,4 +88,10 @@ function validateKey(value) {
   if (apiKey.length < MIN_KEY_LENGTH) throw new AppError('INVALID_DEEPSEEK_KEY', 'A chave informada parece curta demais.', { status: 400 });
   if (apiKey.length > MAX_KEY_LENGTH) throw new AppError('INVALID_DEEPSEEK_KEY', 'A chave informada é grande demais.', { status: 400 });
   return apiKey;
+}
+
+function validateUsdToBrlRate(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0 || (String(value).split('.')[1] || '').length > 4) {
+    throw new AppError('INVALID_USD_TO_BRL_RATE', 'Informe uma cotação válida, maior que zero e com até quatro casas decimais.', { status: 400 });
+  }
 }

@@ -6,6 +6,7 @@ import { serializeJson, writeFileAtomically } from '../utils/atomicJsonStorage.j
 
 const DEFAULT_DATA = Object.freeze({
   schemaVersion: 1,
+  dashboard: Object.freeze({ usdToBrlRate: 5.5 }),
   providers: Object.freeze([
     Object.freeze({ provider: 'openrouter', modelId: null, lastTestedAt: null, lastTestStatus: 'never' }),
     Object.freeze({ provider: 'deepseek', modelId: 'deepseek-v4-flash', lastTestedAt: null, lastTestStatus: 'never' }),
@@ -51,6 +52,21 @@ export function createLocalAiSettingsRepository({
     });
   }
 
+  async function getDashboardSettings() {
+    const data = await getAll();
+    return clone(data.dashboard);
+  }
+
+  async function updateDashboardSettings(updater) {
+    return serialize(async () => {
+      const previous = await getAll();
+      const next = clone(previous);
+      next.dashboard = normalizeDashboardSettings(await updater(clone(previous.dashboard)));
+      await persist(previous, next);
+      return clone(next.dashboard);
+    });
+  }
+
   async function persist(previous, next) {
     await fsImpl.mkdir(settingsDir, { recursive: true });
     await writeFileAtomically(backupPath, serializeJson(previous), { fsImpl, uuid, errorCode: 'AI_SETTINGS_SAVE_FAILED', errorMessage: 'Não foi possível salvar o backup das configurações de IA.' });
@@ -79,14 +95,19 @@ export function createLocalAiSettingsRepository({
     return next;
   }
 
-  return Object.freeze({ ensureInitialized, getAll, get, update, paths: Object.freeze({ filePath, backupPath }) });
+  return Object.freeze({ ensureInitialized, getAll, get, update, getDashboardSettings, updateDashboardSettings, paths: Object.freeze({ filePath, backupPath }) });
 }
 
 function defaultProvider(provider) {
   const definition = getAiProvider(provider);
   return { provider, modelId: definition?.defaultModelId || null, lastTestedAt: null, lastTestStatus: 'never' };
 }
-function normalize(data) { return { schemaVersion: 1, providers: data.providers.map(normalizeProvider) }; }
+function normalize(data) { return { schemaVersion: 1, dashboard: normalizeDashboardSettings(data.dashboard), providers: data.providers.map(normalizeProvider) }; }
+function normalizeDashboardSettings(value) {
+  const rate = Number(value?.usdToBrlRate);
+  return { usdToBrlRate: Number.isFinite(rate) && rate > 0 && decimalPlaces(rate) <= 4 ? rate : DEFAULT_DATA.dashboard.usdToBrlRate };
+}
+function decimalPlaces(value) { return (String(value).split('.')[1] || '').length; }
 function normalizeProvider(value) {
   const fallback = defaultProvider(value.provider);
   const definition = getAiProvider(value.provider);

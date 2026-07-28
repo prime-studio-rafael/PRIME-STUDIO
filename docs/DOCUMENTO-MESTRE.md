@@ -532,6 +532,18 @@ Estado: **encerrada localmente em 28 de julho de 2026; publicação remota aguar
 
 Detalhes e evidências: [FASE-08-0-IMPLEMENTACAO.md](./FASE-08-0-IMPLEMENTACAO.md).
 
+### Fase 8.1A — Dashboard Premium Mock Visual
+
+Estado: **encerrada localmente em 28 de julho de 2026; publicação remota aguarda autorização explícita**.
+
+- Dashboard inicial premium construído exclusivamente com dados mockados: KPIs, gráfico, timeline, donuts, saúde, fila, insights e ações rápidas;
+- custo em USD e custo em BRL são métricas distintas; BRL é calculado localmente a partir da cotação manual, sem alterar o valor USD;
+- a cotação (`usdToBrlRate`) usa o mesmo repositório atômico de Configurações e valida número positivo com até quatro casas em formato pt-BR;
+- não há integração de câmbio, analytics, banco, chamadas ao OpenRouter/DeepSeek, alteração de renderer ou mudança nos contratos de geração;
+- Sidebar permanece fora desta fase.
+
+Detalhes e evidências: [FASE-08-1A-IMPLEMENTACAO.md](./FASE-08-1A-IMPLEMENTACAO.md).
+
 #### Próximas melhorias aprovadas, ainda não iniciadas
 
 - **download em massa das imagens finais**, ampliando o download em lote já validado na Fase 5 (Produção em Lotes).
@@ -585,6 +597,7 @@ A declaração `FASE 2 CONCLUÍDA` foi registrada depois da confirmação de tod
 - [Fase 7.8 — Arquitetura dos Layouts Premium](./FASE-07-8-IMPLEMENTACAO.md)
 - [Fase 7.9 — Estilos Visuais](./FASE-07-9-IMPLEMENTACAO.md)
 - [Fase 8.0 — Recomendação Inteligente de Estilo Visual](./FASE-08-0-IMPLEMENTACAO.md)
+- [Fase 8.1A — Dashboard Premium Mock Visual](./FASE-08-1A-IMPLEMENTACAO.md)
 - [Contrato de dados — Template, Lote, Resultado](./DATA_CONTRACT.md)
 - [Contexto mestre do projeto para IAs](./PROJECT_MASTER_CONTEXT.md)
 - [Ordem de leitura recomendada](./START_HERE.md)
