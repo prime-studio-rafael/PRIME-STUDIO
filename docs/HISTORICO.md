@@ -130,3 +130,9 @@ O Story Composer passou a oferecer três sugestões textuais por chamada explíc
 Estado: **concluída tecnicamente em 27 de julho de 2026; publicação aguardando autorização explícita**.
 
 Branding passou a manter logos principal e branca de forma independente. O compositor ganhou escolha de variante (`auto`, `primary`, `white`) e tamanho (`small`, `medium`, `large`), com seleção automática contextual, fallback seguro, bloqueio manual sem logo branca e compatibilidade completa com Stories e assets antigos. As quatro combinações de validação produziram WebP/JPEG 1080×1920, preservando proporção, posição fixa e área segura. Suíte final: 358 testes em 54 arquivos e build aprovados; zero OpenRouter, DeepSeek ou créditos externos. Detalhes: [FASE-07-6-IMPLEMENTACAO.md](./FASE-07-6-IMPLEMENTACAO.md).
+
+## Fase 7.7 — Sistema Tipográfico Premium
+
+Estado: **implementada e validada tecnicamente em 28 de julho de 2026; aguardando commit e push**.
+
+O Story Composer recebeu quatro estilos tipográficos fechados: Premium/Manrope, Moderno/Inter, Elegante/Plus Jakarta Sans e Impacto/Bebas Neue. As fontes TTF são locais e o contrato é compartilhado pelo preview React/CSS, pelas regras de texto e pelo Sharp. Impacto utiliza Bebas Neue exclusivamente em headline e preço; CTA, subheadline e demais textos usam Inter. `typographyPreset` é aditivo, Stories legados assumem Premium e qualquer troca invalida WebP/JPEG até renderização explícita. A IA recebe somente o nome do preset e preserva suas quatro respostas. Validação final: 377 testes em 55 arquivos, build e `git diff --check` aprovados; zero chamadas ao OpenRouter ou DeepSeek e zero créditos externos. Detalhes: [FASE-07-7-IMPLEMENTACAO.md](./FASE-07-7-IMPLEMENTACAO.md).

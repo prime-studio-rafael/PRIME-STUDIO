@@ -5,6 +5,7 @@ import { DEFAULT_TEMPLATE_CATEGORY_ID, getTemplateCategoryById } from '../catalo
 import { renderStory as defaultRenderStory } from './storyRenderer.js';
 import { storyTextWarnings } from '../../shared/storyTextLayout.js';
 import { resolveStoryLogoVariant } from '../../shared/storyLayoutSpec.js';
+import { STORY_DEFAULT_TYPOGRAPHY, STORY_TYPOGRAPHY_IDS } from '../../shared/storyTypographySpec.js';
 
 const SCHEMA_VERSION = 1;
 const TIMEZONE = 'America/Sao_Paulo';
@@ -15,6 +16,7 @@ const PROPOSAL_TIMES = Object.freeze(['10:00', '15:00', '19:00']);
 const MAX_PROPOSAL_ITEMS = 21;
 const LOGO_MODES = new Set(['auto', 'primary', 'white']);
 const LOGO_SIZES = new Set(['small', 'medium', 'large']);
+const TYPOGRAPHY_PRESETS = new Set(STORY_TYPOGRAPHY_IDS);
 
 export function createMarketingService({ repository, resultService, brandingService, renderStory = defaultRenderStory, uuid = randomUUID, now = () => new Date() } = {}) {
   if (!repository || !resultService || !brandingService) throw new TypeError('MarketingService requires repository, resultService and brandingService.');
@@ -271,9 +273,11 @@ function validateStoryInput(input) {
   if (!Number.isInteger(order) || order < 1 || order > 999) throw new AppError('INVALID_MARKETING_ORDER', 'A ordem deve ser um número inteiro entre 1 e 999.', { status: 400 });
   const logoMode = String(input.logoMode || 'auto');
   const logoSize = String(input.logoSize || 'medium');
+  const typographyPreset = String(input.typographyPreset || STORY_DEFAULT_TYPOGRAPHY);
   if (!LOGO_MODES.has(logoMode)) throw new AppError('INVALID_MARKETING_LOGO_MODE', 'Selecione uma opção de logo válida.', { status: 400 });
   if (!LOGO_SIZES.has(logoSize)) throw new AppError('INVALID_MARKETING_LOGO_SIZE', 'Selecione um tamanho de logo válido.', { status: 400 });
-  return { sourceResultId, sourceAssetVariant, productLabel, priority: Boolean(input.priority), priceText: text(input.priceText, 'Preço', 40), calloutText: text(input.calloutText, 'Chamada curta', 80), headline: text(input.headline, 'Headline', 90), subheadline: text(input.subheadline, 'Subheadline', 120), ctaText: text(input.ctaText, 'CTA', 40), logoMode, logoSize, storyTemplateId, scheduledDate, scheduledTime, order };
+  if (!TYPOGRAPHY_PRESETS.has(typographyPreset)) throw new AppError('INVALID_MARKETING_TYPOGRAPHY_PRESET', 'Selecione um estilo tipográfico válido.', { status: 400 });
+  return { sourceResultId, sourceAssetVariant, productLabel, priority: Boolean(input.priority), priceText: text(input.priceText, 'Preço', 40), calloutText: text(input.calloutText, 'Chamada curta', 80), headline: text(input.headline, 'Headline', 90), subheadline: text(input.subheadline, 'Subheadline', 120), ctaText: text(input.ctaText, 'CTA', 40), logoMode, logoSize, typographyPreset, storyTemplateId, scheduledDate, scheduledTime, order };
 }
 
 async function resolveResult(resultService, id) {
@@ -305,7 +309,7 @@ function assertWeekMutable(week) { if (week.status === 'closed') throw new AppEr
 function sourceCategory(result) { return result.templateCategory || DEFAULT_TEMPLATE_CATEGORY_ID; }
 function categoryLabel(id) { const category = getTemplateCategoryById(id || DEFAULT_TEMPLATE_CATEGORY_ID); return category?.label || 'Sem categoria'; }
 function createStoryRecord({ id, input, source, sourceFileName, timestamp }) { return { id, ...input, productKey: normalizeProductKey(input.productLabel), category: sourceCategory(source.result), categoryLabel: categoryLabel(source.result.templateCategory), sourceAssetFileName: sourceFileName, renderedAssetFileName: null, bufferAssetFileName: null, renderedDimensions: null, renderStatus: 'pending', editorialStatus: 'planned', publishedAt: null, renderedAt: null, renderError: null, createdAt: timestamp, updatedAt: timestamp }; }
-function assertStoryFitsLayout(story) { const warnings = storyTextWarnings(story); if (warnings.length) throw new AppError('MARKETING_STORY_TEXT_OVERFLOW', 'Revise os textos destacados: eles não cabem com segurança no layout selecionado.', { status: 422 }); }
+function assertStoryFitsLayout(story) { const warnings = storyTextWarnings(story, story.typographyPreset || STORY_DEFAULT_TYPOGRAPHY); if (warnings.length) throw new AppError('MARKETING_STORY_TEXT_OVERFLOW', 'Revise os textos destacados: eles não cabem com segurança no layout selecionado.', { status: 422 }); }
 function deterministicProposalOrder(items) {
   const tiers = [items.filter((item) => item.priority), items.filter((item) => !item.priority)];
   const output = [];

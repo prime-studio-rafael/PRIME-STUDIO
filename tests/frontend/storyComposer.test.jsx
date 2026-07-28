@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import StoryComposer from '../../src/features/marketing/components/StoryComposer.jsx';
 
 vi.mock('../../src/features/branding/api/brandingClient.js', () => ({
@@ -49,6 +49,37 @@ describe('StoryComposer', () => {
     expect(cta.style.left).toMatch(/%$/);
   });
 
+  it('updates the local preview with a closed typography preset and marks an existing Story stale', () => {
+    const story = { id: 'story-1', sourceResultId: 'result-1', sourceAssetVariant: 'original', productLabel: 'Legado', priceText: 'R$ 199', headline: 'Novo impacto', ctaText: 'Ver agora', storyTemplateId: 'minimal', scheduledDate: '2026-07-20', scheduledTime: '10:00', order: 1, renderStatus: 'ready' };
+    const props = renderComposer({ story });
+    fireEvent.change(screen.getByLabelText('Estilo tipográfico'), { target: { value: 'impacto' } });
+    expect(screen.getByLabelText('Estilo tipográfico')).toHaveValue('impacto');
+    expect(document.querySelector('[data-field="headline"]')).toHaveStyle({ fontFamily: 'Bebas Neue' });
+    expect(screen.getByText('O arquivo final está desatualizado até você salvar e gerar novamente.')).toBeInTheDocument();
+    expect(props.onSave).not.toHaveBeenCalled();
+    expect(props.onGenerate).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['premium', 'Manrope'],
+    ['moderno', 'Inter'],
+    ['elegante', 'Plus Jakarta Sans'],
+    ['impacto', 'Bebas Neue'],
+  ])('keeps %s consistent in the preview and full-size modal', (preset, family) => {
+    const story = { id: 'story-1', sourceResultId: 'result-1', sourceAssetVariant: 'original', productLabel: 'Legado', priceText: 'R$ 199', headline: 'Novo impacto', subheadline: 'Texto legível', ctaText: 'Ver agora', storyTemplateId: 'minimal', scheduledDate: '2026-07-20', scheduledTime: '10:00', order: 1, renderStatus: 'pending' };
+    renderComposer({ story });
+    prepareAssets();
+    fireEvent.change(screen.getByLabelText('Estilo tipográfico'), { target: { value: preset } });
+    expect(document.querySelector('[data-field="headline"]')).toHaveStyle({ fontFamily: family });
+    if (preset === 'impacto') {
+      expect(document.querySelector('[data-field="priceText"]')).toHaveStyle({ fontFamily: 'Bebas Neue' });
+      expect(document.querySelector('[data-field="subheadline"]')).toHaveStyle({ fontFamily: 'Inter' });
+      expect(document.querySelector('[data-field="ctaText"]')).toHaveStyle({ fontFamily: 'Inter' });
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Ver tamanho real' }));
+    expect(within(screen.getByRole('dialog', { name: 'Story em tamanho real' })).getByText('Novo impacto')).toBeInTheDocument();
+  });
+
   it('shows safe-area guidance, counters, warnings and a closable full-size preview', () => {
     const props = renderComposer();
     prepareAssets();
@@ -83,6 +114,7 @@ describe('StoryComposer', () => {
     expect(screen.getByLabelText('Headline (opcional)')).toHaveValue('Bolsa Prime');
     expect(screen.queryByAltText('Story final renderizado')).not.toBeInTheDocument();
     expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(global.fetch.mock.calls[0][1].body).typographyPreset).toBe('premium');
     global.fetch = originalFetch;
   });
 

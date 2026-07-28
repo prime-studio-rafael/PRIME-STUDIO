@@ -2,7 +2,7 @@
 
 Documento subordinado ao [Documento Mestre](./DOCUMENTO-MESTRE.md), que continua sendo a autoridade final em caso de conflito de escopo. Este documento existe para que uma IA (ou pessoa) que nunca viu o projeto entenda o estado atual sem precisar reconstruir meses de conversas ou ler todos os documentos de fase em ordem cronológica.
 
-Última verificação contra o código: 27 de julho de 2026 — Fase 7.6 Branding Inteligente implementada e validada; publicação aguardando autorização de push.
+Última verificação contra o código: 28 de julho de 2026 — Fase 7.7 Sistema Tipográfico Premium implementada e validada; commit e push aguardam autorização explícita.
 
 ---
 
@@ -25,7 +25,7 @@ Objetivo declarado (ver Documento Mestre, seção 2): provar, com baixo risco e 
 | ZIP de download | `yazl` (gerar) / `yauzl` (dev) | `^3.3.1` / `^3.4.0` |
 | Ícones | `lucide-react` | `^1.24.0` |
 | Testes | Vitest + Testing Library + jsdom | `^4.1.10` |
-| Fontes | `@fontsource/inter` | `^5.2.8` |
+| Fontes dos Stories | TTFs locais (Inter, Manrope, Plus Jakarta Sans, Bebas Neue) | `src/assets/fonts/` |
 
 Sem banco de dados, sem ORM, sem autenticação, sem Docker, sem infraestrutura em nuvem — por decisão de arquitetura, não por limitação técnica (ver Documento Mestre, "Infraestrutura deliberadamente ausente").
 
@@ -57,7 +57,7 @@ PRIME-STUDIO/
 │   └── utils/                    # Validação de imagem, metadata, erros
 ├── shared/                       # Código compartilhado entre frontend e backend (políticas/constantes)
 ├── storage/                      # Dados locais em disco (Git-ignorado) — templates, batches, results, branding, marketing
-├── tests/{server,frontend}/      # 54 arquivos, 353 testes (Vitest)
+├── tests/{server,frontend}/      # 55 arquivos, 377 testes (Vitest)
 ├── docs/                         # Documentação (este diretório)
 ├── .claude/skills/prime-studio/  # Regras permanentes para o Claude Code (ver AGENTS.md para a versão genérica)
 └── public/templates/             # Imagens seed dos templates model-01/model-02
@@ -84,6 +84,7 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 13. **Fase 7.4 — Preview Visual e Compositor de Story** — contrato visual compartilhado, preview local responsivo e renderização WebP + JPEG dos Stories.
 14. **Fase 7.5 — Assistente IA para textos de Stories** — concluída e publicada; sugestões textuais estruturadas, aplicação manual no compositor, validação segura e uma chamada explícita por clique usando o modelo configurado do DeepSeek.
 15. **Fase 7.6 — Branding Inteligente** — duas logos independentes, seleção automática/manual e tamanhos controlados no compositor, sem alterar a geração.
+16. **Fase 7.7 — Sistema Tipográfico Premium** — quatro presets locais, contrato compartilhado entre preview e Sharp e persistência aditiva por Story.
 
 ## 5. Fluxo completo (geração individual)
 
@@ -121,7 +122,7 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 | Tela Produção em Lotes | `src/features/batches/` |
 | Tela Branding | `src/features/branding/` |
 | Marketing Studio | `src/features/marketing/`, `server/services/marketingService.js`, `server/repositories/localMarketingRepository.js` |
-| Renderer 9:16 | `server/services/storyRenderer.js`, `shared/storyLayoutSpec.js`, `shared/storyTextLayout.js` |
+| Renderer 9:16 | `server/services/storyRenderer.js`, `server/services/storyTypographyFonts.js`, `shared/storyLayoutSpec.js`, `shared/storyTextLayout.js`, `shared/storyTypographySpec.js` |
 | Branding Inteligente | `src/features/branding/`, `server/services/brandingService.js`, `server/storage/localBrandingStorage.js` |
 
 ## 7. Decisões importantes (por que, não só o quê)
@@ -139,6 +140,7 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 - **WebP e JPEG vêm da mesma composição** — WebP é o derivado interno; JPEG 1080×1920 é o arquivo para upload manual. Editar um Story invalida os dois, e falha parcial faz limpeza compensatória.
 - **Assistente DeepSeek é explícito e textual** — a Fase 7.5 aceita apenas os campos permitidos, não envia imagens, não persiste respostas integrais e não faz retry.
 - **Branding do Story é determinístico** — `auto` usa a principal em fundos claros e a branca em Oferta; sem branca, há fallback explícito para a principal. Modo/tamanho alterados invalidam ambos os derivados finais.
+- **Tipografia do Story é fechada e local** — os quatro presets usam fontes TTF locais no preview e no Sharp; Bebas Neue só aparece em headline e preço no estilo Impacto. Stories legados derivam Premium e editar o preset invalida ambos os derivados finais.
 
 ## 8. Regras do projeto (resumo — ver [AGENTS.md](../AGENTS.md) para a versão completa)
 

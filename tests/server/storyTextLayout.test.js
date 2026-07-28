@@ -1,5 +1,6 @@
 import { STORY_CANVAS, STORY_LAYOUTS, getStoryLogoBox, resolveStoryLogoVariant } from '../../shared/storyLayoutSpec.js';
 import { layoutStoryText, storyTextWarnings } from '../../shared/storyTextLayout.js';
+import { STORY_TYPOGRAPHY_IDS, getStoryTypographyField, getStoryTypographyLimits } from '../../shared/storyTypographySpec.js';
 
 describe('shared Story visual contract', () => {
   it('keeps all three layouts inside the 1080x1920 canvas', () => {
@@ -31,5 +32,14 @@ describe('shared Story visual contract', () => {
     expect(resolveStoryLogoVariant(offer, 'white', false).variant).toBeNull();
     expect(getStoryLogoBox(offer, 'small').width).toBeLessThan(getStoryLogoBox(offer, 'medium').width);
     expect(getStoryLogoBox(offer, 'large').width).toBeGreaterThan(getStoryLogoBox(offer, 'medium').width);
+  });
+
+  it('keeps typography roles and limits in one shared visual contract', () => {
+    expect(STORY_TYPOGRAPHY_IDS).toEqual(['premium', 'moderno', 'elegante', 'impacto']);
+    expect(getStoryTypographyField('impacto', 'headline').family).toBe('Bebas Neue');
+    expect(getStoryTypographyField('impacto', 'priceText').family).toBe('Bebas Neue');
+    expect(getStoryTypographyField('impacto', 'subheadline').family).toBe('Inter');
+    expect(getStoryTypographyLimits('impacto', 'headline').maxChars).toBe(40);
+    expect(layoutStoryText('uma headline com quatro palavras extras', 'headline', 'impacto')).toMatchObject({ blocked: true });
   });
 });

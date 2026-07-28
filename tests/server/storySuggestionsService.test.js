@@ -19,6 +19,9 @@ describe('storySuggestionsService', () => {
     expect(fetchImpl.mock.calls[0][0]).toBe('https://api.deepseek.com/chat/completions');
     expect(fetchImpl.mock.calls[0][1].body).toContain('deepseek-v4-flash');
     expect(fetchImpl.mock.calls[0][1].body).toContain('Bolsa Prime');
+    const payload = JSON.parse(fetchImpl.mock.calls[0][1].body);
+    expect(JSON.parse(payload.messages[1].content).typographyPreset).toBe('premium');
+    expect(payload.messages[0].content).toContain('Premium');
   });
 
   it('blocks absent keys, invalid payloads and commercial claims without retrying', async () => {
@@ -75,5 +78,11 @@ describe('storySuggestionsService', () => {
     controller.abort();
     await expect(result).rejects.toMatchObject({ code: 'DEEPSEEK_SUGGESTIONS_CANCELLED' });
     expect(pending).toHaveBeenCalledTimes(1);
+  });
+
+  it('accepts only approved typography presets without making a request for invalid values', async () => {
+    const fetchImpl = vi.fn();
+    await expect(service(fetchImpl).suggest({ ...input, typographyPreset: 'arbitrary-font' })).rejects.toMatchObject({ code: 'INVALID_STORY_TYPOGRAPHY_PRESET' });
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 });

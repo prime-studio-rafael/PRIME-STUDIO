@@ -21,7 +21,8 @@ O escopo e a ordem das fases são definidos pelo [Documento Mestre](docs/DOCUMEN
 - Fase 7.3 — Configurações de IA e DeepSeek: **implementada e validada tecnicamente em 21 de julho de 2026** — ver [FASE-07-3-CONFIGURACOES-IA.md](docs/FASE-07-3-CONFIGURACOES-IA.md).
 - Fase 7.4 — Preview Visual e Compositor de Story: **concluída tecnicamente em 27 de julho de 2026** — ver [FASE-07-4-IMPLEMENTACAO.md](docs/FASE-07-4-IMPLEMENTACAO.md).
 - Fase 7.5 — Assistente IA para textos de Stories: **concluída e publicada em 27 de julho de 2026** — ver [FASE-07-5-IMPLEMENTACAO.md](docs/FASE-07-5-IMPLEMENTACAO.md).
-- Fase 7.6 — Branding Inteligente: **concluída tecnicamente em 27 de julho de 2026; publicação aguardando autorização explícita** — ver [FASE-07-6-IMPLEMENTACAO.md](docs/FASE-07-6-IMPLEMENTACAO.md).
+- Fase 7.6 — Branding Inteligente: **concluída e publicada em 27 de julho de 2026** — ver [FASE-07-6-IMPLEMENTACAO.md](docs/FASE-07-6-IMPLEMENTACAO.md).
+- Fase 7.7 — Sistema Tipográfico Premium: **implementada e validada tecnicamente em 28 de julho de 2026; commit e publicação aguardam autorização explícita** — ver [FASE-07-7-IMPLEMENTACAO.md](docs/FASE-07-7-IMPLEMENTACAO.md).
 
 O encerramento está registrado em [FASE-02-ENCERRAMENTO.md](docs/FASE-02-ENCERRAMENTO.md) e a evolução consolidada do projeto em [HISTORICO.md](docs/HISTORICO.md).
 
@@ -164,7 +165,7 @@ Na view **Branding** da sidebar, é possível enviar e aprovar, de forma indepen
 
 Abra **Marketing Studio** na sidebar para planejar semanas locais usando somente Resultados aprovados. É possível adicionar conteúdos manualmente ou selecionar produtos para uma proposta determinística, marcar prioridades e distribuir categorias pela semana. Cada Story mantém categoria, agenda e estado editorial (`Planejado`, `Pronto` ou `Publicado`).
 
-A aba **Stories** reúne formulário e preview instantâneo local em um compositor responsivo. Os três layouts fixos — Produto em destaque, Minimalista e Oferta — compartilham regras canônicas de área segura do Instagram, tipografia, limites e quebras de texto. O preview não renderiza nem faz requisições a cada tecla; o Sharp continua sendo a fonte final de verdade.
+A aba **Stories** reúne formulário e preview instantâneo local em um compositor responsivo. Os três layouts fixos — Produto em destaque, Minimalista e Oferta — compartilham regras canônicas de área segura do Instagram, tipografia, limites e quebras de texto. O seletor **Estilo tipográfico** oferece apenas Premium/Manrope, Moderno/Inter, Elegante/Plus Jakarta Sans e Impacto/Bebas Neue; no Impacto, Bebas é limitada a headline e preço. As fontes são locais, a troca não renderiza automaticamente e o Sharp continua sendo a fonte final de verdade.
 
 Ao gerar explicitamente, o aplicativo cria a partir da mesma composição um WebP interno e um JPEG 1080×1920 para upload manual em Buffer/Instagram. A renderização usa a variante e o tamanho de logo selecionados, preserva a proporção da fonte com `contain`, não corta nem deforma a imagem e permite download seguro dos dois derivados. Editar fonte, variante, layout, textos, modo ou tamanho da logo invalida ambos os arquivos e exige nova renderização. Planejamento, fontes e arquivos finais ficam em:
 
@@ -204,7 +205,7 @@ npm test
 npm run build
 ```
 
-Os testes automatizados usam respostas simuladas e não acessam OpenRouter ou DeepSeek. Estado atual: 54 arquivos e 358 testes aprovados. A validação funcional da Fase 7.5 executou uma chamada real de conexão e uma geração controlada de sugestões, sem OpenRouter.
+Os testes automatizados usam respostas simuladas e não acessam OpenRouter ou DeepSeek. Estado atual: 55 arquivos e 377 testes aprovados. A validação funcional da Fase 7.5 executou uma chamada real de conexão e uma geração controlada de sugestões, sem OpenRouter.
 
 ## Limitações intencionais
 

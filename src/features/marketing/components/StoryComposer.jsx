@@ -2,13 +2,14 @@ import { AlertCircle, Check, Eye, Flag, ImageOff, Loader2, Maximize2, Sparkles, 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { INSTAGRAM_SAFE_AREA, STORY_CANVAS, STORY_HANDLE, STORY_LOGO_SIZES, getStoryLayout, getStoryLogoBox, resolveStoryLogoVariant } from '../../../../shared/storyLayoutSpec.js';
 import { layoutStoryText, storyTextWarnings } from '../../../../shared/storyTextLayout.js';
+import { STORY_DEFAULT_TYPOGRAPHY, STORY_TYPOGRAPHY_PRESETS, getStoryTypographyField, getStoryTypographyPreset } from '../../../../shared/storyTypographySpec.js';
 import { generateStorySuggestions, marketingAssetUrl } from '../api/marketingClient.js';
 import { fetchBrandingState, BRANDING_APPROVED_LOGO_URL, BRANDING_WHITE_LOGO_URL } from '../../branding/api/brandingClient.js';
 
 const inputClass = 'w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-500 disabled:bg-slate-100';
 
 export default function StoryComposer({ week, sources, layouts, story, busy, onSave, onGenerate, onCancel }) {
-  const initial = story ? normalize(story) : { sourceResultId: sources[0]?.id || '', sourceAssetVariant: 'original', productLabel: '', priority: false, priceText: '', calloutText: '', headline: '', subheadline: '', ctaText: 'Saiba mais', logoMode: 'auto', logoSize: 'medium', storyTemplateId: layouts[0]?.id || 'product-highlight', scheduledDate: week.weekStart, scheduledTime: '10:00', order: week.stories.length + 1 };
+  const initial = story ? normalize(story) : { sourceResultId: sources[0]?.id || '', sourceAssetVariant: 'original', productLabel: '', priority: false, priceText: '', calloutText: '', headline: '', subheadline: '', ctaText: 'Saiba mais', logoMode: 'auto', logoSize: 'medium', typographyPreset: STORY_DEFAULT_TYPOGRAPHY, storyTemplateId: layouts[0]?.id || 'product-highlight', scheduledDate: week.weekStart, scheduledTime: '10:00', order: week.stories.length + 1 };
   const [form, setForm] = useState(initial);
   const [showFullSize, setShowFullSize] = useState(false);
   const [imageState, setImageState] = useState('loading');
@@ -23,7 +24,7 @@ export default function StoryComposer({ week, sources, layouts, story, busy, onS
   const sourceUrl = story ? marketingAssetUrl(week.id, story.id, 'source') : form.sourceAssetVariant === 'branded' ? selectedSource?.brandedPreviewUrl : selectedSource?.originalPreviewUrl;
   const dirty = story && JSON.stringify(normalize(story)) !== JSON.stringify(form);
   const finalUrl = story?.renderStatus === 'ready' && !dirty ? marketingAssetUrl(week.id, story.id, 'story') : null;
-  const warnings = useMemo(() => storyTextWarnings(form), [form]);
+  const warnings = useMemo(() => storyTextWarnings(form, form.typographyPreset), [form]);
   const required = Boolean(form.sourceResultId && form.productLabel.trim() && form.scheduledDate && form.scheduledTime && form.order > 0);
   const canRender = required && !warnings.length && !logoUnavailable && (finalUrl || (Boolean(sourceUrl) && imageState === 'ready' && logoState === 'ready'));
   const set = (field) => (event) => {
@@ -43,7 +44,7 @@ export default function StoryComposer({ week, sources, layouts, story, busy, onS
     suggestionAbort.current = controller;
     setAssistant((current) => ({ ...current, loading: true, error: '', unavailable: false, suggestions: [] }));
     try {
-      const result = await generateStorySuggestions({ productLabel: form.productLabel, sourceCategory: selectedSource?.categoryLabel || '', priceText: form.priceText, marketingGoal: assistant.marketingGoal, tone: assistant.tone, additionalInstruction: assistant.additionalInstruction }, controller.signal);
+      const result = await generateStorySuggestions({ productLabel: form.productLabel, sourceCategory: selectedSource?.categoryLabel || '', priceText: form.priceText, marketingGoal: assistant.marketingGoal, tone: assistant.tone, typographyPreset: form.typographyPreset, additionalInstruction: assistant.additionalInstruction }, controller.signal);
       setAssistant((current) => ({ ...current, loading: false, suggestions: result.suggestions || [] }));
     } catch (error) {
       if (error?.name === 'AbortError' || error?.code === 'DEEPSEEK_SUGGESTIONS_CANCELLED') return;
@@ -73,6 +74,7 @@ export default function StoryComposer({ week, sources, layouts, story, busy, onS
         <Field label="Headline (opcional)"><TextControl aria-label="Headline (opcional)" value={form.headline} max={48} onChange={set('headline')} disabled={busy} placeholder="Seu produto em destaque" words={4}/></Field>
         <Field label="Subheadline (opcional)"><TextControl aria-label="Subheadline (opcional)" value={form.subheadline} max={80} onChange={set('subheadline')} disabled={busy} placeholder="Detalhes ou benefício da oferta" words={8}/></Field>
         <Field label="CTA (opcional)"><TextControl aria-label="CTA (opcional)" value={form.ctaText} max={28} onChange={set('ctaText')} disabled={busy} placeholder="Compre agora" words={3}/></Field>
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]"><Field label="Estilo tipográfico"><select aria-label="Estilo tipográfico" value={form.typographyPreset} onChange={set('typographyPreset')} disabled={busy} className={inputClass}>{Object.values(STORY_TYPOGRAPHY_PRESETS).map((preset) => <option key={preset.id} value={preset.id}>{preset.label}</option>)}</select></Field><TypographyPreview preset={getStoryTypographyPreset(form.typographyPreset)}/></div>
         <div className="grid gap-3 sm:grid-cols-2"><Field label="Logo"><select aria-label="Logo" value={form.logoMode} onChange={set('logoMode')} disabled={busy} className={inputClass}><option value="auto">Automática</option><option value="primary">Principal</option><option value="white">Branca</option></select></Field><Field label="Tamanho da logo"><select aria-label="Tamanho da logo" value={form.logoSize} onChange={set('logoSize')} disabled={busy} className={inputClass}>{Object.values(STORY_LOGO_SIZES).map((size) => <option key={size.id} value={size.id}>{size.label}</option>)}</select></Field></div>
         <p className={`rounded-lg px-3 py-2 text-xs font-medium ${logoUnavailable ? 'bg-rose-50 text-rose-800' : 'bg-slate-50 text-slate-600'}`}>{logoUnavailable ? 'Logo branca não configurada. Escolha Automática ou Principal.' : form.logoMode === 'auto' ? `Automática — ${logoChoice.fallback ? 'logo branca indisponível; usando logo principal' : `usando logo ${logoChoice.variant === 'white' ? 'branca' : 'principal'}`}` : `Usando logo ${logoChoice.variant === 'white' ? 'branca' : 'principal'}`}</p>
         <StoryAiAssistant value={assistant} disabled={busy || !form.productLabel.trim()} onChange={(changes) => setAssistant((current) => ({ ...current, ...changes }))} onGenerate={generateSuggestions} onCancel={cancelSuggestions} onApply={applySuggestion}/>
@@ -95,21 +97,28 @@ function StoryAiAssistant({ value, disabled, onChange, onGenerate, onCancel, onA
 
 export function StoryPreview({ form, sourceUrl, imageState, logoState, logoChoice = { variant: 'primary' }, onImageLoad, onImageError, onLogoLoad, onLogoError, showSafeArea = false, finalUrl = null }) {
   const layout = getStoryLayout(form.storyTemplateId) || getStoryLayout('product-highlight');
+  const typography = getStoryTypographyPreset(form.typographyPreset);
   const styleBox = (box) => ({ left: pct(box.left, 'x'), top: pct(box.top, 'y'), width: pct(box.width, 'x'), height: pct(box.height, 'y') });
-  const textStyle = (position, weight, color) => ({
+  const textStyle = (position, field, color) => {
+    const style = getStoryTypographyField(typography.id, field);
+    const fontSize = position.fontSize * style.scale;
+    return ({
     left: pct(position.x, 'x'),
-    top: pct(position.y - position.fontSize, 'y'),
+    top: pct(position.y - fontSize, 'y'),
     width: pct(position.maxWidth, 'x'),
     maxWidth: pct(position.maxWidth, 'x'),
     boxSizing: 'border-box',
-    fontSize: `clamp(9px, ${(position.fontSize / STORY_CANVAS.width) * 100}vw, ${(position.fontSize / STORY_CANVAS.width) * 390}px)`,
-    lineHeight: position.lineHeight / position.fontSize,
-    fontWeight: weight,
+    fontFamily: style.family,
+    fontSize: `clamp(9px, ${(fontSize / STORY_CANVAS.width) * 100}vw, ${(fontSize / STORY_CANVAS.width) * 390}px)`,
+    lineHeight: (position.lineHeight / position.fontSize) * style.lineHeightMultiplier,
+    fontWeight: style.weight,
+    letterSpacing: style.letterSpacing,
     color,
     textAlign: position.align,
     ...(position.align === 'center' ? { transform: 'translateX(-50%)' } : {}),
   });
-  const renderText = (field, position, weight, color) => { const result = layoutStoryText(form[field], field); return result.lines.length ? <p style={textStyle(position, weight, color)} className="absolute m-0 whitespace-pre-line" data-field={field}>{result.lines.join('\n')}</p> : null; };
+  };
+  const renderText = (field, position, color) => { const result = layoutStoryText(form[field], field, typography.id); return result.lines.length ? <p style={textStyle(position, field, color)} className="absolute m-0 whitespace-pre-line" data-field={field}>{result.lines.join('\n')}</p> : null; };
   return <div><div className="mb-3 flex items-center justify-between"><div><h3 className="text-sm font-semibold text-slate-950">Preview do Story</h3><p className="mt-0.5 text-[11px] text-slate-500">1080 × 1920 · visualização local</p></div><span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700"><Eye size={13}/> Atualizado agora</span></div><div className="mx-auto w-full max-w-[390px] overflow-hidden rounded-[22px] border-[7px] border-slate-950 bg-slate-950 shadow-xl"><div className="relative w-full overflow-hidden" style={{ aspectRatio: '9 / 16', background: layout.background }}>
     {sourceUrl && !finalUrl && <img src={sourceUrl} alt="Imagem selecionada para o Story" onLoad={onImageLoad} onError={onImageError} className="absolute object-contain" style={styleBox(layout.image)}/>} {finalUrl && <img src={finalUrl} alt="Story final renderizado" className="absolute inset-0 h-full w-full object-contain"/>}
     {!sourceUrl && !finalUrl && <div className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center text-slate-500"><ImageOff size={28}/><p className="mt-3 text-xs font-semibold">Selecione um Resultado aprovado</p></div>}
@@ -122,7 +131,7 @@ export function StoryPreview({ form, sourceUrl, imageState, logoState, logoChoic
       onLoad={onLogoLoad}
       onError={onLogoError}
     />}
-    {!finalUrl && <>{renderText('productLabel', layout.text.productLabel, 700, layout.colors.primary)}{renderText('calloutText', layout.text.calloutText, 500, layout.colors.muted)}{renderText('headline', layout.text.headline, 700, layout.colors.primary)}{renderText('subheadline', layout.text.subheadline, 400, layout.colors.muted)}{renderText('priceText', layout.text.priceText, 800, layout.colors.price)}{layout.cta && form.ctaText && <><span className="absolute" style={{ ...styleBox(layout.cta), background: layout.colors.accent, borderRadius: `${pct(layout.cta.radius, 'x')}vw` }}/>{renderText('ctaText', layout.text.ctaText, 700, layout.colors.accentText)}</>}<span className="absolute font-medium" style={textStyle(layout.handle, 500, layout.colors.muted)}>{STORY_HANDLE}</span></>}
+    {!finalUrl && <>{renderText('productLabel', layout.text.productLabel, layout.colors.primary)}{renderText('calloutText', layout.text.calloutText, layout.colors.muted)}{renderText('headline', layout.text.headline, layout.colors.primary)}{renderText('subheadline', layout.text.subheadline, layout.colors.muted)}{renderText('priceText', layout.text.priceText, layout.colors.price)}{layout.cta && form.ctaText && <><span className="absolute" style={{ ...styleBox(layout.cta), background: layout.colors.accent, borderRadius: `${pct(layout.cta.radius, 'x')}vw` }}/>{renderText('ctaText', layout.text.ctaText, layout.colors.accentText)}</>}<span className="absolute" style={textStyle(layout.handle, 'handle', layout.colors.muted)}>{STORY_HANDLE}</span></>}
     {showSafeArea && <span
       aria-label="Área segura do Instagram"
       className="pointer-events-none absolute border border-dashed border-sky-400/70"
@@ -135,7 +144,8 @@ function LayoutPicker({ layouts, selected, onSelect }) { return <div className="
 function PreviewModal({ form, sourceUrl, imageState, logoChoice, onClose }) { return <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/80 p-4" role="dialog" aria-modal="true" aria-label="Story em tamanho real"><div className="relative flex max-h-full max-w-full flex-col items-center"><button type="button" onClick={onClose} className="mb-3 self-end rounded-full bg-white p-2 text-slate-700" aria-label="Fechar tamanho real"><X size={18}/></button><div className="max-h-[calc(100vh-90px)] w-auto max-w-full"><StoryPreview form={form} sourceUrl={sourceUrl} imageState={imageState} logoChoice={logoChoice}/></div></div></div>; }
 function Field({ label, children }) { return <label className="block"><span className="mb-1.5 block text-xs font-semibold text-slate-700">{label}</span>{children}</label>; }
 function TextControl({ value, max, words, onChange, ...props }) { const count = String(value || '').trim().split(/\s+/).filter(Boolean).length; return <><input value={value} maxLength={max} onChange={onChange} className={inputClass} {...props}/><span className="mt-1 block text-right text-[10px] text-slate-400">{String(value || '').length}/{max}{words ? ` · ${count}/${words} palavras` : ''}</span></>; }
-function normalize(story) { return { ...story, priceText: story.priceText || '', calloutText: story.calloutText || '', headline: story.headline || '', subheadline: story.subheadline || '', ctaText: story.ctaText || '', logoMode: story.logoMode || 'auto', logoSize: story.logoSize || 'medium' }; }
+function TypographyPreview({ preset }) { const headline = getStoryTypographyField(preset.id, 'headline'); const body = getStoryTypographyField(preset.id, 'subheadline'); return <div className="self-end rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left sm:min-w-32"><span className="block text-[10px] font-semibold uppercase tracking-wide text-slate-400">Prévia</span><span style={{ fontFamily: headline.family, fontWeight: headline.weight, letterSpacing: headline.letterSpacing }} className="mt-0.5 block text-sm text-slate-950">{preset.preview}</span><span style={{ fontFamily: body.family, fontWeight: body.weight }} className="block text-[10px] text-slate-500">{preset.display}</span></div>; }
+function normalize(story) { return { ...story, priceText: story.priceText || '', calloutText: story.calloutText || '', headline: story.headline || '', subheadline: story.subheadline || '', ctaText: story.ctaText || '', logoMode: story.logoMode || 'auto', logoSize: story.logoSize || 'medium', typographyPreset: story.typographyPreset || STORY_DEFAULT_TYPOGRAPHY }; }
 function fieldName(field) { return ({ calloutText: 'Chamada curta', headline: 'Headline', subheadline: 'Subheadline', ctaText: 'CTA', priceText: 'Preço', productLabel: 'Produto' })[field] || field; }
 function addDays(value, amount) { const date = new Date(`${value}T12:00:00Z`); date.setUTCDate(date.getUTCDate() + amount); return date.toISOString().slice(0, 10); }
 function pct(value, axis) { return `${(value / (axis === 'x' ? STORY_CANVAS.width : STORY_CANVAS.height)) * 100}%`; }

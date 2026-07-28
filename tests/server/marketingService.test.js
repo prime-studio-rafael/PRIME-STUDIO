@@ -35,10 +35,19 @@ describe('marketingService', () => {
     const { service, repository, resultService } = await fixture();
     await service.createWeek({ weekStart: '2026-07-20' });
     const week = await service.addStory('week-1', story);
-    expect(week.stories[0]).toMatchObject({ id: 'story-1', productKey: 'camisa-agil-01', category: 'moda-masculina', categoryLabel: 'Moda Masculina', sourceAssetFileName: 'story-1.jpg', renderStatus: 'pending', editorialStatus: 'planned' });
+    expect(week.stories[0]).toMatchObject({ id: 'story-1', productKey: 'camisa-agil-01', category: 'moda-masculina', categoryLabel: 'Moda Masculina', sourceAssetFileName: 'story-1.jpg', typographyPreset: 'premium', renderStatus: 'pending', editorialStatus: 'planned' });
     expect(resultService.readAsset).toHaveBeenCalledWith('result-1', 'result');
     expect(await repository.readAsset('week-1', 'sources', 'story-1.jpg')).toEqual(Buffer.from('bytes-result'));
     expect(JSON.stringify(week)).not.toMatch(/base64|\/Users\//i);
+  });
+
+  it('persists the selected typography and supplies Premium to a legacy Story without that field', async () => {
+    const { service, repository } = await fixture();
+    await service.createWeek({ weekStart: '2026-07-20' });
+    await service.addStory('week-1', { ...story, typographyPreset: 'elegante' });
+    expect((await service.getWeek('week-1')).stories[0].typographyPreset).toBe('elegante');
+    await service.updateStory('week-1', 'story-1', { typographyPreset: 'moderno' });
+    expect((await repository.get('week-1')).stories[0].typographyPreset).toBe('moderno');
   });
 
   it('blocks non-approved sources, invalid weeks and dates outside the selected week', async () => {
@@ -59,9 +68,9 @@ describe('marketingService', () => {
     expect(rendered.stories[0]).toMatchObject({ renderStatus: 'ready', editorialStatus: 'ready', renderedAssetFileName: 'story-1.webp', bufferAssetFileName: 'story-1-buffer.jpg', renderedDimensions: { width: 1080, height: 1920 } });
     expect(await repository.readAsset('week-1', 'stories', 'story-1-buffer.jpg')).toEqual(Buffer.from('buffer-jpeg'));
     expect((await service.approveWeek('week-1')).status).toBe('approved');
-    const edited = await service.updateStory('week-1', 'story-1', { headline: 'Nova chamada' });
+    const edited = await service.updateStory('week-1', 'story-1', { typographyPreset: 'impacto' });
     expect(edited.status).toBe('draft');
-    expect(edited.stories[0]).toMatchObject({ renderStatus: 'pending', renderedAssetFileName: null, bufferAssetFileName: null, renderedDimensions: null });
+    expect(edited.stories[0]).toMatchObject({ typographyPreset: 'impacto', renderStatus: 'pending', renderedAssetFileName: null, bufferAssetFileName: null, renderedDimensions: null });
   });
 
   it('builds the same balanced proposal every time, with priorities first and no repeated Result', async () => {

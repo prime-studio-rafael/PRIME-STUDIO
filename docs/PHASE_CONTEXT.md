@@ -4,10 +4,10 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 
 ## Estado atual
 
-- Versão: MVP local evoluído até a Fase 7.6 — Branding Inteligente.
-- Fase atual: Fase 7.6 validada e em encerramento Git; push aguardando autorização explícita.
-- Última fase concluída tecnicamente: Fase 7.6 — Branding Inteligente.
-- Último estado funcional publicado: commit `0a8e9bb`; a Fase 7.6 aguarda publicação explícita.
+- Versão: MVP local evoluído até a Fase 7.7 — Sistema Tipográfico Premium.
+- Fase atual: Fase 7.7 validada tecnicamente; aguardando commit e autorização explícita de push.
+- Última fase concluída tecnicamente: Fase 7.7 — Sistema Tipográfico Premium.
+- Último estado funcional publicado: commit `6a76d1d` (Fase 7.6).
 - Próxima fase: não há fase de produto aprovada para início.
 
 ## Git
@@ -16,7 +16,7 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 - Branch principal: `main`.
 - Repositório esperado: `prime-studio-rafael/PRIME-STUDIO`.
 - Conta GitHub esperada: `prime-studio-rafael`.
-- Última sincronização conhecida: 27 de julho de 2026.
+- Última sincronização conhecida: 28 de julho de 2026.
 - Operações Git seguem o checklist de `AGENTS.md`; divergências bloqueiam commit e push.
 
 ## Módulos ativos
@@ -30,9 +30,10 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 
 - Template, Lote e Resultado: `docs/DATA_CONTRACT.md`.
 - Semana e Story: `server/services/marketingService.js` e `server/repositories/localMarketingRepository.js`.
-- Contrato visual de Stories: `shared/storyLayoutSpec.js` e `shared/storyTextLayout.js`.
+- Contrato visual de Stories: `shared/storyLayoutSpec.js`, `shared/storyTextLayout.js` e `shared/storyTypographySpec.js`.
 - WebP interno e JPEG 1080×1920 são derivados da mesma composição Sharp.
 - Story: `logoMode` (`auto`/`primary`/`white`) e `logoSize` (`small`/`medium`/`large`) são aditivos; Stories legados usam `auto` + `medium` na leitura.
+- Story: `typographyPreset` é aditivo; valores permitidos são `premium`, `moderno`, `elegante` e `impacto`; Stories legados usam `premium` na leitura. As fontes TTF locais são compartilhadas por preview React/CSS e Sharp; Bebas Neue é restrita a headline e preço no preset Impacto.
 - Branding: logos `primary` e `white` são independentes; `offer` em modo automático prioriza a branca e faz fallback honesto para a principal quando ela não existe.
 - Sugestões textuais: `server/services/storySuggestionsService.js` e `POST /api/marketing/suggestions`.
 - Contratos existentes são aditivos e compatíveis com registros antigos.
@@ -48,7 +49,7 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 
 ## Dependências críticas
 
-React, Vite, Tailwind CSS, Node.js, Express, `sharp`, `multer`, Keychain do macOS e Vitest. Não adicionar banco, autenticação, Docker, nuvem ou provedor externo fora do escopo aprovado.
+React, Vite, Tailwind CSS, Node.js, Express, `sharp`, `multer`, Keychain do macOS e Vitest. As fontes do Story são TTFs locais em `src/assets/fonts/`. Não adicionar banco, autenticação, Docker, nuvem ou provedor externo fora do escopo aprovado.
 
 ## Arquivos principais
 
@@ -57,13 +58,13 @@ React, Vite, Tailwind CSS, Node.js, Express, `sharp`, `multer`, Keychain do macO
 - Templates: `src/features/templates/` e `server/services/templateService.js`.
 - Resultados: `src/features/results/` e `server/services/resultService.js`.
 - Lotes: `src/features/batches/`, `batchService.js` e `batchQueue.js`.
-- Marketing: `src/features/marketing/`, `marketingService.js` e `storyRenderer.js`.
+- Marketing: `src/features/marketing/`, `marketingService.js`, `storyRenderer.js`, `storyTypographyFonts.js` e os contratos `shared/story*`.
 - IA: `src/features/settings/` e `server/services/aiSettingsService.js`.
 - Persistência: `server/repositories/` e `storage/` (ignorado pelo Git).
 
 ## Pendências aprovadas
 
-Nenhuma pendência de produto aprovada para implementação neste momento. A Fase 7.6 está tecnicamente validada, aguardando somente publicação explícita.
+Nenhuma pendência de produto aprovada para implementação neste momento. A Fase 7.7 aguarda somente commit e publicação explícita.
 
 ## Fora do escopo
 
@@ -83,4 +84,4 @@ Publicação automática, Buffer, banco, Supabase, autenticação, nuvem, editor
 
 ## Última sincronização
 
-27 de julho de 2026. Fase 7.6 validada localmente; atualizar este arquivo ao concluir fase, alterar arquitetura, contrato, módulo ativo ou pendência aprovada.
+28 de julho de 2026. Fase 7.7 validada localmente; atualizar este arquivo ao concluir fase, alterar arquitetura, contrato, módulo ativo ou pendência aprovada.

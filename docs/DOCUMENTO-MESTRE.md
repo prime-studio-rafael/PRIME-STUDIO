@@ -2,7 +2,7 @@
 
 Versão: 2.0
 Estado: referência oficial do projeto  
-Última consolidação: 27 de julho de 2026 — Fase 7.6 Branding Inteligente implementada e validada localmente; publicação aguardando autorização de push.
+Última consolidação: 28 de julho de 2026 — Fase 7.7 Sistema Tipográfico Premium implementada e validada localmente; commit e publicação aguardam autorização explícita.
 
 ## 1. Autoridade e controle de escopo
 
@@ -467,7 +467,7 @@ Detalhes e evidências: [FASE-07-5-IMPLEMENTACAO.md](./FASE-07-5-IMPLEMENTACAO.m
 
 ### Fase 7.6 — Branding Inteligente
 
-Estado: **concluída tecnicamente em 27 de julho de 2026; publicação aguardando autorização explícita**.
+Estado: **concluída e publicada em 27 de julho de 2026**.
 
 - Branding mantém duas variantes independentes: `primary` e `white`, cada uma com ciclo próprio de upload, pendência, aprovação, remoção e metadata;
 - o Story aceita `logoMode` (`auto`, `primary`, `white`) e `logoSize` (`small`, `medium`, `large`) de modo aditivo;
@@ -477,6 +477,20 @@ Estado: **concluída tecnicamente em 27 de julho de 2026; publicação aguardand
 - quatro cenários validados, WebP/JPEG 1080×1920 e downloads seguros aprovados; zero chamadas ao OpenRouter/DeepSeek e zero créditos externos.
 
 Detalhes e evidências: [FASE-07-6-IMPLEMENTACAO.md](./FASE-07-6-IMPLEMENTACAO.md).
+
+### Fase 7.7 — Sistema Tipográfico Premium
+
+Estado: **implementada e validada tecnicamente em 28 de julho de 2026; commit e publicação aguardam autorização explícita**.
+
+- quatro presets fechados: Premium/Manrope, Moderno/Inter, Elegante/Plus Jakarta Sans e Impacto/Bebas Neue;
+- fontes locais e contrato tipográfico compartilhado por preview React/CSS, validação de texto e Sharp;
+- Bebas Neue restrita a headline e preço no preset Impacto; textos longos, CTA, subheadline e handle permanecem legíveis em Inter;
+- `typographyPreset` é aditivo e persistido no Story; registros antigos normalizam para Premium;
+- trocar o preset não renderiza automaticamente e invalida os derivados WebP/JPEG até uma nova renderização explícita;
+- o Assistente IA recebe apenas o preset selecionado, sem alterar o contrato de suas quatro respostas;
+- validação final: 377 testes, build e `git diff --check` aprovados, sem chamadas externas.
+
+Detalhes e evidências: [FASE-07-7-IMPLEMENTACAO.md](./FASE-07-7-IMPLEMENTACAO.md).
 
 #### Próximas melhorias aprovadas, ainda não iniciadas
 
@@ -527,6 +541,7 @@ A declaração `FASE 2 CONCLUÍDA` foi registrada depois da confirmação de tod
 - [Fase 7.4 — Preview Visual e Compositor de Story](./FASE-07-4-IMPLEMENTACAO.md)
 - [Fase 7.5 — Assistente IA para textos de Stories](./FASE-07-5-IMPLEMENTACAO.md)
 - [Fase 7.6 — Branding Inteligente](./FASE-07-6-IMPLEMENTACAO.md)
+- [Fase 7.7 — Sistema Tipográfico Premium](./FASE-07-7-IMPLEMENTACAO.md)
 - [Contrato de dados — Template, Lote, Resultado](./DATA_CONTRACT.md)
 - [Contexto mestre do projeto para IAs](./PROJECT_MASTER_CONTEXT.md)
 - [Ordem de leitura recomendada](./START_HERE.md)

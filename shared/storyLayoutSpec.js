@@ -8,15 +8,6 @@ export const STORY_LOGO_SIZES = Object.freeze({
   large: Object.freeze({ id: 'large', label: 'Grande', scale: 1.25 }),
 });
 
-export const STORY_TEXT_LIMITS = Object.freeze({
-  productLabel: Object.freeze({ maxChars: 32, maxLines: 2 }),
-  calloutText: Object.freeze({ maxChars: 48, maxWords: 6, maxLines: 2 }),
-  headline: Object.freeze({ maxChars: 48, maxWords: 4, maxLines: 2 }),
-  subheadline: Object.freeze({ maxChars: 80, maxWords: 8, maxLines: 2 }),
-  priceText: Object.freeze({ maxChars: 20, maxLines: 1 }),
-  ctaText: Object.freeze({ maxChars: 28, maxWords: 3, maxLines: 1 }),
-});
-
 const light = Object.freeze({ primary: '#0f172a', muted: '#64748b', accent: '#0f172a', accentText: '#ffffff', price: '#0f172a' });
 const dark = Object.freeze({ primary: '#ffffff', muted: '#cbd5e1', accent: '#ffffff', accentText: '#111827', price: '#fbbf24' });
 
