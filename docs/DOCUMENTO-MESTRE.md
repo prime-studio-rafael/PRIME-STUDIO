@@ -558,6 +558,18 @@ Estado: **encerrada tecnicamente em 28 de julho de 2026; publicação remota dep
 
 Detalhes e evidências: [FASE-08-1B-IMPLEMENTACAO.md](./FASE-08-1B-IMPLEMENTACAO.md).
 
+### Fase 8.2 — Operations Center Premium
+
+Estado: **encerrada tecnicamente em 28 de julho de 2026; publicação remota depende de autorização explícita**.
+
+- Dashboard reorganizado exclusivamente na interface como Operations Center com Visão Executiva, Produção, Confiabilidade e Inteligência Operacional;
+- componentes, hooks, fontes, agregações, cotação local, estados demonstrativos e responsividade da Fase 8.1B foram preservados;
+- não houve endpoint, serviço, backend, cálculo, monitoramento artificial ou alteração em Story Composer, Branding, Templates, Resultados, Lotes ou Sidebar;
+- validação visual desktop aprovada e validação final com 430 testes em 59 arquivos, build, links e `git diff --check` aprovados;
+- zero chamadas ao OpenRouter/DeepSeek e zero créditos externos.
+
+Detalhes e evidências: [FASE-08-2-IMPLEMENTACAO.md](./FASE-08-2-IMPLEMENTACAO.md).
+
 #### Próximas melhorias aprovadas, ainda não iniciadas
 
 - **download em massa das imagens finais**, ampliando o download em lote já validado na Fase 5 (Produção em Lotes).
@@ -613,6 +625,7 @@ A declaração `FASE 2 CONCLUÍDA` foi registrada depois da confirmação de tod
 - [Fase 8.0 — Recomendação Inteligente de Estilo Visual](./FASE-08-0-IMPLEMENTACAO.md)
 - [Fase 8.1A — Dashboard Premium Mock Visual](./FASE-08-1A-IMPLEMENTACAO.md)
 - [Fase 8.1B — Dashboard Premium com Dados Reais](./FASE-08-1B-IMPLEMENTACAO.md)
+- [Fase 8.2 — Operations Center Premium](./FASE-08-2-IMPLEMENTACAO.md)
 - [Contrato de dados — Template, Lote, Resultado](./DATA_CONTRACT.md)
 - [Contexto mestre do projeto para IAs](./PROJECT_MASTER_CONTEXT.md)
 - [Ordem de leitura recomendada](./START_HERE.md)

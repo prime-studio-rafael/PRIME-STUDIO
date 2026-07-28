@@ -4,10 +4,10 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 
 ## Estado atual
 
-- Versão: MVP local evoluído até a Fase 8.1B — Dashboard Premium com Dados Reais.
-- Fase atual: Fase 8.1B — Dashboard Premium com Dados Reais, encerrada tecnicamente; publicação remota depende de autorização explícita.
-- Última fase concluída tecnicamente: Fase 8.1B — Dashboard Premium com Dados Reais.
-- Último estado funcional publicado: commit `38154e0` (Fase 8.1A).
+- Versão: MVP local evoluído até a Fase 8.2 — Operations Center Premium.
+- Fase atual: Fase 8.2 — Operations Center Premium, encerrada tecnicamente; publicação remota depende de autorização explícita.
+- Última fase concluída tecnicamente: Fase 8.2 — Operations Center Premium.
+- Último estado funcional publicado: commit `53de621` (Fase 8.1B).
 - Próxima fase: não há fase de produto aprovada para início.
 
 ## Git
@@ -25,7 +25,7 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 - Templates, Resultados, Produção em Lotes e Branding locais.
 - Marketing Studio: semanas, Stories, calendário, histórico, compositor visual, Assistente IA textual e Branding Inteligente.
 - Configurações de IA: OpenRouter preservado e DeepSeek configurável; o Assistente usa o modelo selecionado pela configuração.
-- Dashboard premium local: Resultados, Lotes, timeline, fila, custos, tempo médio, IA principal e insights determinísticos usam dados locais reais. Gráfico, donuts, taxa consolidada e monitoramentos ausentes permanecem explicitamente demonstrativos ou indisponíveis; a cotação USD→BRL é local e manual.
+- Operations Center local: Dashboard organiza os mesmos dados reais em Visão Executiva, Produção, Confiabilidade e Inteligência Operacional. Resultados, Lotes, timeline, fila, custos, tempo médio, IA principal e insights determinísticos permanecem locais; gráfico, donuts, taxa consolidada e monitoramentos ausentes continuam explicitamente demonstrativos ou indisponíveis.
 
 ## Principais contratos
 
@@ -90,4 +90,4 @@ Publicação automática, Buffer, banco, Supabase, autenticação, nuvem, editor
 
 ## Última sincronização
 
-28 de julho de 2026. Fase 8.1B encerrada tecnicamente; atualizar este arquivo ao concluir fase, alterar arquitetura, contrato, módulo ativo ou pendência aprovada.
+28 de julho de 2026. Fase 8.2 encerrada tecnicamente; atualizar este arquivo ao concluir fase, alterar arquitetura, contrato, módulo ativo ou pendência aprovada.

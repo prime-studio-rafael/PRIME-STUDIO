@@ -2,7 +2,7 @@
 
 Documento subordinado ao [Documento Mestre](./DOCUMENTO-MESTRE.md), que continua sendo a autoridade final em caso de conflito de escopo. Este documento existe para que uma IA (ou pessoa) que nunca viu o projeto entenda o estado atual sem precisar reconstruir meses de conversas ou ler todos os documentos de fase em ordem cronológica.
 
-Última verificação contra o código: 28 de julho de 2026 — Fase 8.1B Dashboard Premium com Dados Reais encerrada tecnicamente; publicação remota depende de autorização explícita.
+Última verificação contra o código: 28 de julho de 2026 — Fase 8.2 Operations Center Premium encerrada tecnicamente; publicação remota depende de autorização explícita.
 
 ---
 
@@ -90,6 +90,7 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 19. **Fase 8.0 — Recomendação Inteligente de Estilo Visual** — ranking local obrigatório e DeepSeek opcional, limitados ao catálogo visual e sem persistência de recomendação.
 20. **Fase 8.1A — Dashboard Premium Mock Visual** — dashboard inicial com dados demonstrativos e cotação USD→BRL manual local, sem analytics ou integração financeira.
 21. **Fase 8.1B — Dashboard Premium com Dados Reais** — Resultados e Lotes locais alimentam KPIs, custos, fila e timeline; dados ainda sem fonte real aparecem honestamente como demonstrativos, indisponíveis ou futuros.
+22. **Fase 8.2 — Operations Center Premium** — reorganização visual do Dashboard em Visão Executiva, Produção, Confiabilidade e Inteligência Operacional, sem mudar fontes, cálculos ou backend.
 
 ## 5. Fluxo completo (geração individual)
 

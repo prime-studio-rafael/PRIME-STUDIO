@@ -24,7 +24,8 @@ O escopo e a ordem das fases são definidos pelo [Documento Mestre](docs/DOCUMEN
 - Fase 7.6 — Branding Inteligente: **concluída e publicada em 27 de julho de 2026** — ver [FASE-07-6-IMPLEMENTACAO.md](docs/FASE-07-6-IMPLEMENTACAO.md).
 - Fase 7.7 — Sistema Tipográfico Premium: **implementada e validada tecnicamente em 28 de julho de 2026; commit e publicação aguardam autorização explícita** — ver [FASE-07-7-IMPLEMENTACAO.md](docs/FASE-07-7-IMPLEMENTACAO.md).
 - Fase 8.1A — Dashboard Premium Mock Visual: **concluída em 28 de julho de 2026** — ver [FASE-08-1A-IMPLEMENTACAO.md](docs/FASE-08-1A-IMPLEMENTACAO.md).
-- Fase 8.1B — Dashboard Premium com Dados Reais: **encerrada tecnicamente em 28 de julho de 2026; publicação remota depende de autorização explícita** — ver [FASE-08-1B-IMPLEMENTACAO.md](docs/FASE-08-1B-IMPLEMENTACAO.md).
+- Fase 8.1B — Dashboard Premium com Dados Reais: **concluída e publicada em 28 de julho de 2026** — ver [FASE-08-1B-IMPLEMENTACAO.md](docs/FASE-08-1B-IMPLEMENTACAO.md).
+- Fase 8.2 — Operations Center Premium: **encerrada tecnicamente em 28 de julho de 2026; publicação remota depende de autorização explícita** — ver [FASE-08-2-IMPLEMENTACAO.md](docs/FASE-08-2-IMPLEMENTACAO.md).
 
 O encerramento está registrado em [FASE-02-ENCERRAMENTO.md](docs/FASE-02-ENCERRAMENTO.md) e a evolução consolidada do projeto em [HISTORICO.md](docs/HISTORICO.md).
 
@@ -91,7 +92,7 @@ Na aba **DeepSeek**, a chave é guardada exclusivamente no Chaves do macOS com s
 
 ### Dashboard e cotação manual
 
-O Dashboard é a tela inicial e reutiliza os Resultados e Lotes locais para mostrar produção, aprovações, pendências, tempo médio, IA principal, custos, fila, timeline e insights determinísticos. Em **Configurações → Dashboard**, informe a **Cotação do dólar** manualmente (padrão `5,50`) para converter custos reais em USD para BRL. A cotação é salva localmente, não consulta API de câmbio e não altera o custo USD original. Onde ainda não há fonte real comparável, a interface informa claramente que o dado é demonstrativo, futuro ou indisponível.
+O Dashboard é o **Operations Center** local: organiza Visão Executiva, Produção, Confiabilidade e Inteligência Operacional usando os mesmos Resultados e Lotes locais. Mostra produção, aprovações, pendências, tempo médio, IA principal, custos, fila, timeline e insights determinísticos. Em **Configurações → Dashboard**, informe a **Cotação do dólar** manualmente (padrão `5,50`) para converter custos reais em USD para BRL. A cotação é salva localmente, não consulta API de câmbio e não altera o custo USD original. Onde ainda não há fonte real comparável, a interface informa claramente que o dado é demonstrativo, futuro ou indisponível.
 
 ## Templates locais
 

@@ -166,3 +166,9 @@ Dashboard premium implementado como tela inicial, com KPIs, produção por dia, 
 Estado: **encerrada tecnicamente em 28 de julho de 2026; publicação remota depende de autorização explícita**.
 
 O Dashboard passou a reutilizar Resultados e Lotes já carregados pela SPA, sem endpoint ou serviço novo. KPIs, tempo médio, IA principal, custos USD/BRL, lotes, fila e timeline agora são agregações locais reais; os insights são determinísticos. Custos aceitam apenas USD finito não negativo e a conversão BRL usa a cotação manual local, sem alterar o valor de origem. O gráfico, donuts, taxa consolidada e serviços sem fonte real mantêm estados honestos de demonstração, indisponibilidade ou monitoramento futuro. Desktop, tablet e mobile foram aprovados. Validação final: 430 testes em 59 arquivos, build, links e `git diff --check` aprovados; zero chamadas ao OpenRouter/DeepSeek e zero créditos externos. Detalhes: [FASE-08-1B-IMPLEMENTACAO.md](./FASE-08-1B-IMPLEMENTACAO.md).
+
+## Fase 8.2 — Operations Center Premium
+
+Estado: **encerrada tecnicamente em 28 de julho de 2026; publicação remota depende de autorização explícita**.
+
+O Dashboard foi reorganizado visualmente como Operations Center em quatro áreas: Visão Executiva, Produção, Confiabilidade e Inteligência Operacional. A mudança reutiliza todos os dados, componentes e estados já existentes; não altera cálculos, hooks, fontes de dados, endpoints, backend ou monitoramentos. A validação visual desktop foi aprovada. Validação final: 430 testes em 59 arquivos, build, links e `git diff --check` aprovados; zero chamadas ao OpenRouter/DeepSeek e zero créditos externos. Detalhes: [FASE-08-2-IMPLEMENTACAO.md](./FASE-08-2-IMPLEMENTACAO.md).

@@ -23,8 +23,8 @@ describe('Dashboard premium com dados locais', () => {
     expect(screen.getByText('Produção por dia')).toBeInTheDocument();
     expect(screen.getByText('Produções recentes')).toBeInTheDocument();
     expect(screen.getByText('Estilos visuais')).toBeInTheDocument();
-    expect(screen.getByText('Tudo sob controle')).toBeInTheDocument();
-    expect(screen.getByText('Insights operacionais')).toBeInTheDocument();
+    expect(screen.getByText('Saúde da operação')).toBeInTheDocument();
+    expect(screen.getByText('Inteligência operacional')).toBeInTheDocument();
     expect(screen.getByText('Camisa Premium')).toBeInTheDocument();
     expect(screen.getByText('Coleção Alphaville')).toBeInTheDocument();
     expect(screen.getByText('Chave local configurada')).toBeInTheDocument();
