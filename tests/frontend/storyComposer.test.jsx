@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import StoryComposer from '../../src/features/marketing/components/StoryComposer.jsx';
 
 vi.mock('../../src/features/branding/api/brandingClient.js', () => ({
@@ -9,7 +9,7 @@ vi.mock('../../src/features/branding/api/brandingClient.js', () => ({
 }));
 
 const week = { id: 'week-1', weekStart: '2026-07-20', stories: [] };
-const sources = [{ id: 'result-1', templateLabel: 'Resultado aprovado', originalPreviewUrl: '/result-1.jpg', brandedPreviewUrl: '/result-1-branded.jpg', brandedAvailable: true }];
+const sources = [{ id: 'result-1', templateLabel: 'Resultado aprovado', category: 'tenis-masculino', originalPreviewUrl: '/result-1.jpg', brandedPreviewUrl: '/result-1-branded.jpg', brandedAvailable: true }];
 const layouts = [
   { id: 'premium', label: 'Premium', description: 'Produto sofisticado, preço e chamada de ação equilibrados.' },
   { id: 'luxury', label: 'Luxury', description: 'Composição escura com marca e preço em destaque.' },
@@ -79,6 +79,44 @@ describe('StoryComposer', () => {
     expect(screen.getByLabelText('Logo')).toHaveValue('white');
     expect(screen.getByText('Logo branca não configurada. Escolha Automática ou Principal.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Gerar Story final' })).toBeDisabled();
+  });
+
+  it('shows a local style recommendation only after an explicit click and applies it manually', async () => {
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn(async () => new Response(JSON.stringify({ source: 'local-fallback', recommendedStyleId: 'offer', reason: 'Dá destaque ao preço informado.', alternatives: [{ styleId: 'luxury', reason: 'Mantém presença exclusiva.' }] }), { status: 200 }));
+    try {
+      const story = { id: 'story-1', sourceResultId: 'result-1', sourceAssetVariant: 'original', productLabel: 'Tênis Prime', priceText: 'R$ 499', storyTemplateId: 'premium', typographyPreset: 'premium', logoMode: 'primary', logoSize: 'medium', scheduledDate: '2026-07-20', scheduledTime: '10:00', order: 1, renderStatus: 'ready' };
+      renderComposer({ story });
+      fireEvent.click(screen.getByRole('button', { name: 'Recomendar estilo' }));
+      expect(await screen.findByText('Sugestão local')).toBeInTheDocument();
+      expect(screen.getByText('Recomendado:')).toBeInTheDocument();
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      const payload = JSON.parse(global.fetch.mock.calls[0][1].body);
+      expect(payload).toMatchObject({ productLabel: 'Tênis Prime', sourceCategory: 'tenis-masculino', priority: false });
+      expect(JSON.stringify(payload)).not.toMatch(/image|base64/i);
+      fireEvent.click(screen.getByRole('button', { name: 'Aplicar recomendação' }));
+      expect(screen.getByLabelText('Estilo tipográfico')).toHaveValue('impacto');
+      expect(screen.getByLabelText('Logo')).toHaveValue('white');
+      expect(screen.getByText('O arquivo final está desatualizado até você salvar e gerar novamente.')).toBeInTheDocument();
+    } finally { global.fetch = originalFetch; }
+  });
+
+  it('marks a recommendation stale after relevant data changes and supports cancellation', async () => {
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn(async (_url, options) => new Promise((_resolve, reject) => options.signal.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' })))));
+    try {
+      renderComposer();
+      fireEvent.change(screen.getByLabelText('Nome ou código do produto'), { target: { value: 'Tênis Prime' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Recomendar estilo' }));
+      expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+      await waitFor(() => expect(screen.queryByRole('button', { name: 'Cancelar' })).not.toBeInTheDocument());
+      global.fetch = vi.fn(async () => new Response(JSON.stringify({ source: 'local-fallback', recommendedStyleId: 'prime-store', reason: 'Opção equilibrada para os dados informados.', alternatives: [] }), { status: 200 }));
+      fireEvent.click(screen.getByRole('button', { name: 'Recomendar estilo' }));
+      await screen.findByText('Sugestão local');
+      fireEvent.change(screen.getByLabelText('Preço (opcional)'), { target: { value: 'R$ 499' } });
+      expect(screen.getByText('Os dados do Story mudaram. Gere uma nova recomendação.')).toBeInTheDocument();
+    } finally { global.fetch = originalFetch; }
   });
 
   it('keeps the CTA centered inside its button in the local preview', () => {

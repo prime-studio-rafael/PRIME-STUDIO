@@ -85,7 +85,7 @@ O Keychain tem prioridade. Se uma chave estiver salva no Chaves do macOS, ela se
 
 ### DeepSeek
 
-Na aba **DeepSeek**, a chave é guardada exclusivamente no Chaves do macOS com service `PRIME_IA_STUDIO_DEEPSEEK` e account `local-user`. O modelo disponível nesta instalação é `deepseek-v4-flash`. O teste de conexão faz somente uma consulta à listagem de modelos, com timeout e zero retry. O Marketing Studio usa essa configuração somente quando o usuário clica em **Gerar 3 sugestões**.
+Na aba **DeepSeek**, a chave é guardada exclusivamente no Chaves do macOS com service `PRIME_IA_STUDIO_DEEPSEEK` e account `local-user`. O modelo disponível nesta instalação é `deepseek-v4-flash`. O teste de conexão faz somente uma consulta à listagem de modelos, com timeout e zero retry. O Marketing Studio usa essa configuração somente por ação explícita: **Gerar 3 sugestões** ou **Recomendar estilo**. Sem chave, a recomendação de estilo continua disponível como Sugestão local.
 
 ## Templates locais
 
@@ -167,7 +167,7 @@ Abra **Marketing Studio** na sidebar para planejar semanas locais usando somente
 
 A aba **Stories** reúne formulário e preview instantâneo local em um compositor responsivo. Os cinco layouts — Premium, Luxury, Minimal, Offer e Editorial — compartilham regras canônicas de área segura do Instagram, tipografia, limites e quebras de texto. O seletor **Estilo tipográfico** oferece apenas Premium/Manrope, Moderno/Inter, Elegante/Plus Jakarta Sans e Impacto/Bebas Neue; no Impacto, Bebas é limitada a headline e preço. As fontes são locais, a troca não renderiza automaticamente e o Sharp continua sendo a fonte final de verdade.
 
-No início do compositor, **Estilo Visual** oferece combinações prontas de layout, tipografia, variante e tamanho de logo: PRIME Store, Luxury, Minimal, Offer e Editorial. Aplicar um estilo nunca bloqueia a edição individual; se a combinação for alterada manualmente, a interface mostra **Personalizado**. O estilo é apenas uma camada de conveniência: nenhum `visualStyleId` é salvo e o renderer continua usando os quatro campos já existentes.
+No início do compositor, **Estilo Visual** oferece combinações prontas de layout, tipografia, variante e tamanho de logo: PRIME Store, Luxury, Minimal, Offer e Editorial. Aplicar um estilo nunca bloqueia a edição individual; se a combinação for alterada manualmente, a interface mostra **Personalizado**. O estilo é apenas uma camada de conveniência: nenhum `visualStyleId` é salvo e o renderer continua usando os quatro campos já existentes. **Recomendar estilo** cria uma sugestão manual a partir de ranking local e, quando o DeepSeek está disponível, de uma justificativa opcional; a sugestão nunca é aplicada, salva ou renderizada automaticamente.
 
 Ao gerar explicitamente, o aplicativo cria a partir da mesma composição um WebP interno e um JPEG 1080×1920 para upload manual em Buffer/Instagram. A renderização usa a variante e o tamanho de logo selecionados, preserva a proporção da fonte com `contain`, não corta nem deforma a imagem e permite download seguro dos dois derivados. Editar fonte, variante, layout, textos, modo ou tamanho da logo invalida ambos os arquivos e exige nova renderização. Planejamento, fontes e arquivos finais ficam em:
 

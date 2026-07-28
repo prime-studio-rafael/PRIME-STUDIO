@@ -16,12 +16,14 @@ describe('marketing HTTP API', () => {
         : { buffer: Buffer.from('webp'), mimeType: 'image/webp', fileName: 'story.webp' })),
     };
     const storySuggestionsService = { suggest: vi.fn(async () => ({ suggestions: [{ calloutText: 'A', headline: 'B', subheadline: 'C', ctaText: 'D' }, { calloutText: 'E', headline: 'F', subheadline: 'G', ctaText: 'H' }, { calloutText: 'I', headline: 'J', subheadline: 'K', ctaText: 'L' }] })) };
-    const app = express(); app.use(express.json()); app.use('/api/marketing', createMarketingRouter({ marketingService: service, storySuggestionsService }));
+    const storyStyleRecommendationService = { recommend: vi.fn(async () => ({ source: 'local-fallback', recommendedStyleId: 'premium', reason: 'Opção equilibrada para os dados informados.', alternatives: [] })) };
+    const app = express(); app.use(express.json()); app.use('/api/marketing', createMarketingRouter({ marketingService: service, storySuggestionsService, storyStyleRecommendationService }));
     const { baseUrl, close } = await startTestServer(app);
     try {
       expect((await fetch(`${baseUrl}/api/marketing/layouts`)).status).toBe(200);
       expect((await fetch(`${baseUrl}/api/marketing/sources`)).status).toBe(200);
       expect((await fetch(`${baseUrl}/api/marketing/suggestions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productLabel: 'Produto' }) })).status).toBe(200);
+      expect((await fetch(`${baseUrl}/api/marketing/style-recommendation`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productLabel: 'Produto' }) })).status).toBe(200);
       expect((await fetch(`${baseUrl}/api/marketing/weeks`)).status).toBe(200);
       expect((await fetch(`${baseUrl}/api/marketing/weeks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ weekStart: '2026-07-20' }) })).status).toBe(201);
       expect((await fetch(`${baseUrl}/api/marketing/weeks/week-1/stories`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status).toBe(201);
@@ -40,6 +42,7 @@ describe('marketing HTTP API', () => {
       expect(bufferAsset.headers.get('x-content-type-options')).toBe('nosniff');
       expect(service.renderStory).toHaveBeenCalledTimes(1);
       expect(storySuggestionsService.suggest).toHaveBeenCalledTimes(1);
+      expect(storyStyleRecommendationService.recommend).toHaveBeenCalledTimes(1);
     } finally { await close(); }
   });
 });

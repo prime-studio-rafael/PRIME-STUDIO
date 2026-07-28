@@ -2,7 +2,7 @@
 
 Documento subordinado ao [Documento Mestre](./DOCUMENTO-MESTRE.md), que continua sendo a autoridade final em caso de conflito de escopo. Este documento existe para que uma IA (ou pessoa) que nunca viu o projeto entenda o estado atual sem precisar reconstruir meses de conversas ou ler todos os documentos de fase em ordem cronológica.
 
-Última verificação contra o código: 28 de julho de 2026 — Fase 7.7 Sistema Tipográfico Premium implementada e validada; commit e push aguardam autorização explícita.
+Última verificação contra o código: 28 de julho de 2026 — Fase 8.0 Recomendação Inteligente de Estilo Visual encerrada localmente; push aguarda autorização explícita.
 
 ---
 
@@ -87,6 +87,7 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 16. **Fase 7.7 — Sistema Tipográfico Premium** — quatro presets locais, contrato compartilhado entre preview e Sharp e persistência aditiva por Story.
 17. **Fase 7.8 — Arquitetura dos Layouts Premium** — catálogo visual compartilhado com cinco layouts e paridade estrutural entre Preview e Sharp.
 18. **Fase 7.9 — Estilos Visuais** — cinco combinações fechadas sobre os layouts da Fase 7.8; estado oficial derivado ou `Personalizado`, sem novo campo persistido.
+19. **Fase 8.0 — Recomendação Inteligente de Estilo Visual** — ranking local obrigatório e DeepSeek opcional, limitados ao catálogo visual e sem persistência de recomendação.
 
 ## 5. Fluxo completo (geração individual)
 
@@ -116,7 +117,7 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 | Cliente OpenRouter | `server/providers/openrouter/openrouterClient.js` |
 | Chave do OpenRouter | `server/secrets/` (Chaves do macOS) + `.env` (fallback) |
 | Configurações de IA | `src/features/settings/`, `server/services/aiSettingsService.js`, `server/repositories/localAiSettingsRepository.js` |
-| Assistente de Stories | `src/features/marketing/components/StoryComposer.jsx`, `server/services/storySuggestionsService.js` |
+| Assistente e recomendação de Stories | `src/features/marketing/components/StoryComposer.jsx`, `server/services/storySuggestionsService.js`, `server/services/storyStyleRecommendationService.js` |
 | Overlay de Branding | `server/services/logoOverlay.js` (nome indicativo — conferir arquivo exato no código) |
 | Tela Nova Geração | `src/app/App.jsx`, `src/features/generation/` |
 | Tela Templates | `src/features/templates/` |
@@ -144,6 +145,7 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 - **Branding do Story é determinístico** — `auto` usa a principal em fundos claros e a branca em Oferta; sem branca, há fallback explícito para a principal. Modo/tamanho alterados invalidam ambos os derivados finais.
 - **Tipografia do Story é fechada e local** — os quatro presets usam fontes TTF locais no preview e no Sharp; Bebas Neue só aparece em headline e preço no estilo Impacto. Stories legados derivam Premium e editar o preset invalida ambos os derivados finais.
 - **Estilo Visual apenas orquestra contratos existentes** — cinco estilos aplicam os quatro campos já persistidos; o estilo ativo é derivado e vira `Personalizado` após ajuste manual. Não há `visualStyleId`, regra nova no Sharp ou segunda fonte de verdade.
+- **Recomendação de estilo é opcional e transitória** — o ranking local funciona sem rede; DeepSeek só ordena estilos elegíveis e escreve motivos. Falhas retornam fallback local, e nenhuma recomendação chega ao renderer ou storage.
 
 ## 8. Regras do projeto (resumo — ver [AGENTS.md](../AGENTS.md) para a versão completa)
 

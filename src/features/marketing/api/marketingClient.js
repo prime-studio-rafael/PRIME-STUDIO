@@ -41,4 +41,5 @@ export function deleteMarketingStory(weekId, storyId) { return requestJson(`/api
 export function renderMarketingStory(weekId, storyId) { return requestJson(`/api/marketing/weeks/${encodeURIComponent(weekId)}/stories/${encodeURIComponent(storyId)}/render`, json('POST')); }
 export function updateMarketingEditorialStatus(weekId, storyId, editorialStatus) { return requestJson(`/api/marketing/weeks/${encodeURIComponent(weekId)}/stories/${encodeURIComponent(storyId)}/editorial-status`, json('PATCH', { editorialStatus })); }
 export function generateStorySuggestions(payload, signal) { return requestJson('/api/marketing/suggestions', { ...json('POST', payload), signal }); }
+export function recommendStoryVisualStyle(payload, signal) { return requestJson('/api/marketing/style-recommendation', { ...json('POST', payload), signal }); }
 export function marketingAssetUrl(weekId, storyId, kind) { return `/api/marketing/weeks/${encodeURIComponent(weekId)}/stories/${encodeURIComponent(storyId)}/assets/${kind}`; }

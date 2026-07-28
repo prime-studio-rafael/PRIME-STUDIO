@@ -2,7 +2,7 @@
 
 Versão: 2.0
 Estado: referência oficial do projeto  
-Última consolidação: 28 de julho de 2026 — Fase 7.7 Sistema Tipográfico Premium implementada e validada localmente; commit e publicação aguardam autorização explícita.
+Última consolidação: 28 de julho de 2026 — Fase 8.0 Recomendação Inteligente de Estilo Visual encerrada localmente; push aguarda autorização explícita.
 
 ## 1. Autoridade e controle de escopo
 
@@ -494,7 +494,7 @@ Detalhes e evidências: [FASE-07-7-IMPLEMENTACAO.md](./FASE-07-7-IMPLEMENTACAO.m
 
 ### Fase 7.8 — Arquitetura dos Layouts Premium
 
-Estado: **implementada e validada em 28 de julho de 2026; encerrada no commit conjunto com a Fase 7.9, aguardando push explícito**.
+Estado: **concluída e publicada em 28 de julho de 2026** (`c8e639c`).
 
 - catálogo compartilhado com cinco layouts oficiais: Premium, Luxury, Minimal, Offer e Editorial;
 - Preview React/CSS e Sharp consomem regiões, paletas, limites e comportamento de logo do mesmo contrato;
@@ -506,7 +506,7 @@ Detalhes e evidências: [FASE-07-8-IMPLEMENTACAO.md](./FASE-07-8-IMPLEMENTACAO.m
 
 ### Fase 7.9 — Estilos Visuais
 
-Estado: **implementada e validada em 28 de julho de 2026; encerrada no commit conjunto com a Fase 7.8, aguardando push explícito**.
+Estado: **concluída e publicada em 28 de julho de 2026** (`c8e639c`).
 
 - cinco estilos oficiais: PRIME Store, Luxury, Minimal, Offer e Editorial;
 - cada estilo aplica somente uma combinação fechada dos campos existentes `storyTemplateId`, `typographyPreset`, `logoMode` e `logoSize`;
@@ -518,6 +518,19 @@ Estado: **implementada e validada em 28 de julho de 2026; encerrada no commit co
 - a Fase 7.9 depende funcionalmente do catálogo introduzido na Fase 7.8; validação direcionada: 61 testes aprovados, sem chamadas ao OpenRouter/DeepSeek ou créditos externos.
 
 Detalhes e evidências: [FASE-07-9-IMPLEMENTACAO.md](./FASE-07-9-IMPLEMENTACAO.md).
+
+### Fase 8.0 — Recomendação Inteligente de Estilo Visual
+
+Estado: **encerrada localmente em 28 de julho de 2026; publicação remota aguarda autorização explícita**.
+
+- ranking local determinístico obrigatório por sinais normalizados de categoria, objetivo, tom, prioridade e preço informado;
+- DeepSeek opcional restrito a ordenar e justificar estilos elegíveis, sempre com fallback local, timeout, cancelamento e zero retry;
+- endpoint explícito recebe somente dados textuais sanitizados, nunca imagens, Base64, caminhos, chaves ou catálogo do frontend;
+- recomendação é transitória: não persiste `visualStyleId`, origem, motivo ou resposta completa;
+- aplicação manual reutiliza os quatro campos visuais existentes, sem alterar Preview/Sharp, renderer, Branding ou contratos de Story;
+- validação funcional e visual aprovada, sem chamadas reais ao DeepSeek/OpenRouter ou consumo de créditos.
+
+Detalhes e evidências: [FASE-08-0-IMPLEMENTACAO.md](./FASE-08-0-IMPLEMENTACAO.md).
 
 #### Próximas melhorias aprovadas, ainda não iniciadas
 
@@ -569,6 +582,9 @@ A declaração `FASE 2 CONCLUÍDA` foi registrada depois da confirmação de tod
 - [Fase 7.5 — Assistente IA para textos de Stories](./FASE-07-5-IMPLEMENTACAO.md)
 - [Fase 7.6 — Branding Inteligente](./FASE-07-6-IMPLEMENTACAO.md)
 - [Fase 7.7 — Sistema Tipográfico Premium](./FASE-07-7-IMPLEMENTACAO.md)
+- [Fase 7.8 — Arquitetura dos Layouts Premium](./FASE-07-8-IMPLEMENTACAO.md)
+- [Fase 7.9 — Estilos Visuais](./FASE-07-9-IMPLEMENTACAO.md)
+- [Fase 8.0 — Recomendação Inteligente de Estilo Visual](./FASE-08-0-IMPLEMENTACAO.md)
 - [Contrato de dados — Template, Lote, Resultado](./DATA_CONTRACT.md)
 - [Contexto mestre do projeto para IAs](./PROJECT_MASTER_CONTEXT.md)
 - [Ordem de leitura recomendada](./START_HERE.md)

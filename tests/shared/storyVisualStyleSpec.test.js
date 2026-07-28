@@ -15,6 +15,7 @@ describe('storyVisualStyleSpec', () => {
     for (const [id, apply] of Object.entries(expected)) {
       expect(getStoryVisualStyle(id)).toMatchObject({ id, apply });
       expect(getStoryVisualStyle(id).recommendedFor.length).toBeGreaterThan(0);
+      expect(getStoryVisualStyle(id).recommendation).toMatchObject({ categories: expect.any(Array), marketingGoals: expect.any(Array), tones: expect.any(Array) });
       expect(applyStoryVisualStyle(id)).toEqual(apply);
     }
   });
@@ -26,7 +27,7 @@ describe('storyVisualStyleSpec', () => {
   });
 
   it('fails clearly when a style references an unavailable contract value', () => {
-    const invalid = { broken: { id: 'broken', recommendedFor: [], apply: { ...expected['prime-store'], typographyPreset: 'missing' } } };
+    const invalid = { broken: { id: 'broken', recommendedFor: [], recommendation: { categories: [], marketingGoals: [], tones: [], priorityPreference: 'neutral', priceEmphasis: 'neutral' }, apply: { ...expected['prime-store'], typographyPreset: 'missing' } } };
     expect(() => validateStoryVisualStyleCatalog(invalid)).toThrow('Tipografia inválida no estilo visual broken: missing');
   });
 });

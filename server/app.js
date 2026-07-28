@@ -35,6 +35,7 @@ import { createLocalAiSettingsRepository } from './repositories/localAiSettingsR
 import { createAiSettingsService } from './services/aiSettingsService.js';
 import { createAiSettingsRouter } from './routes/aiSettings.js';
 import { createStorySuggestionsService } from './services/storySuggestionsService.js';
+import { createStoryStyleRecommendationService } from './services/storyStyleRecommendationService.js';
 import { isAppError } from './utils/errors.js';
 import { requestLogger } from './utils/requestLogger.js';
 import { readEnv } from './config/env.js';
@@ -72,6 +73,7 @@ export function createApp({
   deepSeekKeyStore = createDeepSeekKeyStore(),
   deepSeekKeyValidator,
   storySuggestionsService,
+  storyStyleRecommendationService,
 } = {}) {
   let resolvedGenerationService;
   const resolvedCoordinator = generationCoordinator || createGenerationCoordinator();
@@ -109,6 +111,10 @@ export function createApp({
     deepSeekKeyStore,
     getModelId: async () => (await resolvedAiSettingsService.getDeepSeek()).modelId,
   });
+  const resolvedStoryStyleRecommendationService = storyStyleRecommendationService || createStoryStyleRecommendationService({
+    deepSeekKeyStore,
+    getModelId: async () => (await resolvedAiSettingsService.getDeepSeek()).modelId,
+  });
   const app = express();
   app.disable('x-powered-by');
   app.use(requestLogger);
@@ -123,7 +129,7 @@ export function createApp({
   app.use('/api/batches', createBatchesRouter({ batchService: resolvedBatchService, repository: resolvedBatchRepository }));
   app.use('/api/results', createResultsRouter({ resultService: resolvedResultService }));
   app.use('/api/branding', createBrandingRouter({ brandingService: resolvedBrandingService }));
-  app.use('/api/marketing', createMarketingRouter({ marketingService: resolvedMarketingService, storySuggestionsService: resolvedStorySuggestionsService }));
+  app.use('/api/marketing', createMarketingRouter({ marketingService: resolvedMarketingService, storySuggestionsService: resolvedStorySuggestionsService, storyStyleRecommendationService: resolvedStoryStyleRecommendationService }));
 
   app.use((error, _request, response, _next) => {
     if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {

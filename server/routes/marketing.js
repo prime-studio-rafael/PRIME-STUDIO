@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-export function createMarketingRouter({ marketingService, storySuggestionsService }) {
+export function createMarketingRouter({ marketingService, storySuggestionsService, storyStyleRecommendationService }) {
   const router = Router();
   router.use((_request, response, next) => { response.set('Cache-Control', 'no-store'); next(); });
 
@@ -12,6 +12,14 @@ export function createMarketingRouter({ marketingService, storySuggestionsServic
     request.once('aborted', cancel);
     response.once('close', () => { if (!response.writableEnded) cancel(); });
     try { response.json(await storySuggestionsService.suggest(request.body || {}, { signal: controller.signal })); } catch (error) { next(error); }
+    finally { request.removeListener('aborted', cancel); }
+  });
+  router.post('/style-recommendation', async (request, response, next) => {
+    const controller = new AbortController();
+    const cancel = () => controller.abort();
+    request.once('aborted', cancel);
+    response.once('close', () => { if (!response.writableEnded) cancel(); });
+    try { response.json(await storyStyleRecommendationService.recommend(request.body || {}, { signal: controller.signal })); } catch (error) { next(error); }
     finally { request.removeListener('aborted', cancel); }
   });
   router.get('/weeks', async (_request, response, next) => { try { response.json(await marketingService.listWeeks()); } catch (error) { next(error); } });

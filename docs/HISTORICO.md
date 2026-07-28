@@ -139,12 +139,18 @@ O Story Composer recebeu quatro estilos tipográficos fechados: Premium/Manrope,
 
 ## Fase 7.8 — Arquitetura dos Layouts Premium
 
-Estado: **implementada e validada em 28 de julho de 2026; encerrada no commit conjunto com a Fase 7.9, aguardando push explícito**.
+Estado: **concluída e publicada em 28 de julho de 2026** (`c8e639c`).
 
 A composição dos Stories passou a usar um catálogo compartilhado com Premium, Luxury, Minimal, Offer e Editorial. Preview React/CSS e Sharp consomem o mesmo contrato de regiões, paleta, limites de texto, miniaturas e comportamento de logo; `product-highlight` legado normaliza para Premium. A troca de layout mantém renderização explícita, invalida derivados e preserva WebP/JPEG 1080×1920. Detalhes: [FASE-07-8-IMPLEMENTACAO.md](./FASE-07-8-IMPLEMENTACAO.md).
 
 ## Fase 7.9 — Estilos Visuais
 
-Estado: **implementada e validada em 28 de julho de 2026; encerrada no commit conjunto com a Fase 7.8, aguardando push explícito**.
+Estado: **concluída e publicada em 28 de julho de 2026** (`c8e639c`).
 
 Foi incluída uma camada compartilhada de orquestração sobre a arquitetura da Fase 7.8, com cinco estilos: PRIME Store, Luxury, Minimal, Offer e Editorial. Cada estilo aplica apenas layout, tipografia, variante e tamanho de logo já existentes. O estado oficial é derivado por correspondência exata; ajustes manuais mostram `Personalizado`, sem persistir `visualStyleId` ou criar segunda fonte de verdade. `recommendedFor` é exclusivamente informativo. Preview e Sharp continuam usando os mesmos quatro campos, sem regra específica de estilo no renderer. A validação direcionada aprovou 61 testes; não houve chamadas ao OpenRouter, DeepSeek ou consumo de créditos. Detalhes: [FASE-07-9-IMPLEMENTACAO.md](./FASE-07-9-IMPLEMENTACAO.md).
+
+## Fase 8.0 — Recomendação Inteligente de Estilo Visual
+
+Estado: **encerrada localmente em 28 de julho de 2026; publicação remota aguarda autorização explícita**.
+
+O Marketing Studio passou a recomendar estilos com ranking local obrigatório e DeepSeek opcional, sempre limitado ao catálogo oficial. A IA recebe apenas texto sanitizado e estilos elegíveis; respostas inválidas, ausência de chave, rede ou timeout retornam uma Sugestão local segura. A aplicação continua manual e somente preenche os quatro campos visuais já existentes, sem persistir `visualStyleId`, origem ou justificativa e sem alterar o Sharp. Validação final: 409 testes em 57 arquivos, build, links e `git diff --check` aprovados; zero chamadas reais ao DeepSeek/OpenRouter e zero créditos externos. Detalhes: [FASE-08-0-IMPLEMENTACAO.md](./FASE-08-0-IMPLEMENTACAO.md).

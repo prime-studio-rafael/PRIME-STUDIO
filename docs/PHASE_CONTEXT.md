@@ -4,10 +4,10 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 
 ## Estado atual
 
-- Versão: MVP local evoluído até a Fase 7.9 — Estilos Visuais.
-- Fase atual: Fases 7.8 e 7.9 concluídas localmente; aguardando autorização explícita para push do commit conjunto.
-- Última fase concluída tecnicamente: Fase 7.9 — Estilos Visuais, sobre a arquitetura da Fase 7.8.
-- Último estado funcional publicado: commit `b17af162` (Fase 7.7).
+- Versão: MVP local evoluído até a Fase 8.0 — Recomendação Inteligente de Estilo Visual.
+- Fase atual: Fase 8.0 — Recomendação Inteligente de Estilo Visual, encerrada localmente; publicação remota aguarda autorização explícita.
+- Última fase concluída tecnicamente: Fase 8.0 — Recomendação Inteligente de Estilo Visual.
+- Último estado funcional publicado: commit `c8e639c` (Fases 7.8 e 7.9).
 - Próxima fase: não há fase de produto aprovada para início.
 
 ## Git
@@ -35,6 +35,7 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 - Story: `logoMode` (`auto`/`primary`/`white`) e `logoSize` (`small`/`medium`/`large`) são aditivos; Stories legados usam `auto` + `medium` na leitura.
 - Story: `typographyPreset` é aditivo; valores permitidos são `premium`, `moderno`, `elegante` e `impacto`; Stories legados usam `premium` na leitura. As fontes TTF locais são compartilhadas por preview React/CSS e Sharp; Bebas Neue é restrita a headline e preço no preset Impacto.
 - Estilos Visuais: `shared/storyVisualStyleSpec.js` orquestra cinco combinações oficiais de layout, tipografia, variante e tamanho de logo. O estilo ativo é derivado exclusivamente dos quatro campos persistidos; `visualStyleId` e `recommendedFor` não são persistidos.
+- Recomendação de estilo: `server/services/storyStyleRecommendationService.js` combina ranking local obrigatório e DeepSeek opcional; `POST /api/marketing/style-recommendation` não persiste a recomendação e nunca envia imagem.
 - Branding: logos `primary` e `white` são independentes; `offer` em modo automático prioriza a branca e faz fallback honesto para a principal quando ela não existe.
 - Sugestões textuais: `server/services/storySuggestionsService.js` e `POST /api/marketing/suggestions`.
 - Contratos existentes são aditivos e compatíveis com registros antigos.
@@ -59,7 +60,7 @@ React, Vite, Tailwind CSS, Node.js, Express, `sharp`, `multer`, Keychain do macO
 - Templates: `src/features/templates/` e `server/services/templateService.js`.
 - Resultados: `src/features/results/` e `server/services/resultService.js`.
 - Lotes: `src/features/batches/`, `batchService.js` e `batchQueue.js`.
-- Marketing: `src/features/marketing/`, `marketingService.js`, `storyRenderer.js`, `storyTypographyFonts.js` e os contratos `shared/story*`, incluindo `storyVisualStyleSpec.js`.
+- Marketing: `src/features/marketing/`, `marketingService.js`, `storyRenderer.js`, `storyTypographyFonts.js`, `storyStyleRecommendationService.js` e os contratos `shared/story*`.
 - IA: `src/features/settings/` e `server/services/aiSettingsService.js`.
 - Persistência: `server/repositories/` e `storage/` (ignorado pelo Git).
 
@@ -85,4 +86,4 @@ Publicação automática, Buffer, banco, Supabase, autenticação, nuvem, editor
 
 ## Última sincronização
 
-28 de julho de 2026. Fases 7.8 e 7.9 concluídas localmente no mesmo commit; atualizar este arquivo ao concluir fase, alterar arquitetura, contrato, módulo ativo ou pendência aprovada.
+28 de julho de 2026. Fase 8.0 encerrada localmente; atualizar este arquivo ao concluir fase, alterar arquitetura, contrato, módulo ativo ou pendência aprovada.
