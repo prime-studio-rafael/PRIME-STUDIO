@@ -50,14 +50,16 @@ export default function App({ initialView = 'generation' }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeView, setActiveView] = useState(initialView);
   const templateCatalog = useTemplates();
-  const resultHistory = useResults(activeView === 'results');
-  const batchesState = useBatches(activeView === 'batches');
+  // Resultados e lotes continuam usando os mesmos hooks das respectivas telas. O Dashboard
+  // apenas passa a ser outro consumidor local dessas leituras, sem criar uma segunda consulta.
+  const resultHistory = useResults(activeView === 'results' || activeView === 'dashboard');
+  const batchesState = useBatches(activeView === 'batches' || activeView === 'dashboard');
   const marketingState = useMarketing(activeView === 'marketing');
   const templates = templateCatalog.templates;
   const garmentPreviewUrl = useObjectUrl(garmentFile);
   const inspectionSequenceRef = useRef(0);
   const { status, result, error, referenceSnapshot, generate, reset } = useGeneration();
-  const previousActiveViewRef = useRef(activeView);
+  const previousActiveViewRef = useRef(null);
   const previousGenerationStatusRef = useRef(status);
 
   useEffect(() => {
@@ -100,7 +102,7 @@ export default function App({ initialView = 'generation' }) {
   // cada render: só chamamos load() nas duas transições reais que importam, nunca em toda
   // renderização e nunca mais de uma vez por transição.
   useEffect(() => {
-    const enteringResults = activeView === 'results' && previousActiveViewRef.current !== 'results';
+    const enteringResults = ['dashboard', 'results'].includes(activeView) && previousActiveViewRef.current !== activeView;
     previousActiveViewRef.current = activeView;
     if (enteringResults) resultHistory.load().catch(() => {});
   }, [activeView, resultHistory]);
@@ -200,7 +202,18 @@ export default function App({ initialView = 'generation' }) {
   return (
     <AppShell keyConfigured={config.keyConfigured} activeView={activeView} onNavigate={setActiveView} onOpenSettings={() => setSettingsOpen(true)}>
       {activeView === 'dashboard' ? (
-        <DashboardPage onNavigate={setActiveView} usdToBrlRate={config.dashboardSettings?.usdToBrlRate} quoteStatus={bootstrapState} />
+        <DashboardPage
+          onNavigate={setActiveView}
+          usdToBrlRate={config.dashboardSettings?.usdToBrlRate}
+          quoteStatus={bootstrapState}
+          results={resultHistory.results}
+          resultsStatus={resultHistory.status}
+          resultsError={resultHistory.error}
+          batches={batchesState.batches}
+          batchesStatus={batchesState.status}
+          batchesError={batchesState.error}
+          keyConfigured={config.keyConfigured}
+        />
       ) : activeView === 'templates' ? (
         <TemplatesPage catalog={templateCatalog} policy={config.imagePolicy || imagePolicy} generationBusy={isBusy} />
       ) : activeView === 'results' ? (

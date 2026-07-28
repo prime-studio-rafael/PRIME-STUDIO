@@ -160,3 +160,9 @@ O Marketing Studio passou a recomendar estilos com ranking local obrigatório e 
 Estado: **encerrada localmente em 28 de julho de 2026; publicação remota aguarda autorização explícita**.
 
 Dashboard premium implementado como tela inicial, com KPIs, produção por dia, timeline, donuts, saúde, fila, insights e atalhos usando somente dados demonstrativos. A preferência local de cotação USD→BRL ganhou campo pt-BR em Configurações e persiste no mesmo armazenamento atômico de configurações, com backup. O custo USD permanece separado; o BRL é conversão local manual, sem API de câmbio, banco, OpenRouter ou DeepSeek. Validação direcionada: 26 testes em 8 arquivos e `git diff --check` aprovados. Detalhes: [FASE-08-1A-IMPLEMENTACAO.md](./FASE-08-1A-IMPLEMENTACAO.md).
+
+## Fase 8.1B — Dashboard Premium com Dados Reais
+
+Estado: **encerrada tecnicamente em 28 de julho de 2026; publicação remota depende de autorização explícita**.
+
+O Dashboard passou a reutilizar Resultados e Lotes já carregados pela SPA, sem endpoint ou serviço novo. KPIs, tempo médio, IA principal, custos USD/BRL, lotes, fila e timeline agora são agregações locais reais; os insights são determinísticos. Custos aceitam apenas USD finito não negativo e a conversão BRL usa a cotação manual local, sem alterar o valor de origem. O gráfico, donuts, taxa consolidada e serviços sem fonte real mantêm estados honestos de demonstração, indisponibilidade ou monitoramento futuro. Desktop, tablet e mobile foram aprovados. Validação final: 430 testes em 59 arquivos, build, links e `git diff --check` aprovados; zero chamadas ao OpenRouter/DeepSeek e zero créditos externos. Detalhes: [FASE-08-1B-IMPLEMENTACAO.md](./FASE-08-1B-IMPLEMENTACAO.md).

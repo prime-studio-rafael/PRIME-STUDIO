@@ -544,6 +544,20 @@ Estado: **encerrada localmente em 28 de julho de 2026; publicação remota aguar
 
 Detalhes e evidências: [FASE-08-1A-IMPLEMENTACAO.md](./FASE-08-1A-IMPLEMENTACAO.md).
 
+### Fase 8.1B — Dashboard Premium com Dados Reais
+
+Estado: **encerrada tecnicamente em 28 de julho de 2026; publicação remota depende de autorização explícita**.
+
+- Dashboard reutiliza somente Resultados, Lotes, configuração local do OpenRouter e cotação manual já existentes; não há endpoint, serviço ou persistência de agregados novos;
+- métricas reais incluem Resultados únicos por ID, aprovados, pendentes, tempo médio válido, IA principal, custos USD/BRL, lotes, fila e timeline recente;
+- USD é a origem do custo; BRL é calculado localmente com `usdToBrlRate`, sem API de câmbio e sem alterar o valor original;
+- insights são determinísticos e locais; o estado do OpenRouter informa apenas chave configurada ou não configurada;
+- gráfico, donuts, taxa de sucesso e monitoramentos sem fonte real continuam com estados explícitos de demonstração, indisponibilidade ou monitoramento futuro;
+- layout aprovado em desktop, tablet e mobile; não houve alteração de renderer, Story Composer, Branding, Templates, Resultados, Lotes ou contratos;
+- validação final: 430 testes em 59 arquivos, build, links e `git diff --check` aprovados; zero chamadas ao OpenRouter/DeepSeek e zero créditos externos.
+
+Detalhes e evidências: [FASE-08-1B-IMPLEMENTACAO.md](./FASE-08-1B-IMPLEMENTACAO.md).
+
 #### Próximas melhorias aprovadas, ainda não iniciadas
 
 - **download em massa das imagens finais**, ampliando o download em lote já validado na Fase 5 (Produção em Lotes).
@@ -598,6 +612,7 @@ A declaração `FASE 2 CONCLUÍDA` foi registrada depois da confirmação de tod
 - [Fase 7.9 — Estilos Visuais](./FASE-07-9-IMPLEMENTACAO.md)
 - [Fase 8.0 — Recomendação Inteligente de Estilo Visual](./FASE-08-0-IMPLEMENTACAO.md)
 - [Fase 8.1A — Dashboard Premium Mock Visual](./FASE-08-1A-IMPLEMENTACAO.md)
+- [Fase 8.1B — Dashboard Premium com Dados Reais](./FASE-08-1B-IMPLEMENTACAO.md)
 - [Contrato de dados — Template, Lote, Resultado](./DATA_CONTRACT.md)
 - [Contexto mestre do projeto para IAs](./PROJECT_MASTER_CONTEXT.md)
 - [Ordem de leitura recomendada](./START_HERE.md)

@@ -4,10 +4,10 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 
 ## Estado atual
 
-- Versão: MVP local evoluído até a Fase 8.1A — Dashboard Premium Mock Visual.
-- Fase atual: Fase 8.1A — Dashboard Premium Mock Visual, encerrada localmente; publicação remota aguarda autorização explícita.
-- Última fase concluída tecnicamente: Fase 8.1A — Dashboard Premium Mock Visual.
-- Último estado funcional publicado: commit `b4187c8` (Fase 8.0).
+- Versão: MVP local evoluído até a Fase 8.1B — Dashboard Premium com Dados Reais.
+- Fase atual: Fase 8.1B — Dashboard Premium com Dados Reais, encerrada tecnicamente; publicação remota depende de autorização explícita.
+- Última fase concluída tecnicamente: Fase 8.1B — Dashboard Premium com Dados Reais.
+- Último estado funcional publicado: commit `38154e0` (Fase 8.1A).
 - Próxima fase: não há fase de produto aprovada para início.
 
 ## Git
@@ -25,7 +25,7 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 - Templates, Resultados, Produção em Lotes e Branding locais.
 - Marketing Studio: semanas, Stories, calendário, histórico, compositor visual, Assistente IA textual e Branding Inteligente.
 - Configurações de IA: OpenRouter preservado e DeepSeek configurável; o Assistente usa o modelo selecionado pela configuração.
-- Dashboard premium local: métricas, gráfico, timeline, donuts, saúde, fila e insights são mockados; a cotação USD→BRL é local e manual.
+- Dashboard premium local: Resultados, Lotes, timeline, fila, custos, tempo médio, IA principal e insights determinísticos usam dados locais reais. Gráfico, donuts, taxa consolidada e monitoramentos ausentes permanecem explicitamente demonstrativos ou indisponíveis; a cotação USD→BRL é local e manual.
 
 ## Principais contratos
 
@@ -37,6 +37,7 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 - Story: `typographyPreset` é aditivo; valores permitidos são `premium`, `moderno`, `elegante` e `impacto`; Stories legados usam `premium` na leitura. As fontes TTF locais são compartilhadas por preview React/CSS e Sharp; Bebas Neue é restrita a headline e preço no preset Impacto.
 - Estilos Visuais: `shared/storyVisualStyleSpec.js` orquestra cinco combinações oficiais de layout, tipografia, variante e tamanho de logo. O estilo ativo é derivado exclusivamente dos quatro campos persistidos; `visualStyleId` e `recommendedFor` não são persistidos.
 - Recomendação de estilo: `server/services/storyStyleRecommendationService.js` combina ranking local obrigatório e DeepSeek opcional; `POST /api/marketing/style-recommendation` não persiste a recomendação e nunca envia imagem.
+- Dashboard: Resultados são deduplicados por ID e filtrados por período; custos aceitam somente valores USD finitos não negativos e BRL é derivado por `USD × usdToBrlRate`, com arredondamento final. Não há endpoint novo, câmbio externo ou persistência de agregados.
 - Cotação do Dashboard: `usdToBrlRate` é uma preferência local em `storage/settings/ai-providers.json`; não altera custos USD, não integra câmbio e não sai do computador.
 - Branding: logos `primary` e `white` são independentes; `offer` em modo automático prioriza a branca e faz fallback honesto para a principal quando ela não existe.
 - Sugestões textuais: `server/services/storySuggestionsService.js` e `POST /api/marketing/suggestions`.
@@ -89,4 +90,4 @@ Publicação automática, Buffer, banco, Supabase, autenticação, nuvem, editor
 
 ## Última sincronização
 
-28 de julho de 2026. Fase 8.1A encerrada localmente; atualizar este arquivo ao concluir fase, alterar arquitetura, contrato, módulo ativo ou pendência aprovada.
+28 de julho de 2026. Fase 8.1B encerrada tecnicamente; atualizar este arquivo ao concluir fase, alterar arquitetura, contrato, módulo ativo ou pendência aprovada.
