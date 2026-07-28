@@ -3,6 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { createLocalMarketingRepository } from '../../server/repositories/localMarketingRepository.js';
 import { createMarketingService } from '../../server/services/marketingService.js';
+import { listStoryVisualStyles } from '../../shared/storyVisualStyleSpec.js';
 
 let directory;
 afterEach(async () => { if (directory) await rm(directory, { recursive: true, force: true }); directory = null; });
@@ -21,11 +22,11 @@ async function fixture({ approved = true, repositoryDecorator = (repository) => 
     get: vi.fn(async (id) => results.find((result) => result.id === id)),
     readAsset: vi.fn(async (_id, type) => ({ buffer: Buffer.from(`bytes-${type}`), mimeType: 'image/jpeg', filename: `${type}.jpg` })),
   };
-  const brandingService = { readLogoAsset: vi.fn(async () => ({ buffer: Buffer.from('logo'), mimeType: 'image/png' })) };
+  const brandingService = { getState: vi.fn(async () => ({ variants: { primary: { approved: { id: 'primary' } }, white: { approved: { id: 'white' } } } })), readLogoAsset: vi.fn(async () => ({ buffer: Buffer.from('logo'), mimeType: 'image/png' })) };
   const renderer = vi.fn(async () => ({ buffer: Buffer.from('rendered'), jpegBuffer: Buffer.from('buffer-jpeg'), mimeType: 'image/webp', jpegMimeType: 'image/jpeg', dimensions: { width: 1080, height: 1920 } }));
   const serviceRepository = repositoryDecorator(repository);
   const service = createMarketingService({ repository: serviceRepository, resultService, brandingService, renderStory: renderer, uuid: () => { const value = index++; return value === 0 ? 'week-1' : `story-${value}`; }, now: () => new Date('2026-07-20T12:00:00.000Z') });
-  return { service, repository, resultService, renderer };
+  return { service, repository, resultService, brandingService, renderer };
 }
 
 const story = { sourceResultId: 'result-1', sourceAssetVariant: 'original', productLabel: 'Camisa Ágil 01', priceText: 'R$ 99', headline: '10% no PIX', ctaText: 'Comprar', storyTemplateId: 'product-highlight', scheduledDate: '2026-07-20', scheduledTime: '10:00', order: 1 };
@@ -34,8 +35,9 @@ describe('marketingService', () => {
   it('creates a Monday week and copies only an approved result into a normalized Story', async () => {
     const { service, repository, resultService } = await fixture();
     await service.createWeek({ weekStart: '2026-07-20' });
-    const week = await service.addStory('week-1', story);
-    expect(week.stories[0]).toMatchObject({ id: 'story-1', productKey: 'camisa-agil-01', category: 'moda-masculina', categoryLabel: 'Moda Masculina', sourceAssetFileName: 'story-1.jpg', typographyPreset: 'premium', renderStatus: 'pending', editorialStatus: 'planned' });
+    const week = await service.addStory('week-1', { ...story, visualStyleId: 'prime-store' });
+    expect(week.stories[0]).toMatchObject({ id: 'story-1', productKey: 'camisa-agil-01', category: 'moda-masculina', categoryLabel: 'Moda Masculina', sourceAssetFileName: 'story-1.jpg', storyTemplateId: 'premium', typographyPreset: 'premium', renderStatus: 'pending', editorialStatus: 'planned' });
+    expect(week.stories[0]).not.toHaveProperty('visualStyleId');
     expect(resultService.readAsset).toHaveBeenCalledWith('result-1', 'result');
     expect(await repository.readAsset('week-1', 'sources', 'story-1.jpg')).toEqual(Buffer.from('bytes-result'));
     expect(JSON.stringify(week)).not.toMatch(/base64|\/Users\//i);
@@ -48,6 +50,24 @@ describe('marketingService', () => {
     expect((await service.getWeek('week-1')).stories[0].typographyPreset).toBe('elegante');
     await service.updateStory('week-1', 'story-1', { typographyPreset: 'moderno' });
     expect((await repository.get('week-1')).stories[0].typographyPreset).toBe('moderno');
+  });
+
+  it('uses Premium for missing layouts and rejects unknown layouts', async () => {
+    const { service } = await fixture();
+    await service.createWeek({ weekStart: '2026-07-20' });
+    const created = await service.addStory('week-1', { ...story, storyTemplateId: undefined });
+    expect(created.stories[0].storyTemplateId).toBe('premium');
+    await expect(service.updateStory('week-1', 'story-1', { storyTemplateId: 'not-a-layout' })).rejects.toMatchObject({ code: 'INVALID_STORY_TEMPLATE' });
+  });
+
+  it.each(listStoryVisualStyles())('renders $label using only the four fields applied by its Visual Style', async (visualStyle) => {
+    const { service, renderer, brandingService } = await fixture();
+    await service.createWeek({ weekStart: '2026-07-20' });
+    await service.addStory('week-1', { ...story, ...visualStyle.apply });
+    const rendered = await service.renderStory('week-1', 'story-1');
+    expect(renderer).toHaveBeenCalledWith(expect.objectContaining({ story: expect.objectContaining(visualStyle.apply) }));
+    expect(rendered.stories[0]).not.toHaveProperty('visualStyleId');
+    expect(brandingService.readLogoAsset).toHaveBeenCalledWith(visualStyle.apply.logoMode);
   });
 
   it('blocks non-approved sources, invalid weeks and dates outside the selected week', async () => {

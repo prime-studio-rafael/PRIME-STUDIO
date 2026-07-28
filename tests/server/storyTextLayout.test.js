@@ -1,16 +1,18 @@
-import { STORY_CANVAS, STORY_LAYOUTS, getStoryLogoBox, resolveStoryLogoVariant } from '../../shared/storyLayoutSpec.js';
+import { DEFAULT_STORY_LAYOUT_ID, STORY_CANVAS, STORY_LAYOUTS, getStoryLayout, getStoryLogoBox, normalizeStoryLayoutId, resolveStoryLogoVariant } from '../../shared/storyLayoutSpec.js';
 import { layoutStoryText, storyTextWarnings } from '../../shared/storyTextLayout.js';
 import { STORY_TYPOGRAPHY_IDS, getStoryTypographyField, getStoryTypographyLimits } from '../../shared/storyTypographySpec.js';
 
 describe('shared Story visual contract', () => {
-  it('keeps all three layouts inside the 1080x1920 canvas', () => {
+  it('keeps the five official catalog layouts inside the 1080x1920 canvas', () => {
     expect(STORY_CANVAS).toEqual({ width: 1080, height: 1920 });
-    expect(STORY_LAYOUTS.map((layout) => layout.id)).toEqual(['product-highlight', 'minimal', 'offer']);
+    expect(STORY_LAYOUTS.map((layout) => layout.id)).toEqual(['premium', 'luxury', 'minimal', 'offer', 'editorial']);
     for (const layout of STORY_LAYOUTS) {
-      expect(layout.image.left + layout.image.width).toBeLessThanOrEqual(STORY_CANVAS.width);
-      expect(layout.image.top + layout.image.height).toBeLessThanOrEqual(STORY_CANVAS.height);
-      expect(layout.logo.left + layout.logo.width).toBeLessThanOrEqual(STORY_CANVAS.width);
-      expect(layout.logo.top + layout.logo.height).toBeLessThanOrEqual(STORY_CANVAS.height);
+      expect(layout.palette.background).toMatch(/^#/);
+      expect(layout.thumbnail.lines.length).toBeGreaterThan(0);
+      expect(layout.regions.image.left + layout.regions.image.width).toBeLessThanOrEqual(STORY_CANVAS.width);
+      expect(layout.regions.image.top + layout.regions.image.height).toBeLessThanOrEqual(STORY_CANVAS.height);
+      expect(layout.regions.logo.left + layout.regions.logo.width).toBeLessThanOrEqual(STORY_CANVAS.width);
+      expect(layout.regions.logo.top + layout.regions.logo.height).toBeLessThanOrEqual(STORY_CANVAS.height);
     }
   });
 
@@ -32,6 +34,14 @@ describe('shared Story visual contract', () => {
     expect(resolveStoryLogoVariant(offer, 'white', false).variant).toBeNull();
     expect(getStoryLogoBox(offer, 'small').width).toBeLessThan(getStoryLogoBox(offer, 'medium').width);
     expect(getStoryLogoBox(offer, 'large').width).toBeGreaterThan(getStoryLogoBox(offer, 'medium').width);
+  });
+
+  it('uses Premium for absent layouts and keeps product-highlight as a legacy alias', () => {
+    expect(DEFAULT_STORY_LAYOUT_ID).toBe('premium');
+    expect(normalizeStoryLayoutId()).toBe('premium');
+    expect(normalizeStoryLayoutId('product-highlight')).toBe('premium');
+    expect(getStoryLayout('product-highlight')).toMatchObject({ id: 'premium', label: 'Premium' });
+    expect(getStoryLayout('unknown')).toBeNull();
   });
 
   it('keeps typography roles and limits in one shared visual contract', () => {

@@ -4,7 +4,7 @@ import { STORY_TEMPLATES, getStoryTemplate } from '../catalogs/storyTemplates.js
 import { DEFAULT_TEMPLATE_CATEGORY_ID, getTemplateCategoryById } from '../catalogs/templateCategories.js';
 import { renderStory as defaultRenderStory } from './storyRenderer.js';
 import { storyTextWarnings } from '../../shared/storyTextLayout.js';
-import { resolveStoryLogoVariant } from '../../shared/storyLayoutSpec.js';
+import { DEFAULT_STORY_LAYOUT_ID, getStoryLayout, normalizeStoryLayoutId, resolveStoryLogoVariant } from '../../shared/storyLayoutSpec.js';
 import { STORY_DEFAULT_TYPOGRAPHY, STORY_TYPOGRAPHY_IDS } from '../../shared/storyTypographySpec.js';
 
 const SCHEMA_VERSION = 1;
@@ -160,7 +160,8 @@ export function createMarketingService({ repository, resultService, brandingServ
     const bufferAssetFileName = `${story.id}-buffer.jpg`;
     try {
       assertStoryFitsLayout(story);
-      const layout = getStoryTemplate(story.storyTemplateId);
+      const layout = getStoryLayout(story.storyTemplateId);
+      if (!layout) throw new AppError('INVALID_STORY_TEMPLATE', 'Selecione um layout de Story válido.', { status: 400 });
       const branding = brandingService.getState ? await brandingService.getState() : null;
       const logoChoice = resolveStoryLogoVariant(layout, story.logoMode || 'auto', Boolean(branding?.variants?.white?.approved));
       if (!logoChoice.variant) throw new AppError('MARKETING_WHITE_LOGO_REQUIRED', 'A logo branca não está configurada. Selecione Automática ou Principal.', { status: 422 });
@@ -263,8 +264,8 @@ function validateStoryInput(input) {
   const sourceResultId = text(input.sourceResultId, 'Resultado de origem', 100, true);
   const sourceAssetVariant = String(input.sourceAssetVariant || 'original');
   if (!VARIANTS.has(sourceAssetVariant)) throw new AppError('INVALID_MARKETING_VARIANT', 'Selecione a versão Original ou Com logo.', { status: 400 });
-  const storyTemplateId = String(input.storyTemplateId || 'product-highlight');
-  if (!getStoryTemplate(storyTemplateId)) throw new AppError('INVALID_STORY_TEMPLATE', 'Selecione um layout de Story válido.', { status: 400 });
+  const storyTemplateId = normalizeStoryLayoutId(input.storyTemplateId || DEFAULT_STORY_LAYOUT_ID);
+  if (!storyTemplateId || !getStoryTemplate(storyTemplateId)) throw new AppError('INVALID_STORY_TEMPLATE', 'Selecione um layout de Story válido.', { status: 400 });
   const scheduledDate = String(input.scheduledDate || '');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(scheduledDate)) throw new AppError('INVALID_MARKETING_DATE', 'Informe uma data válida para o Story.', { status: 400 });
   const scheduledTime = String(input.scheduledTime || '');
@@ -309,7 +310,7 @@ function assertWeekMutable(week) { if (week.status === 'closed') throw new AppEr
 function sourceCategory(result) { return result.templateCategory || DEFAULT_TEMPLATE_CATEGORY_ID; }
 function categoryLabel(id) { const category = getTemplateCategoryById(id || DEFAULT_TEMPLATE_CATEGORY_ID); return category?.label || 'Sem categoria'; }
 function createStoryRecord({ id, input, source, sourceFileName, timestamp }) { return { id, ...input, productKey: normalizeProductKey(input.productLabel), category: sourceCategory(source.result), categoryLabel: categoryLabel(source.result.templateCategory), sourceAssetFileName: sourceFileName, renderedAssetFileName: null, bufferAssetFileName: null, renderedDimensions: null, renderStatus: 'pending', editorialStatus: 'planned', publishedAt: null, renderedAt: null, renderError: null, createdAt: timestamp, updatedAt: timestamp }; }
-function assertStoryFitsLayout(story) { const warnings = storyTextWarnings(story, story.typographyPreset || STORY_DEFAULT_TYPOGRAPHY); if (warnings.length) throw new AppError('MARKETING_STORY_TEXT_OVERFLOW', 'Revise os textos destacados: eles não cabem com segurança no layout selecionado.', { status: 422 }); }
+function assertStoryFitsLayout(story) { const warnings = storyTextWarnings(story, story.typographyPreset || STORY_DEFAULT_TYPOGRAPHY, story.storyTemplateId); if (warnings.length) throw new AppError('MARKETING_STORY_TEXT_OVERFLOW', 'Revise os textos destacados: eles não cabem com segurança no layout selecionado.', { status: 422 }); }
 function deterministicProposalOrder(items) {
   const tiers = [items.filter((item) => item.priority), items.filter((item) => !item.priority)];
   const output = [];

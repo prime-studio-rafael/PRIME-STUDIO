@@ -13,14 +13,14 @@ export async function renderStory({ sourceBuffer, logoBuffer, story }) {
   if (!logoBuffer?.length) throw new AppError('MARKETING_LOGO_REQUIRED', 'Aprove uma logo na tela Branding antes de renderizar Stories.', { status: 422 });
 
   try {
-    const source = await sharp(sourceBuffer).rotate().resize({ width: layout.image.width, height: layout.image.height, fit: 'contain', withoutEnlargement: false }).toBuffer();
+    const source = await sharp(sourceBuffer).rotate().resize({ width: layout.regions.image.width, height: layout.regions.image.height, fit: layout.behavior.imageFit, withoutEnlargement: false }).toBuffer();
     const sourceMeta = await sharp(source).metadata();
     const logoBox = getStoryLogoBox(layout, story.logoSize || 'medium');
     const logo = await sharp(logoBuffer).resize({ width: logoBox.width, height: logoBox.height, fit: 'inside', withoutEnlargement: true }).png().toBuffer();
     const logoMeta = await sharp(logo).metadata();
-    const composed = await sharp({ create: { width: STORY_CANVAS.width, height: STORY_CANVAS.height, channels: 4, background: layout.background } })
+    const composed = await sharp({ create: { width: STORY_CANVAS.width, height: STORY_CANVAS.height, channels: 4, background: layout.palette.background } })
       .composite([
-        { input: source, left: layout.image.left + Math.floor((layout.image.width - sourceMeta.width) / 2), top: layout.image.top + Math.floor((layout.image.height - sourceMeta.height) / 2) },
+        { input: source, left: layout.regions.image.left + Math.floor((layout.regions.image.width - sourceMeta.width) / 2), top: layout.regions.image.top + Math.floor((layout.regions.image.height - sourceMeta.height) / 2) },
         { input: Buffer.from(textSvg(story, layout)), left: 0, top: 0 },
         { input: logo, left: logoBox.left + Math.floor((logoBox.width - logoMeta.width) / 2), top: logoBox.top + Math.floor((logoBox.height - logoMeta.height) / 2) },
       ])
@@ -39,26 +39,26 @@ export async function renderStory({ sourceBuffer, logoBuffer, story }) {
 }
 
 function textSvg(story, layout) {
-  const colors = layout.colors;
+  const colors = layout.palette;
   const typography = getStoryTypographyPreset(story.typographyPreset);
-  const product = layoutStoryText(story.productLabel, 'productLabel', typography.id);
-  const callout = layoutStoryText(story.calloutText, 'calloutText', typography.id);
-  const headline = layoutStoryText(story.headline, 'headline', typography.id);
-  const subheadline = layoutStoryText(story.subheadline, 'subheadline', typography.id);
-  const price = layoutStoryText(story.priceText, 'priceText', typography.id);
-  const cta = layoutStoryText(story.ctaText, 'ctaText', typography.id);
+  const product = layoutStoryText(story.productLabel, 'productLabel', typography.id, layout.id);
+  const callout = layoutStoryText(story.calloutText, 'calloutText', typography.id, layout.id);
+  const headline = layoutStoryText(story.headline, 'headline', typography.id, layout.id);
+  const subheadline = layoutStoryText(story.subheadline, 'subheadline', typography.id, layout.id);
+  const price = layoutStoryText(story.priceText, 'priceText', typography.id, layout.id);
+  const cta = layoutStoryText(story.ctaText, 'ctaText', typography.id, layout.id);
   const parts = [
-    textElement(product, layout.text.productLabel, colors.primary, getStoryTypographyField(typography.id, 'productLabel')),
-    textElement(callout, layout.text.calloutText, colors.muted, getStoryTypographyField(typography.id, 'calloutText')),
-    textElement(headline, layout.text.headline, colors.primary, getStoryTypographyField(typography.id, 'headline')),
-    textElement(subheadline, layout.text.subheadline, colors.muted, getStoryTypographyField(typography.id, 'subheadline')),
-    textElement(price, layout.text.priceText, colors.price, getStoryTypographyField(typography.id, 'priceText')),
+    textElement(product, layout.regions.text.productLabel, colors.primary, getStoryTypographyField(typography.id, 'productLabel')),
+    textElement(callout, layout.regions.text.calloutText, colors.muted, getStoryTypographyField(typography.id, 'calloutText')),
+    textElement(headline, layout.regions.text.headline, colors.primary, getStoryTypographyField(typography.id, 'headline')),
+    textElement(subheadline, layout.regions.text.subheadline, colors.muted, getStoryTypographyField(typography.id, 'subheadline')),
+    textElement(price, layout.regions.text.priceText, colors.price, getStoryTypographyField(typography.id, 'priceText')),
   ];
-  if (layout.cta && cta.lines.length) {
-    parts.push(`<rect x="${layout.cta.left}" y="${layout.cta.top}" width="${layout.cta.width}" height="${layout.cta.height}" rx="${layout.cta.radius}" fill="${colors.accent}"/>`);
-    parts.push(textElement(cta, layout.text.ctaText, colors.accentText, getStoryTypographyField(typography.id, 'ctaText')));
+  if (layout.regions.cta && cta.lines.length) {
+    parts.push(`<rect x="${layout.regions.cta.left}" y="${layout.regions.cta.top}" width="${layout.regions.cta.width}" height="${layout.regions.cta.height}" rx="${layout.regions.cta.radius}" fill="${colors.accent}"/>`);
+    parts.push(textElement(cta, layout.regions.text.ctaText, colors.accentText, getStoryTypographyField(typography.id, 'ctaText')));
   }
-  const handle = layout.handle;
+  const handle = layout.regions.handle;
   const handleType = getStoryTypographyField(typography.id, 'handle');
   parts.push(`<text x="${handle.x}" y="${handle.y}" font-family="${handleType.family}" font-size="${scaledFontSize(handle, handleType)}" font-weight="${handleType.weight}" letter-spacing="${handleType.letterSpacing}" fill="${colors.muted}">${escapeXml(STORY_HANDLE)}</text>`);
   return `<svg width="${STORY_CANVAS.width}" height="${STORY_CANVAS.height}" viewBox="0 0 ${STORY_CANVAS.width} ${STORY_CANVAS.height}" xmlns="http://www.w3.org/2000/svg"><style>${storyTypographyFontFaces(typography.id)}</style><rect x="${INSTAGRAM_SAFE_AREA.left}" y="${INSTAGRAM_SAFE_AREA.top}" width="${STORY_CANVAS.width - INSTAGRAM_SAFE_AREA.left - INSTAGRAM_SAFE_AREA.right}" height="${STORY_CANVAS.height - INSTAGRAM_SAFE_AREA.top - INSTAGRAM_SAFE_AREA.bottom}" fill="none"/>${parts.join('')}</svg>`;

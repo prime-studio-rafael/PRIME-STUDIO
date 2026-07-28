@@ -11,9 +11,11 @@ vi.mock('../../src/features/branding/api/brandingClient.js', () => ({
 const week = { id: 'week-1', weekStart: '2026-07-20', stories: [] };
 const sources = [{ id: 'result-1', templateLabel: 'Resultado aprovado', originalPreviewUrl: '/result-1.jpg', brandedPreviewUrl: '/result-1-branded.jpg', brandedAvailable: true }];
 const layouts = [
-  { id: 'product-highlight', label: 'Produto em destaque', background: '#f4f1eb' },
-  { id: 'minimal', label: 'Minimalista', background: '#f8fafc' },
-  { id: 'offer', label: 'Oferta', background: '#111827' },
+  { id: 'premium', label: 'Premium', description: 'Produto sofisticado, preço e chamada de ação equilibrados.' },
+  { id: 'luxury', label: 'Luxury', description: 'Composição escura com marca e preço em destaque.' },
+  { id: 'minimal', label: 'Minimal', description: 'Imagem predominante, texto leve e marca discreta.' },
+  { id: 'offer', label: 'Offer', description: 'Oferta direta com preço e CTA de alto contraste.' },
+  { id: 'editorial', label: 'Editorial', description: 'Imagem vertical com narrativa e composição editorial.' },
 ];
 
 function renderComposer(overrides = {}) {
@@ -35,11 +37,48 @@ describe('StoryComposer', () => {
     fireEvent.change(screen.getByLabelText('Headline (opcional)'), { target: { value: 'Oferta especial hoje' } });
     fireEvent.change(screen.getByLabelText('Variante'), { target: { value: 'branded' } });
     expect(screen.getByAltText('Imagem selecionada para o Story')).toHaveAttribute('src', '/result-1-branded.jpg');
-    fireEvent.click(screen.getByRole('button', { name: 'Oferta' }));
-    expect(screen.getByRole('button', { name: 'Oferta' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Selecionar layout Offer' }));
+    expect(screen.getByRole('button', { name: 'Selecionar layout Offer' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText('Camisa Prime')).toBeInTheDocument();
     expect(props.onSave).not.toHaveBeenCalled();
     expect(props.onGenerate).not.toHaveBeenCalled();
+  });
+
+  it('uses visual catalog cards for all five layouts and marks a rendered Story stale after selection', () => {
+    const story = { id: 'story-1', sourceResultId: 'result-1', sourceAssetVariant: 'original', productLabel: 'Legado', storyTemplateId: 'premium', scheduledDate: '2026-07-20', scheduledTime: '10:00', order: 1, renderStatus: 'ready' };
+    const props = renderComposer({ story });
+    for (const label of ['Premium', 'Luxury', 'Minimal', 'Offer', 'Editorial']) expect(screen.getByRole('button', { name: `Selecionar layout ${label}` })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Selecionar layout Editorial' }));
+    expect(screen.getByRole('button', { name: 'Selecionar layout Editorial' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('O arquivo final está desatualizado até você salvar e gerar novamente.')).toBeInTheDocument();
+    expect(props.onSave).not.toHaveBeenCalled();
+    expect(props.onGenerate).not.toHaveBeenCalled();
+  });
+
+  it('applies a Visual Style locally and derives Personalizado after a manual change', () => {
+    const story = { id: 'story-1', sourceResultId: 'result-1', sourceAssetVariant: 'original', productLabel: 'Legado', storyTemplateId: 'premium', typographyPreset: 'premium', logoMode: 'primary', logoSize: 'medium', scheduledDate: '2026-07-20', scheduledTime: '10:00', order: 1, renderStatus: 'ready' };
+    const props = renderComposer({ story });
+    expect(screen.getByText('Estilo ativo: PRIME Store')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar estilo visual Luxury' }));
+    expect(screen.getByLabelText('Estilo tipográfico')).toHaveValue('elegante');
+    expect(screen.getByLabelText('Logo')).toHaveValue('white');
+    expect(screen.getByLabelText('Tamanho da logo')).toHaveValue('small');
+    expect(screen.getByText('Estilo ativo: Luxury')).toBeInTheDocument();
+    expect(screen.getByText('O arquivo final está desatualizado até você salvar e gerar novamente.')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Tamanho da logo'), { target: { value: 'medium' } });
+    expect(screen.getByText('Estilo ativo: Personalizado')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Tamanho da logo'), { target: { value: 'small' } });
+    expect(screen.getByText('Estilo ativo: Luxury')).toBeInTheDocument();
+    expect(props.onSave).not.toHaveBeenCalled();
+    expect(props.onGenerate).not.toHaveBeenCalled();
+  });
+
+  it('keeps the existing white-logo block when a Visual Style requires it', () => {
+    renderComposer();
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar estilo visual Offer' }));
+    expect(screen.getByLabelText('Logo')).toHaveValue('white');
+    expect(screen.getByText('Logo branca não configurada. Escolha Automática ou Principal.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Gerar Story final' })).toBeDisabled();
   });
 
   it('keeps the CTA centered inside its button in the local preview', () => {
@@ -96,10 +135,11 @@ describe('StoryComposer', () => {
   });
 
   it('keeps a legacy Story editable with empty additive fields and identifies the responsive composer', () => {
-    const story = { id: 'story-1', sourceResultId: 'result-1', sourceAssetVariant: 'original', productLabel: 'Legado', priceText: null, headline: null, ctaText: null, storyTemplateId: 'minimal', scheduledDate: '2026-07-20', scheduledTime: '10:00', order: 1, renderStatus: 'pending' };
+    const story = { id: 'story-1', sourceResultId: 'result-1', sourceAssetVariant: 'original', productLabel: 'Legado', priceText: null, headline: null, ctaText: null, scheduledDate: '2026-07-20', scheduledTime: '10:00', order: 1, renderStatus: 'pending' };
     renderComposer({ story });
     expect(screen.getByLabelText('Chamada curta (opcional)')).toHaveValue('');
     expect(screen.getByLabelText('Subheadline (opcional)')).toHaveValue('');
+    expect(screen.getByRole('button', { name: /Premium/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByText('Preview do Story').closest('aside')).toHaveClass('xl:sticky');
   });
 

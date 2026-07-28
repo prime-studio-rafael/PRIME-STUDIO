@@ -136,3 +136,15 @@ Branding passou a manter logos principal e branca de forma independente. O compo
 Estado: **implementada e validada tecnicamente em 28 de julho de 2026; aguardando commit e push**.
 
 O Story Composer recebeu quatro estilos tipográficos fechados: Premium/Manrope, Moderno/Inter, Elegante/Plus Jakarta Sans e Impacto/Bebas Neue. As fontes TTF são locais e o contrato é compartilhado pelo preview React/CSS, pelas regras de texto e pelo Sharp. Impacto utiliza Bebas Neue exclusivamente em headline e preço; CTA, subheadline e demais textos usam Inter. `typographyPreset` é aditivo, Stories legados assumem Premium e qualquer troca invalida WebP/JPEG até renderização explícita. A IA recebe somente o nome do preset e preserva suas quatro respostas. Validação final: 377 testes em 55 arquivos, build e `git diff --check` aprovados; zero chamadas ao OpenRouter ou DeepSeek e zero créditos externos. Detalhes: [FASE-07-7-IMPLEMENTACAO.md](./FASE-07-7-IMPLEMENTACAO.md).
+
+## Fase 7.8 — Arquitetura dos Layouts Premium
+
+Estado: **implementada e validada em 28 de julho de 2026; encerrada no commit conjunto com a Fase 7.9, aguardando push explícito**.
+
+A composição dos Stories passou a usar um catálogo compartilhado com Premium, Luxury, Minimal, Offer e Editorial. Preview React/CSS e Sharp consomem o mesmo contrato de regiões, paleta, limites de texto, miniaturas e comportamento de logo; `product-highlight` legado normaliza para Premium. A troca de layout mantém renderização explícita, invalida derivados e preserva WebP/JPEG 1080×1920. Detalhes: [FASE-07-8-IMPLEMENTACAO.md](./FASE-07-8-IMPLEMENTACAO.md).
+
+## Fase 7.9 — Estilos Visuais
+
+Estado: **implementada e validada em 28 de julho de 2026; encerrada no commit conjunto com a Fase 7.8, aguardando push explícito**.
+
+Foi incluída uma camada compartilhada de orquestração sobre a arquitetura da Fase 7.8, com cinco estilos: PRIME Store, Luxury, Minimal, Offer e Editorial. Cada estilo aplica apenas layout, tipografia, variante e tamanho de logo já existentes. O estado oficial é derivado por correspondência exata; ajustes manuais mostram `Personalizado`, sem persistir `visualStyleId` ou criar segunda fonte de verdade. `recommendedFor` é exclusivamente informativo. Preview e Sharp continuam usando os mesmos quatro campos, sem regra específica de estilo no renderer. A validação direcionada aprovou 61 testes; não houve chamadas ao OpenRouter, DeepSeek ou consumo de créditos. Detalhes: [FASE-07-9-IMPLEMENTACAO.md](./FASE-07-9-IMPLEMENTACAO.md).

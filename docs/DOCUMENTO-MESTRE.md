@@ -492,6 +492,33 @@ Estado: **implementada e validada tecnicamente em 28 de julho de 2026; commit e 
 
 Detalhes e evidências: [FASE-07-7-IMPLEMENTACAO.md](./FASE-07-7-IMPLEMENTACAO.md).
 
+### Fase 7.8 — Arquitetura dos Layouts Premium
+
+Estado: **implementada e validada em 28 de julho de 2026; encerrada no commit conjunto com a Fase 7.9, aguardando push explícito**.
+
+- catálogo compartilhado com cinco layouts oficiais: Premium, Luxury, Minimal, Offer e Editorial;
+- Preview React/CSS e Sharp consomem regiões, paletas, limites e comportamento de logo do mesmo contrato;
+- seletor visual com miniaturas vetoriais; trocar layout não renderiza automaticamente e invalida derivados anteriores;
+- `product-highlight` legado normaliza para Premium e Story sem layout usa Premium;
+- WebP/JPEG permanecem em 1080×1920, sem deformação e sem chamadas externas.
+
+Detalhes e evidências: [FASE-07-8-IMPLEMENTACAO.md](./FASE-07-8-IMPLEMENTACAO.md).
+
+### Fase 7.9 — Estilos Visuais
+
+Estado: **implementada e validada em 28 de julho de 2026; encerrada no commit conjunto com a Fase 7.8, aguardando push explícito**.
+
+- cinco estilos oficiais: PRIME Store, Luxury, Minimal, Offer e Editorial;
+- cada estilo aplica somente uma combinação fechada dos campos existentes `storyTemplateId`, `typographyPreset`, `logoMode` e `logoSize`;
+- o catálogo compartilhado valida referências reais de layout, tipografia e Branding; não replica geometria, paleta, fonte, posição ou regra de renderer;
+- o card ativo é derivado por combinação exata; ajustes manuais mantêm todos os controles livres e mostram `Personalizado`;
+- `visualStyleId` e `recommendedFor` não são persistidos; `recommendedFor` é apenas informação visual;
+- Preview React/CSS e Sharp continuam consumindo os mesmos quatro campos, sem lógica específica por estilo no renderer;
+- Stories antigos permanecem compatíveis, sem migração ou regravação; logo branca manual ausente segue bloqueando de forma explícita;
+- a Fase 7.9 depende funcionalmente do catálogo introduzido na Fase 7.8; validação direcionada: 61 testes aprovados, sem chamadas ao OpenRouter/DeepSeek ou créditos externos.
+
+Detalhes e evidências: [FASE-07-9-IMPLEMENTACAO.md](./FASE-07-9-IMPLEMENTACAO.md).
+
 #### Próximas melhorias aprovadas, ainda não iniciadas
 
 - **download em massa das imagens finais**, ampliando o download em lote já validado na Fase 5 (Produção em Lotes).

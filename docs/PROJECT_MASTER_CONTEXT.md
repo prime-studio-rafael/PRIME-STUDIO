@@ -85,6 +85,8 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 14. **Fase 7.5 — Assistente IA para textos de Stories** — concluída e publicada; sugestões textuais estruturadas, aplicação manual no compositor, validação segura e uma chamada explícita por clique usando o modelo configurado do DeepSeek.
 15. **Fase 7.6 — Branding Inteligente** — duas logos independentes, seleção automática/manual e tamanhos controlados no compositor, sem alterar a geração.
 16. **Fase 7.7 — Sistema Tipográfico Premium** — quatro presets locais, contrato compartilhado entre preview e Sharp e persistência aditiva por Story.
+17. **Fase 7.8 — Arquitetura dos Layouts Premium** — catálogo visual compartilhado com cinco layouts e paridade estrutural entre Preview e Sharp.
+18. **Fase 7.9 — Estilos Visuais** — cinco combinações fechadas sobre os layouts da Fase 7.8; estado oficial derivado ou `Personalizado`, sem novo campo persistido.
 
 ## 5. Fluxo completo (geração individual)
 
@@ -122,7 +124,7 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 | Tela Produção em Lotes | `src/features/batches/` |
 | Tela Branding | `src/features/branding/` |
 | Marketing Studio | `src/features/marketing/`, `server/services/marketingService.js`, `server/repositories/localMarketingRepository.js` |
-| Renderer 9:16 | `server/services/storyRenderer.js`, `server/services/storyTypographyFonts.js`, `shared/storyLayoutSpec.js`, `shared/storyTextLayout.js`, `shared/storyTypographySpec.js` |
+| Renderer 9:16 | `server/services/storyRenderer.js`, `server/services/storyTypographyFonts.js`, `shared/storyLayoutSpec.js`, `shared/storyTextLayout.js`, `shared/storyTypographySpec.js`, `shared/storyVisualStyleSpec.js` |
 | Branding Inteligente | `src/features/branding/`, `server/services/brandingService.js`, `server/storage/localBrandingStorage.js` |
 
 ## 7. Decisões importantes (por que, não só o quê)
@@ -141,6 +143,7 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 - **Assistente DeepSeek é explícito e textual** — a Fase 7.5 aceita apenas os campos permitidos, não envia imagens, não persiste respostas integrais e não faz retry.
 - **Branding do Story é determinístico** — `auto` usa a principal em fundos claros e a branca em Oferta; sem branca, há fallback explícito para a principal. Modo/tamanho alterados invalidam ambos os derivados finais.
 - **Tipografia do Story é fechada e local** — os quatro presets usam fontes TTF locais no preview e no Sharp; Bebas Neue só aparece em headline e preço no estilo Impacto. Stories legados derivam Premium e editar o preset invalida ambos os derivados finais.
+- **Estilo Visual apenas orquestra contratos existentes** — cinco estilos aplicam os quatro campos já persistidos; o estilo ativo é derivado e vira `Personalizado` após ajuste manual. Não há `visualStyleId`, regra nova no Sharp ou segunda fonte de verdade.
 
 ## 8. Regras do projeto (resumo — ver [AGENTS.md](../AGENTS.md) para a versão completa)
 

@@ -4,10 +4,10 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 
 ## Estado atual
 
-- Versão: MVP local evoluído até a Fase 7.7 — Sistema Tipográfico Premium.
-- Fase atual: Fase 7.7 validada tecnicamente; aguardando commit e autorização explícita de push.
-- Última fase concluída tecnicamente: Fase 7.7 — Sistema Tipográfico Premium.
-- Último estado funcional publicado: commit `6a76d1d` (Fase 7.6).
+- Versão: MVP local evoluído até a Fase 7.9 — Estilos Visuais.
+- Fase atual: Fases 7.8 e 7.9 concluídas localmente; aguardando autorização explícita para push do commit conjunto.
+- Última fase concluída tecnicamente: Fase 7.9 — Estilos Visuais, sobre a arquitetura da Fase 7.8.
+- Último estado funcional publicado: commit `b17af162` (Fase 7.7).
 - Próxima fase: não há fase de produto aprovada para início.
 
 ## Git
@@ -30,10 +30,11 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 
 - Template, Lote e Resultado: `docs/DATA_CONTRACT.md`.
 - Semana e Story: `server/services/marketingService.js` e `server/repositories/localMarketingRepository.js`.
-- Contrato visual de Stories: `shared/storyLayoutSpec.js`, `shared/storyTextLayout.js` e `shared/storyTypographySpec.js`.
+- Contrato visual de Stories: `shared/storyLayoutSpec.js`, `shared/storyTextLayout.js`, `shared/storyTypographySpec.js` e `shared/storyVisualStyleSpec.js`.
 - WebP interno e JPEG 1080×1920 são derivados da mesma composição Sharp.
 - Story: `logoMode` (`auto`/`primary`/`white`) e `logoSize` (`small`/`medium`/`large`) são aditivos; Stories legados usam `auto` + `medium` na leitura.
 - Story: `typographyPreset` é aditivo; valores permitidos são `premium`, `moderno`, `elegante` e `impacto`; Stories legados usam `premium` na leitura. As fontes TTF locais são compartilhadas por preview React/CSS e Sharp; Bebas Neue é restrita a headline e preço no preset Impacto.
+- Estilos Visuais: `shared/storyVisualStyleSpec.js` orquestra cinco combinações oficiais de layout, tipografia, variante e tamanho de logo. O estilo ativo é derivado exclusivamente dos quatro campos persistidos; `visualStyleId` e `recommendedFor` não são persistidos.
 - Branding: logos `primary` e `white` são independentes; `offer` em modo automático prioriza a branca e faz fallback honesto para a principal quando ela não existe.
 - Sugestões textuais: `server/services/storySuggestionsService.js` e `POST /api/marketing/suggestions`.
 - Contratos existentes são aditivos e compatíveis com registros antigos.
@@ -58,13 +59,13 @@ React, Vite, Tailwind CSS, Node.js, Express, `sharp`, `multer`, Keychain do macO
 - Templates: `src/features/templates/` e `server/services/templateService.js`.
 - Resultados: `src/features/results/` e `server/services/resultService.js`.
 - Lotes: `src/features/batches/`, `batchService.js` e `batchQueue.js`.
-- Marketing: `src/features/marketing/`, `marketingService.js`, `storyRenderer.js`, `storyTypographyFonts.js` e os contratos `shared/story*`.
+- Marketing: `src/features/marketing/`, `marketingService.js`, `storyRenderer.js`, `storyTypographyFonts.js` e os contratos `shared/story*`, incluindo `storyVisualStyleSpec.js`.
 - IA: `src/features/settings/` e `server/services/aiSettingsService.js`.
 - Persistência: `server/repositories/` e `storage/` (ignorado pelo Git).
 
 ## Pendências aprovadas
 
-Nenhuma pendência de produto aprovada para implementação neste momento. A Fase 7.7 aguarda somente commit e publicação explícita.
+- Backlog visual futuro do Marketing Studio: evoluir o layout Luxury para uma percepção de luxo mais marcante; evoluir Editorial para linguagem de revista; ampliar Estilos Visuais com novos presets somente após aprovação explícita, preservando edição manual posterior.
 
 ## Fora do escopo
 
@@ -84,4 +85,4 @@ Publicação automática, Buffer, banco, Supabase, autenticação, nuvem, editor
 
 ## Última sincronização
 
-28 de julho de 2026. Fase 7.7 validada localmente; atualizar este arquivo ao concluir fase, alterar arquitetura, contrato, módulo ativo ou pendência aprovada.
+28 de julho de 2026. Fases 7.8 e 7.9 concluídas localmente no mesmo commit; atualizar este arquivo ao concluir fase, alterar arquitetura, contrato, módulo ativo ou pendência aprovada.

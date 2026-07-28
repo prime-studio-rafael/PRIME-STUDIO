@@ -3,14 +3,14 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import MarketingPage from '../../src/features/marketing/components/MarketingPage.jsx';
 
 const week = { id: 'week-1', weekStart: '2026-07-20', timezone: 'America/Sao_Paulo', status: 'draft', updatedAt: '2026-07-20T12:00:00Z', stories: [] };
-function marketing(overrides = {}) { return { layouts: [{ id: 'product-highlight', label: 'Produto em destaque' }, { id: 'minimal', label: 'Minimalista' }, { id: 'offer', label: 'Oferta' }], sources: [{ id: 'result-1', templateLabel: 'Modelo aprovado', productHint: 'Produto aprovado', categoryLabel: 'Moda Masculina', brandedAvailable: true }], weeks: [week], selected: week, status: 'ready', error: '', busy: false, load: vi.fn(), select: vi.fn(async () => {}), createWeek: vi.fn(async () => {}), approveWeek: vi.fn(async () => {}), draftWeek: vi.fn(async () => {}), closeWeek: vi.fn(async () => {}), proposeWeek: vi.fn(async () => {}), removeWeek: vi.fn(async () => {}), addStory: vi.fn(async () => {}), updateStory: vi.fn(async () => {}), removeStory: vi.fn(async () => {}), renderStory: vi.fn(async () => {}), setEditorialStatus: vi.fn(async () => {}), ...overrides }; }
+function marketing(overrides = {}) { return { layouts: [{ id: 'premium', label: 'Premium', description: 'Clássico e sofisticado.' }, { id: 'luxury', label: 'Luxury', description: 'Fundo escuro e alto contraste.' }, { id: 'minimal', label: 'Minimal', description: 'Imagem em destaque.' }, { id: 'offer', label: 'Offer', description: 'Preço e conversão.' }, { id: 'editorial', label: 'Editorial', description: 'Composição informativa.' }], sources: [{ id: 'result-1', templateLabel: 'Modelo aprovado', productHint: 'Produto aprovado', categoryLabel: 'Moda Masculina', brandedAvailable: true }], weeks: [week], selected: week, status: 'ready', error: '', busy: false, load: vi.fn(), select: vi.fn(async () => {}), createWeek: vi.fn(async () => {}), approveWeek: vi.fn(async () => {}), draftWeek: vi.fn(async () => {}), closeWeek: vi.fn(async () => {}), proposeWeek: vi.fn(async () => {}), removeWeek: vi.fn(async () => {}), addStory: vi.fn(async () => {}), updateStory: vi.fn(async () => {}), removeStory: vi.fn(async () => {}), renderStory: vi.fn(async () => {}), setEditorialStatus: vi.fn(async () => {}), ...overrides }; }
 
 describe('Marketing Studio UI', () => {
   it('creates a planned Story from an approved result using the visual composer', () => {
     const state = marketing(); render(<MarketingPage marketing={state}/>);
     fireEvent.change(screen.getByLabelText('Nome ou código do produto'), { target: { value: 'Camisa 01' } });
     fireEvent.click(screen.getByRole('button', { name: 'Salvar rascunho' }));
-    expect(state.addStory).toHaveBeenCalledWith(expect.objectContaining({ sourceResultId: 'result-1', productLabel: 'Camisa 01', storyTemplateId: 'product-highlight', scheduledDate: '2026-07-20' }));
+    expect(state.addStory).toHaveBeenCalledWith(expect.objectContaining({ sourceResultId: 'result-1', productLabel: 'Camisa 01', storyTemplateId: 'premium', scheduledDate: '2026-07-20' }));
   });
 
   it('creates a deterministic proposal request with a marked priority', () => {
