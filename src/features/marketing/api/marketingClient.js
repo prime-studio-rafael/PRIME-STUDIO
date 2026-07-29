@@ -27,6 +27,7 @@ async function requestJson(url, options = {}) {
 const json = (method, body) => ({ method, headers: { 'Content-Type': 'application/json' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
 
 export function fetchMarketingBootstrap() { return Promise.all([requestJson('/api/marketing/layouts'), requestJson('/api/marketing/sources'), requestJson('/api/marketing/weeks')]); }
+export function fetchMarketingWeeks() { return requestJson('/api/marketing/weeks'); }
 export function fetchMarketingWeek(id) { return requestJson(`/api/marketing/weeks/${encodeURIComponent(id)}`); }
 export function createMarketingWeek(weekStart) { return requestJson('/api/marketing/weeks', json('POST', { weekStart })); }
 export function updateMarketingWeek(id, changes) { return requestJson(`/api/marketing/weeks/${encodeURIComponent(id)}`, json('PATCH', changes)); }

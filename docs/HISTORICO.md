@@ -172,3 +172,9 @@ O Dashboard passou a reutilizar Resultados e Lotes já carregados pela SPA, sem 
 Estado: **encerrada tecnicamente em 28 de julho de 2026; publicação remota depende de autorização explícita**.
 
 O Dashboard foi reorganizado visualmente como Operations Center em quatro áreas: Visão Executiva, Produção, Confiabilidade e Inteligência Operacional. A mudança reutiliza todos os dados, componentes e estados já existentes; não altera cálculos, hooks, fontes de dados, endpoints, backend ou monitoramentos. A validação visual desktop foi aprovada. Validação final: 430 testes em 59 arquivos, build, links e `git diff --check` aprovados; zero chamadas ao OpenRouter/DeepSeek e zero créditos externos. Detalhes: [FASE-08-2-IMPLEMENTACAO.md](./FASE-08-2-IMPLEMENTACAO.md).
+
+## Fase 8.3 — Operations Center 100% Real
+
+Estado: **concluída tecnicamente em 29 de julho de 2026; publicação remota depende de autorização explícita**.
+
+O Dashboard passou a usar Resultados locais únicos para a série de produção, modelos e taxa de aprovação, e Stories locais para Estilos Visuais e Tipografias. Não há mais valores demonstrativos: ausências são mostradas como estados vazios. Branding, DeepSeek e OpenRouter exibem somente configuração persistida; `GET /api/health` ganhou estados seguros de Storage e Renderer por leitura estrutural, verificação de Sharp e fontes locais, sem escrever, renderizar ou expor paths. Validação direcionada: 19 testes em 3 arquivos e `git diff --check` aprovados; zero chamadas externas e zero créditos. Detalhes: [FASE-08-3-IMPLEMENTACAO.md](./FASE-08-3-IMPLEMENTACAO.md).

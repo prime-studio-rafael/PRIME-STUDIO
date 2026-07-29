@@ -570,6 +570,19 @@ Estado: **encerrada tecnicamente em 28 de julho de 2026; publicação remota dep
 
 Detalhes e evidências: [FASE-08-2-IMPLEMENTACAO.md](./FASE-08-2-IMPLEMENTACAO.md).
 
+### Fase 8.3 — Operations Center 100% Real
+
+Estado: **concluída tecnicamente em 29 de julho de 2026; publicação remota depende de autorização explícita**.
+
+- o Dashboard eliminou números, gráficos, donuts e badges demonstrativos: Produção por dia, Modelos e Taxa de aprovação são agregações locais reais;
+- a série diária usa Resultados únicos, datas válidas, períodos Hoje/7/30 dias e o fuso `America/Sao_Paulo`; a taxa usa somente `approved` e `rejected`;
+- Estilos Visuais e Tipografias usam os Stories persistidos; sem histórico, há estados vazios honestos;
+- Branding, DeepSeek e OpenRouter exibem apenas configuração/último teste persistido, nunca conectividade presumida;
+- `GET /api/health` foi estendido aditivamente para Storage e Renderer, com leitura estrutural, Sharp e fontes locais — sem escrita, renderização ou paths na resposta;
+- não houve endpoint novo, persistência de agregados, mudança de contrato, chamada externa ou consumo de créditos.
+
+Detalhes e evidências: [FASE-08-3-IMPLEMENTACAO.md](./FASE-08-3-IMPLEMENTACAO.md).
+
 #### Próximas melhorias aprovadas, ainda não iniciadas
 
 - **download em massa das imagens finais**, ampliando o download em lote já validado na Fase 5 (Produção em Lotes).
@@ -626,6 +639,7 @@ A declaração `FASE 2 CONCLUÍDA` foi registrada depois da confirmação de tod
 - [Fase 8.1A — Dashboard Premium Mock Visual](./FASE-08-1A-IMPLEMENTACAO.md)
 - [Fase 8.1B — Dashboard Premium com Dados Reais](./FASE-08-1B-IMPLEMENTACAO.md)
 - [Fase 8.2 — Operations Center Premium](./FASE-08-2-IMPLEMENTACAO.md)
+- [Fase 8.3 — Operations Center 100% Real](./FASE-08-3-IMPLEMENTACAO.md)
 - [Contrato de dados — Template, Lote, Resultado](./DATA_CONTRACT.md)
 - [Contexto mestre do projeto para IAs](./PROJECT_MASTER_CONTEXT.md)
 - [Ordem de leitura recomendada](./START_HERE.md)

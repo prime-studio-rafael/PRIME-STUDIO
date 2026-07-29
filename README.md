@@ -92,7 +92,7 @@ Na aba **DeepSeek**, a chave é guardada exclusivamente no Chaves do macOS com s
 
 ### Dashboard e cotação manual
 
-O Dashboard é o **Operations Center** local: organiza Visão Executiva, Produção, Confiabilidade e Inteligência Operacional usando os mesmos Resultados e Lotes locais. Mostra produção, aprovações, pendências, tempo médio, IA principal, custos, fila, timeline e insights determinísticos. Em **Configurações → Dashboard**, informe a **Cotação do dólar** manualmente (padrão `5,50`) para converter custos reais em USD para BRL. A cotação é salva localmente, não consulta API de câmbio e não altera o custo USD original. Onde ainda não há fonte real comparável, a interface informa claramente que o dado é demonstrativo, futuro ou indisponível.
+O Dashboard é o **Operations Center** local: organiza Visão Executiva, Produção, Confiabilidade e Inteligência Operacional usando Resultados, Lotes, Stories e configurações locais. Mostra produção diária, taxa de aprovação, modelos, estilos, tipografias, custos, fila, timeline e insights determinísticos. Storage e Renderer são verificados localmente sem escrita ou renderização; Branding, DeepSeek e OpenRouter mostram apenas estados de configuração seguros. Em **Configurações → Dashboard**, informe a **Cotação do dólar** manualmente (padrão `5,50`) para converter custos reais em USD para BRL. A cotação é salva localmente, não consulta API de câmbio e não altera o custo USD original.
 
 ## Templates locais
 

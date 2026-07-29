@@ -25,6 +25,7 @@ import BrandingPage from '../features/branding/components/BrandingPage.jsx';
 import MarketingPage from '../features/marketing/components/MarketingPage.jsx';
 import useMarketing from '../features/marketing/hooks/useMarketing.js';
 import DashboardPage from '../features/dashboard/components/DashboardPage.jsx';
+import useDashboardOperations from '../features/dashboard/hooks/useDashboardOperations.js';
 
 const initialConfig = {
   keyConfigured: false,
@@ -55,6 +56,7 @@ export default function App({ initialView = 'generation' }) {
   const resultHistory = useResults(activeView === 'results' || activeView === 'dashboard');
   const batchesState = useBatches(activeView === 'batches' || activeView === 'dashboard');
   const marketingState = useMarketing(activeView === 'marketing');
+  const dashboardOperations = useDashboardOperations(activeView === 'dashboard');
   const templates = templateCatalog.templates;
   const garmentPreviewUrl = useObjectUrl(garmentFile);
   const inspectionSequenceRef = useRef(0);
@@ -213,6 +215,7 @@ export default function App({ initialView = 'generation' }) {
           batchesStatus={batchesState.status}
           batchesError={batchesState.error}
           keyConfigured={config.keyConfigured}
+          operations={dashboardOperations}
         />
       ) : activeView === 'templates' ? (
         <TemplatesPage catalog={templateCatalog} policy={config.imagePolicy || imagePolicy} generationBusy={isBusy} />

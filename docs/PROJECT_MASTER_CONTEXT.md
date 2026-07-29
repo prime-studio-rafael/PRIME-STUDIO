@@ -2,7 +2,7 @@
 
 Documento subordinado ao [Documento Mestre](./DOCUMENTO-MESTRE.md), que continua sendo a autoridade final em caso de conflito de escopo. Este documento existe para que uma IA (ou pessoa) que nunca viu o projeto entenda o estado atual sem precisar reconstruir meses de conversas ou ler todos os documentos de fase em ordem cronológica.
 
-Última verificação contra o código: 28 de julho de 2026 — Fase 8.2 Operations Center Premium encerrada tecnicamente; publicação remota depende de autorização explícita.
+Última verificação contra o código: 29 de julho de 2026 — Fase 8.3 Operations Center 100% Real encerrada tecnicamente; publicação remota depende de autorização explícita.
 
 ---
 
@@ -91,6 +91,7 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 20. **Fase 8.1A — Dashboard Premium Mock Visual** — dashboard inicial com dados demonstrativos e cotação USD→BRL manual local, sem analytics ou integração financeira.
 21. **Fase 8.1B — Dashboard Premium com Dados Reais** — Resultados e Lotes locais alimentam KPIs, custos, fila e timeline; dados ainda sem fonte real aparecem honestamente como demonstrativos, indisponíveis ou futuros.
 22. **Fase 8.2 — Operations Center Premium** — reorganização visual do Dashboard em Visão Executiva, Produção, Confiabilidade e Inteligência Operacional, sem mudar fontes, cálculos ou backend.
+23. **Fase 8.3 — Operations Center 100% Real** — últimos dados demonstrativos substituídos por Resultados, Stories, configurações e health local seguro; sem endpoint novo, persistência de agregados ou chamadas externas.
 
 ## 5. Fluxo completo (geração individual)
 
@@ -120,7 +121,7 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 | Cliente OpenRouter | `server/providers/openrouter/openrouterClient.js` |
 | Chave do OpenRouter | `server/secrets/` (Chaves do macOS) + `.env` (fallback) |
 | Configurações de IA | `src/features/settings/`, `server/services/aiSettingsService.js`, `server/repositories/localAiSettingsRepository.js` |
-| Dashboard e cotação local | `src/features/dashboard/`, `DashboardSettingsPanel.jsx`, `useResults`, `useBatches`, `localAiSettingsRepository.js` |
+| Dashboard e cotação local | `src/features/dashboard/`, `DashboardSettingsPanel.jsx`, `useResults`, `useBatches`, `localAiSettingsRepository.js`, `localHealthService.js` |
 | Assistente e recomendação de Stories | `src/features/marketing/components/StoryComposer.jsx`, `server/services/storySuggestionsService.js`, `server/services/storyStyleRecommendationService.js` |
 | Overlay de Branding | `server/services/logoOverlay.js` (nome indicativo — conferir arquivo exato no código) |
 | Tela Nova Geração | `src/app/App.jsx`, `src/features/generation/` |

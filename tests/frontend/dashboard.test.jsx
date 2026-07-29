@@ -2,6 +2,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 import DashboardPage, { convertUsdToBrl, getDashboardMetrics, getInsights } from '../../src/features/dashboard/components/DashboardPage.jsx';
+import { getApprovalRate, getMarketingDistributions, getModelDistribution, getProductionSeries } from '../../src/features/dashboard/dashboardMetrics.js';
 
 const now = new Date('2026-07-28T15:00:00.000Z');
 const results = [
@@ -50,7 +51,6 @@ describe('Dashboard premium com dados locais', () => {
   it('mantém o card BRL honesto quando a cotação local está indisponível', async () => {
     render(<DashboardPage onNavigate={vi.fn()} usdToBrlRate={null} quoteStatus="error" results={results} now={now} />);
     await screen.findByRole('heading', { name: 'Bom dia, Rafael.' });
-    expect(screen.getAllByText('Não informado')).not.toHaveLength(0);
     expect(screen.getByText('Não foi possível ler a cotação local')).toBeInTheDocument();
     expect(screen.getByText('$0.07')).toBeInTheDocument();
   });
@@ -132,8 +132,8 @@ describe('Dashboard premium com dados locais', () => {
     const technicalModel = 'google/gemini-3.1-flash-lite-image';
     render(<DashboardPage onNavigate={vi.fn()} now={now} results={[{ id: 'model', createdAt: '2026-07-28T12:00:00.000Z', reviewStatus: 'pending', model: technicalModel, costUsd: 0.034 }]} />);
     await screen.findByRole('heading', { name: 'Bom dia, Rafael.' });
-    expect(screen.getByText('Gemini 3.1 Flash Lite')).toBeInTheDocument();
-    expect(screen.getByTitle(technicalModel)).toBeInTheDocument();
+    expect(screen.getAllByText('Gemini 3.1 Flash Lite')).not.toHaveLength(0);
+    expect(screen.getAllByTitle(technicalModel)).not.toHaveLength(0);
   });
 
   it('apresenta a ausência de cotação sem usar o rótulo genérico não informado', async () => {
@@ -141,7 +141,24 @@ describe('Dashboard premium com dados locais', () => {
     await screen.findByRole('heading', { name: 'Bom dia, Rafael.' });
     expect(screen.getByText('Cotação ausente')).toBeInTheDocument();
     expect(screen.getByText('Defina a cotação local em Configurações')).toBeInTheDocument();
-    expect(screen.getByText('Dados demonstrativos')).toBeInTheDocument();
-    expect(screen.getAllByText('Monitoramento futuro')).toHaveLength(4);
+    expect(screen.queryByText('Dados demonstrativos')).not.toBeInTheDocument();
+    expect(screen.queryByText('Monitoramento futuro')).not.toBeInTheDocument();
+  });
+
+  it('calcula série diária única no fuso de São Paulo, sem inserir dados fictícios', () => {
+    const series = getProductionSeries({ now: new Date('2026-07-28T02:00:00.000Z'), period: '7 dias', results: [{ id: 'a', createdAt: '2026-07-28T01:30:00.000Z' }, { id: 'a', createdAt: '2026-07-28T01:30:00.000Z' }, { id: 'invalid', createdAt: 'x' }] });
+    expect(series.points).toHaveLength(7); expect(series.points.at(-1).value).toBe(1); expect(series.hasData).toBe(true);
+  });
+
+  it('normaliza modelos e calcula taxa de aprovação sem pendentes', () => {
+    const input = [{ id: 'a', createdAt: '2026-07-28T14:00:00.000Z', model: ' google/gemini-3.1-flash-lite-image ', reviewStatus: 'approved' }, { id: 'b', createdAt: '2026-07-28T13:00:00.000Z', model: 'GOOGLE/GEMINI-3.1-FLASH-LITE-IMAGE', reviewStatus: 'rejected' }, { id: 'c', createdAt: '2026-07-28T12:00:00.000Z', reviewStatus: 'pending' }];
+    expect(getModelDistribution({ results: input, now }).items[0]).toMatchObject({ count: 2, label: 'Gemini 3.1 Flash Lite' });
+    expect(getApprovalRate({ results: input, now })).toMatchObject({ approved: 1, completed: 2, percentage: 50 });
+  });
+
+  it('normaliza Stories legados e separa combinações personalizadas', () => {
+    const distribution = getMarketingDistributions([{ stories: [{ storyTemplateId: 'product-highlight' }, { storyTemplateId: 'premium', typographyPreset: 'impacto', logoMode: 'primary', logoSize: 'large' }] }]);
+    expect(distribution.styles.items).toEqual([expect.objectContaining({ label: 'Personalizado', count: 2 })]);
+    expect(distribution.typography.items).toEqual(expect.arrayContaining([expect.objectContaining({ label: 'Premium' }), expect.objectContaining({ label: 'Impacto' })]));
   });
 });

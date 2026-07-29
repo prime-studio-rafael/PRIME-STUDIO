@@ -4,10 +4,10 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 
 ## Estado atual
 
-- Versão: MVP local evoluído até a Fase 8.2 — Operations Center Premium.
-- Fase atual: Fase 8.2 — Operations Center Premium, encerrada tecnicamente; publicação remota depende de autorização explícita.
-- Última fase concluída tecnicamente: Fase 8.2 — Operations Center Premium.
-- Último estado funcional publicado: commit `53de621` (Fase 8.1B).
+- Versão: MVP local evoluído até a Fase 8.3 — Operations Center 100% Real.
+- Fase atual: Fase 8.3 — Operations Center 100% Real, encerrada tecnicamente; publicação remota depende de autorização explícita.
+- Última fase concluída tecnicamente: Fase 8.3 — Operations Center 100% Real.
+- Último estado funcional publicado: commit `b7dcc33` (Fase 8.2).
 - Próxima fase: não há fase de produto aprovada para início.
 
 ## Git
@@ -25,7 +25,7 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 - Templates, Resultados, Produção em Lotes e Branding locais.
 - Marketing Studio: semanas, Stories, calendário, histórico, compositor visual, Assistente IA textual e Branding Inteligente.
 - Configurações de IA: OpenRouter preservado e DeepSeek configurável; o Assistente usa o modelo selecionado pela configuração.
-- Operations Center local: Dashboard organiza os mesmos dados reais em Visão Executiva, Produção, Confiabilidade e Inteligência Operacional. Resultados, Lotes, timeline, fila, custos, tempo médio, IA principal e insights determinísticos permanecem locais; gráfico, donuts, taxa consolidada e monitoramentos ausentes continuam explicitamente demonstrativos ou indisponíveis.
+- Operations Center local: Dashboard organiza dados locais reais em Visão Executiva, Produção, Confiabilidade e Inteligência Operacional. Resultados únicos alimentam série diária, modelos, taxa de aprovação, timeline, custos e fila; Stories alimentam Estilos Visuais e Tipografias. Branding, DeepSeek, OpenRouter, Storage e Renderer mostram somente estado configuracional ou health local seguro — sem métricas demonstrativas.
 
 ## Principais contratos
 
@@ -37,7 +37,7 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 - Story: `typographyPreset` é aditivo; valores permitidos são `premium`, `moderno`, `elegante` e `impacto`; Stories legados usam `premium` na leitura. As fontes TTF locais são compartilhadas por preview React/CSS e Sharp; Bebas Neue é restrita a headline e preço no preset Impacto.
 - Estilos Visuais: `shared/storyVisualStyleSpec.js` orquestra cinco combinações oficiais de layout, tipografia, variante e tamanho de logo. O estilo ativo é derivado exclusivamente dos quatro campos persistidos; `visualStyleId` e `recommendedFor` não são persistidos.
 - Recomendação de estilo: `server/services/storyStyleRecommendationService.js` combina ranking local obrigatório e DeepSeek opcional; `POST /api/marketing/style-recommendation` não persiste a recomendação e nunca envia imagem.
-- Dashboard: Resultados são deduplicados por ID e filtrados por período; custos aceitam somente valores USD finitos não negativos e BRL é derivado por `USD × usdToBrlRate`, com arredondamento final. Não há endpoint novo, câmbio externo ou persistência de agregados.
+- Dashboard: Resultados são deduplicados por ID e filtrados por período em `America/Sao_Paulo`; custos aceitam somente valores USD finitos não negativos e BRL é derivado por `USD × usdToBrlRate`, com arredondamento final. A taxa de aprovação usa apenas revisões `approved` e `rejected`. Não há endpoint novo, câmbio externo ou persistência de agregados.
 - Cotação do Dashboard: `usdToBrlRate` é uma preferência local em `storage/settings/ai-providers.json`; não altera custos USD, não integra câmbio e não sai do computador.
 - Branding: logos `primary` e `white` são independentes; `offer` em modo automático prioriza a branca e faz fallback honesto para a principal quando ela não existe.
 - Sugestões textuais: `server/services/storySuggestionsService.js` e `POST /api/marketing/suggestions`.
@@ -51,6 +51,7 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 - Branding: `/api/branding`.
 - Marketing: `/api/marketing`.
 - IA e configuração local: `/api/secrets/openrouter` e `/api/ai/providers` (inclui cotação manual do Dashboard).
+- Health local: `/api/health` retorna estado seguro e aditivo de Storage e Renderer, sem caminhos físicos.
 
 ## Dependências críticas
 
@@ -59,7 +60,7 @@ React, Vite, Tailwind CSS, Node.js, Express, `sharp`, `multer`, Keychain do macO
 ## Arquivos principais
 
 - SPA: `src/app/App.jsx`.
-- Dashboard: `src/features/dashboard/` e `src/features/settings/components/DashboardSettingsPanel.jsx`.
+- Dashboard: `src/features/dashboard/`, `src/features/settings/components/DashboardSettingsPanel.jsx` e `server/services/localHealthService.js`.
 - Geração: `server/services/generationExecutor.js` e `generateImage.js`.
 - Templates: `src/features/templates/` e `server/services/templateService.js`.
 - Resultados: `src/features/results/` e `server/services/resultService.js`.
@@ -90,4 +91,4 @@ Publicação automática, Buffer, banco, Supabase, autenticação, nuvem, editor
 
 ## Última sincronização
 
-28 de julho de 2026. Fase 8.2 encerrada tecnicamente; atualizar este arquivo ao concluir fase, alterar arquitetura, contrato, módulo ativo ou pendência aprovada.
+29 de julho de 2026. Fase 8.3 encerrada tecnicamente; atualizar este arquivo ao concluir fase, alterar arquitetura, contrato, módulo ativo ou pendência aprovada.
