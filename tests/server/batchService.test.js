@@ -31,6 +31,7 @@ describe('BatchService local', () => {
     const file = { buffer, mimetype: 'image/jpeg', originalname: 'blusa.jpeg' };
     const batch = await service.create({ name: 'Coleção teste', templateId: 'model-01', files: [file] });
     expect(batch).toMatchObject({ status: 'ready', totalItems: 1, estimatedCostUsd: 0.034 });
+    expect(batch.events).toMatchObject([{ type: 'batch_created', itemId: null, data: { count: 1 } }]);
     expect(batch.items[0]).not.toHaveProperty('buffer');
     await expect(service.create({ name: 'Duplicado', templateId: 'model-01', files: [file, { ...file, originalname: 'igual.jpeg' }] })).rejects.toMatchObject({ code: 'DUPLICATE_BATCH_FILE' });
   });
@@ -45,6 +46,31 @@ describe('BatchService local', () => {
     const finished = await service.get(batch.id);
     expect(executor.execute).toHaveBeenCalledTimes(1);
     expect(finished.items[0]).toMatchObject({ status: 'completed', attempts: 1, resultId: 'result-1', providerRequestId: 'request-1' });
+    expect(finished.events.map((event) => event.type)).toEqual(['batch_created', 'batch_started', 'item_preparing', 'item_generation_started', 'item_completed', 'batch_completed']);
+    expect((await service.list())[0]).not.toHaveProperty('events');
+  });
+
+  it('records a single preparing-to-queued event when a pause happens before generation starts', async () => {
+    const { buffer, service, repository } = await fixture();
+    const batch = await service.create({ name: 'Pausa antes da geração', templateId: 'model-01', files: [{ buffer, mimetype: 'image/jpeg', originalname: 'a.jpeg' }] });
+    await service.start(batch.id, { confirmPaid: true });
+    const prepared = await service.prepareNext(batch.id);
+    await service.pause(batch.id);
+    expect(await service.beginPrepared(batch.id, prepared.item.id)).toBe(false);
+
+    const persisted = await service.get(batch.id);
+    expect(persisted.status).toBe('paused');
+    expect(persisted.items[0]).toMatchObject({ status: 'queued' });
+    expect(persisted.events.filter((event) => event.type === 'item_requeued')).toEqual([
+      expect.objectContaining({ itemId: prepared.item.id, fromStatus: 'preparing', toStatus: 'queued', data: { reason: 'pause_requested' } }),
+    ]);
+
+    const directory = path.join(repository.paths.batchesDirectory, batch.id);
+    const [primary, backup] = await Promise.all(['batch.json', 'batch.json.bak'].map(async (file) => JSON.parse(await readFile(path.join(directory, file), 'utf8'))));
+    for (const persistedFile of [primary, backup]) {
+      expect(persistedFile.items[0].status).toBe('queued');
+      expect(persistedFile.events.filter((event) => event.type === 'item_requeued')).toHaveLength(1);
+    }
   });
 
   it('freezes the full generation profile snapshot into batch.json, including additionalInstruction', async () => {
@@ -122,6 +148,7 @@ describe('BatchService local', () => {
     const recovered = await restarted.get(batch.id);
     expect(recovered.status).toBe('interrupted');
     expect(recovered.items.map((item) => item.status)).toEqual(['completed', 'failed', 'cancelled', 'queued', 'interrupted']);
+    expect(recovered.events.map((event) => event.type)).toEqual(['batch_created', 'batch_interrupted', 'item_interrupted']);
   });
 
   it('reconciles exactly one valid persisted result for an interrupted item and remains idempotent', async () => {
@@ -133,6 +160,7 @@ describe('BatchService local', () => {
 
     expect(await service.recoverInterruptedItems({ resultStorage })).toEqual({ recovered: 1 });
     expect((await service.get(batch.id)).items[0]).toMatchObject({ status: 'completed', resultId: 'result-recovered', costUsd: 0.034, durationMs: 8_000, providerRequestId: 'request-recovered' });
+    expect((await service.get(batch.id)).events.at(-2)).toMatchObject({ type: 'item_result_recovered', itemId: batch.items[0].id, data: { resultId: 'result-recovered', costUsd: 0.034, durationMs: 8_000 } });
     expect(await service.recoverInterruptedItems({ resultStorage })).toEqual({ recovered: 0 });
     expect(resultStorage.readAsset).toHaveBeenCalledTimes(1);
   });
@@ -203,6 +231,21 @@ describe('BatchService local', () => {
     resultStorage.listEntries.mockResolvedValue([{ metadata: { id: 'result-absent', status: 'success', createdAt: '2026-07-30T12:00:00.000Z', batchId: batch.id, batchItemId: itemId } }]);
     expect(await service.recoverInterruptedItems({ resultStorage })).toEqual({ recovered: 1 });
     expect((await service.get(batch.id)).items[0]).toMatchObject({ status: 'completed', resultId: 'result-absent', costUsd: null, durationMs: null });
+  });
+
+  it('records a single safe diagnostic when recovery is ignored and never reenqueues the item', async () => {
+    const { buffer, service, repository } = await fixture();
+    const batch = await service.create({ name: 'Diagnóstico seguro', templateId: 'model-01', files: [{ buffer, mimetype: 'image/jpeg', originalname: 'a.jpeg' }] });
+    await repository.update(batch.id, (next) => { next.status = 'interrupted'; next.items[0].status = 'interrupted'; return next; });
+    const metadata = { id: 'result-invalid', status: 'success', createdAt: '2026-07-30T12:00:00.000Z', batchId: batch.id, batchItemId: batch.items[0].id, costUsd: '0.034' };
+    const resultStorage = { listEntries: vi.fn(async () => [{ metadata }]), readAsset: vi.fn() };
+
+    expect(await service.recoverInterruptedItems({ resultStorage })).toEqual({ recovered: 0 });
+    expect(await service.recoverInterruptedItems({ resultStorage })).toEqual({ recovered: 0 });
+    const current = await service.get(batch.id);
+    expect(current.items[0]).toMatchObject({ status: 'interrupted', resultId: null });
+    expect(current.events.filter((event) => event.type === 'recovery_ignored_invalid_metadata')).toHaveLength(1);
+    expect(resultStorage.readAsset).not.toHaveBeenCalled();
   });
 
   it('only enqueues queued items when an interrupted batch is resumed manually', async () => {

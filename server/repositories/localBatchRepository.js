@@ -4,6 +4,7 @@ import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promise
 import { AppError } from '../utils/errors.js';
 import { serializeJson, writeFileAtomically } from '../utils/atomicJsonStorage.js';
 import { detectImageMime } from '../utils/fileValidation.js';
+import { appendBatchEvent, normalizeBatchEvents } from '../utils/batchEvents.js';
 
 const SAFE_ID = /^[a-zA-Z0-9-]+$/;
 const EXT = Object.freeze({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' });
@@ -26,9 +27,20 @@ export function createLocalBatchRepository({ batchesDir = path.resolve(process.c
       const batch = await readRecoverable(entry.name);
       if (!batch) continue;
       let changed = false;
-      if (batch.status === 'running') { batch.status = 'interrupted'; changed = true; }
+      const normalizedEvents = normalizeBatchEvents(batch.events);
+      if (!Array.isArray(batch.events) || JSON.stringify(batch.events) !== JSON.stringify(normalizedEvents)) { batch.events = normalizedEvents; changed = true; }
+      if (batch.status === 'running') {
+        batch.status = 'interrupted';
+        appendBatchEvent(batch, { type: 'batch_interrupted', fromStatus: 'running', toStatus: 'interrupted', data: { reason: 'server_restarted' } }, { createId: uuid });
+        changed = true;
+      }
       for (const item of batch.items || []) {
-        if (item.status === 'preparing' || item.status === 'generating') { item.status = 'interrupted'; item.updatedAt = new Date().toISOString(); changed = true; }
+        if (item.status === 'preparing' || item.status === 'generating') {
+          const fromStatus = item.status;
+          item.status = 'interrupted'; item.updatedAt = new Date().toISOString();
+          appendBatchEvent(batch, { type: 'item_interrupted', itemId: item.id, fromStatus, toStatus: 'interrupted', data: { reason: 'server_restarted' } }, { createId: uuid });
+          changed = true;
+        }
       }
       if (changed) { summarize(batch); batch.updatedAt = new Date().toISOString(); await persist(batch); }
       cache.set(batch.id, batch);
@@ -43,6 +55,7 @@ export function createLocalBatchRepository({ batchesDir = path.resolve(process.c
         await fsImpl.mkdir(path.join(tmp, 'items'), { recursive: true });
         await fsImpl.writeFile(path.join(tmp, `template.${extension(template.mimeType)}`), template.buffer);
         batch.templateStorageKey = `template.${extension(template.mimeType)}`;
+        batch.events = normalizeBatchEvents(batch.events);
         batch.items = items;
         summarize(batch);
         for (const item of items) {

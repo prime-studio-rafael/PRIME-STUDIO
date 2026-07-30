@@ -3,6 +3,7 @@ import { AlertCircle, ChevronDown, ChevronUp, FolderPlus, Info, Layers3, Loader2
 import SectionCard from '../../../components/ui/SectionCard.jsx';
 import BatchSummaryCards from './BatchSummaryCards.jsx';
 import BatchItemRow from './BatchItemRow.jsx';
+import BatchTimeline from './BatchTimeline.jsx';
 import useTemplateCategories from '../../templates/hooks/useTemplateCategories.js';
 import { DEFAULT_TEMPLATE_CATEGORY_ID } from '../../templates/hooks/useTemplateLibraryFilters.js';
 import { ADDITIONAL_INSTRUCTION_MAX_LENGTH } from '../../../../shared/additionalInstructionPolicy.js';
@@ -320,6 +321,7 @@ function BatchDetail({ batch, action, onOpenResult }) {
           {batch.items.map((item) => <BatchItemRow key={item.id} batchId={batch.id} item={item} onOpenResult={onOpenResult} />)}
         </ul>
       </div>
+      <BatchTimeline key={batch.id} batch={batch} />
     </SectionCard>
   );
 }

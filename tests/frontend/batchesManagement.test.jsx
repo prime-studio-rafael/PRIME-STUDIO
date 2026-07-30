@@ -36,6 +36,11 @@ const batchDetail = {
     { id: 'i3', originalFileName: 'c.jpg', garmentMime: 'image/jpeg', garmentDimensions: { width: 800, height: 1000 }, status: 'queued', resultId: null, costUsd: null, durationMs: null, safeError: null },
     { id: 'i4', originalFileName: 'd.jpg', garmentMime: 'image/jpeg', garmentDimensions: { width: 800, height: 1000 }, status: 'failed', resultId: null, costUsd: null, durationMs: null, safeError: { code: 'GENERATION_FAILED', message: 'A geração deste item falhou.' } },
   ],
+  events: [
+    { id: 'event-1', at: '2026-07-30T10:00:00.000Z', type: 'batch_started', itemId: null, fromStatus: 'ready', toStatus: 'running', data: {} },
+    { id: 'event-2', at: '2026-07-30T10:00:02.000Z', type: 'item_completed', itemId: 'i1', fromStatus: 'generating', toStatus: 'completed', data: { resultId: 'result-1', providerRequestId: 'request-1', costUsd: 0.034, durationMs: 5000 } },
+    { id: 'event-3', at: '2026-07-30T10:00:03.000Z', type: 'item_failed', itemId: 'i4', fromStatus: 'generating', toStatus: 'failed', data: { errorCode: 'GENERATION_FAILED' } },
+  ],
 };
 const secondBatchSummary = { ...batchSummary, id: 'batch-2', name: 'Lote 02' };
 const secondBatchDetail = { ...batchDetail, ...secondBatchSummary, items: [{ ...batchDetail.items[0], id: 'i5', originalFileName: 'manual.jpg' }] };
@@ -325,10 +330,68 @@ describe('batches page', () => {
 
   it('shows the real duration and cost for a finished item, and a dash for a pending one', async () => {
     await openBatchesAndSelect();
-    expect(screen.getByText('5.0 s')).toBeInTheDocument();
-    expect(screen.getByText('US$ 0.0340')).toBeInTheDocument();
+    const firstItem = screen.getByText('a.jpg').closest('li');
+    expect(within(firstItem).getByText('5.0 s')).toBeInTheDocument();
+    expect(within(firstItem).getByText('US$ 0.0340')).toBeInTheDocument();
     const dashes = screen.getAllByText('—');
     expect(dashes.length).toBeGreaterThan(0);
+  });
+
+  it('shows a chronological local timeline with safe filters and recovery microcopy', async () => {
+    await openBatchesAndSelect();
+    expect(screen.getByRole('heading', { name: 'Diagnóstico do lote' })).toBeInTheDocument();
+    expect(screen.getByText('Produção do lote iniciada.')).toBeInTheDocument();
+    expect(screen.getByText('Item concluído.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Falhas' }));
+    expect(screen.getByText('Item falhou durante a geração.')).toBeInTheDocument();
+    expect(screen.queryByText('Item concluído.')).not.toBeInTheDocument();
+  });
+
+  it('filters the timeline by the selected item without another backend request', async () => {
+    await openBatchesAndSelect();
+    const before = batchesApi.fetchBatch.mock.calls.length;
+    fireEvent.click(screen.getByRole('button', { name: 'Item selecionado' }));
+    expect(screen.getByLabelText('Item')).toBeInTheDocument();
+    expect(screen.getByText('Item concluído.')).toBeInTheDocument();
+    expect(screen.queryByText('Produção do lote iniciada.')).not.toBeInTheDocument();
+    expect(batchesApi.fetchBatch).toHaveBeenCalledTimes(before);
+  });
+
+  it('keeps a legacy batch without events compatible and shows an honest empty timeline', async () => {
+    batchesApi.fetchBatch.mockResolvedValue({ ...batchDetail, events: undefined });
+    await openBatchesAndSelect();
+    expect(screen.getByText('Ainda não há eventos')).toBeInTheDocument();
+    expect(screen.getByText('O histórico será formado pelas transições reais deste lote.')).toBeInTheDocument();
+  });
+
+  it('discards invalid event timestamps without breaking the timeline or its chronological order', async () => {
+    batchesApi.fetchBatch.mockResolvedValue({
+      ...batchDetail,
+      events: [
+        { id: 'valid-later', at: '2026-07-30T10:00:03.000Z', type: 'item_completed', itemId: 'i1', data: {} },
+        { id: 'invalid-text', at: 'not-a-date', type: 'item_failed', itemId: 'i4', data: {} },
+        { id: 'invalid-empty', at: '', type: 'item_failed', itemId: 'i4', data: {} },
+        { id: 'invalid-null', at: null, type: 'item_failed', itemId: 'i4', data: {} },
+        { id: 'invalid-undefined', at: undefined, type: 'item_failed', itemId: 'i4', data: {} },
+        { id: 'invalid-missing', type: 'item_failed', itemId: 'i4', data: {} },
+        { id: 'invalid-format', at: '30/07/2026', type: 'item_failed', itemId: 'i4', data: {} },
+        { id: 'invalid-ambiguous-numeric', at: '07/30/2026', type: 'item_failed', itemId: 'i4', data: {} },
+        { id: 'invalid-ambiguous-text', at: 'July 30, 2026', type: 'item_failed', itemId: 'i4', data: {} },
+        { id: 'invalid-date-only', at: '2026-07-30', type: 'item_failed', itemId: 'i4', data: {} },
+        { id: 'invalid-no-millis', at: '2026-07-30T20:09:15Z', type: 'item_failed', itemId: 'i4', data: {} },
+        { id: 'invalid-offset', at: '2026-07-30T20:09:15.123+00:00', type: 'item_failed', itemId: 'i4', data: {} },
+        { id: 'invalid-impossible', at: '2026-02-30T10:00:00.000Z', type: 'item_failed', itemId: 'i4', data: {} },
+        { id: 'valid-earlier', at: '2026-07-30T10:00:01.000Z', type: 'batch_started', itemId: null, data: {} },
+      ],
+    });
+    await openBatchesAndSelect();
+    const timeline = screen.getByRole('list', { name: 'Linha do tempo do lote' });
+    expect(within(timeline).getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+      expect.stringContaining('Produção do lote iniciada.'),
+      expect.stringContaining('Item concluído.'),
+    ]);
+    expect(screen.queryByText('Item falhou durante a geração.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Invalid Date')).not.toBeInTheDocument();
   });
 
   it('never renders a per-item retry, pause or delete action — only "Abrir resultado" for finished items with a result', async () => {
