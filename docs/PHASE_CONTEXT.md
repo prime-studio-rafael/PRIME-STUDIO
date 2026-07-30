@@ -5,10 +5,10 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 ## Estado atual
 
 - Versão: MVP local evoluído até a Fase 8.4 — Operação Assistida de Lotes, publicada no commit `48ad2fd`.
-- Fase atual: nenhuma fase de produto em andamento.
+- Fase atual: Fase 8.5 — Recuperação e Continuidade de Lotes, em implementação e validação local (sem commit ou push).
 - Última fase concluída tecnicamente: Fase 8.4 — Operação Assistida de Lotes.
 - Último estado funcional publicado: commit `48ad2fd` (Fase 8.4), sincronizado com `origin/main`.
-- Próxima fase: não há fase de produto aprovada para início.
+- Próxima fase: encerramento da Fase 8.5 após auditoria e validação final aprovadas.
 
 ## Git
 
@@ -39,6 +39,7 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 - Recomendação de estilo: `server/services/storyStyleRecommendationService.js` combina ranking local obrigatório e DeepSeek opcional; `POST /api/marketing/style-recommendation` não persiste a recomendação e nunca envia imagem.
 - Dashboard: Resultados são deduplicados por ID e filtrados por período em `America/Sao_Paulo`; custos aceitam somente valores USD finitos não negativos e BRL é derivado por `USD × usdToBrlRate`, com arredondamento final. A taxa de aprovação usa apenas revisões `approved` e `rejected`. Não há endpoint novo, câmbio externo ou persistência de agregados.
 - Cotação do Dashboard: `usdToBrlRate` é uma preferência local em `storage/settings/ai-providers.json`; não altera custos USD, não integra câmbio e não sai do computador.
+- Recuperação de lotes: o filesystem/backend continua como única fonte operacional. No startup, resultados locais só reconciliam itens `interrupted` por `batchId` e `batchItemId` exatos, metadata válida (incluindo números finitos não negativos quando presentes) e asset de resultado válido, sem reenfileirar ou regenerar automaticamente. O navegador guarda somente o ID da seleção visual em `localStorage`; respostas obsoletas, inclusive após unmount, não podem sobrescrever uma seleção manual mais recente e nunca são persistidos itens, resultados, custos, imagens ou estados operacionais.
 - Branding: logos `primary` e `white` são independentes; `offer` em modo automático prioriza a branca e faz fallback honesto para a principal quando ela não existe.
 - Sugestões textuais: `server/services/storySuggestionsService.js` e `POST /api/marketing/suggestions`.
 - Contratos existentes são aditivos e compatíveis com registros antigos.
@@ -91,4 +92,4 @@ Publicação automática, Buffer, banco, Supabase, autenticação, nuvem, editor
 
 ## Última sincronização
 
-30 de julho de 2026. Fase 8.4 publicada; não há fase de produto em andamento. Atualizar este arquivo ao concluir fase, alterar arquitetura, contrato, módulo ativo ou pendência aprovada.
+30 de julho de 2026. Fase 8.5 em implementação e validação local; Fase 8.4 permanece como último estado publicado. Atualizar este arquivo ao concluir fase, alterar arquitetura, contrato, módulo ativo ou pendência aprovada.

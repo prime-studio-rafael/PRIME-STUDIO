@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import App from '../../src/app/App.jsx';
+import useBatches from '../../src/features/batches/hooks/useBatches.js';
 import * as batchesApi from '../../src/features/batches/api/batchesClient.js';
 import * as resultsApi from '../../src/features/results/api/resultsClient.js';
 import * as templatesApi from '../../src/features/templates/api/templatesClient.js';
@@ -36,18 +37,39 @@ const batchDetail = {
     { id: 'i4', originalFileName: 'd.jpg', garmentMime: 'image/jpeg', garmentDimensions: { width: 800, height: 1000 }, status: 'failed', resultId: null, costUsd: null, durationMs: null, safeError: { code: 'GENERATION_FAILED', message: 'A geração deste item falhou.' } },
   ],
 };
+const secondBatchSummary = { ...batchSummary, id: 'batch-2', name: 'Lote 02' };
+const secondBatchDetail = { ...batchDetail, ...secondBatchSummary, items: [{ ...batchDetail.items[0], id: 'i5', originalFileName: 'manual.jpg' }] };
+
+function deferred() {
+  let resolve;
+  return { promise: new Promise((done) => { resolve = done; }), resolve };
+}
+
+function installStorage(entries = []) {
+  const values = new Map(entries);
+  Object.defineProperty(window, 'localStorage', {
+    configurable: true,
+    value: {
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => values.set(key, String(value)),
+      removeItem: (key) => values.delete(key),
+      clear: () => values.clear(),
+    },
+  });
+}
 
 async function openBatchesAndSelect() {
   render(<App />);
   fireEvent.click(screen.getByRole('button', { name: 'Produção em Lotes' }));
-  fireEvent.click(await screen.findByText('Lote 01'));
+  fireEvent.click(await screen.findByRole('button', { name: /Lote 01/ }));
   return screen.findByText('a.jpg');
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  installStorage();
   batchesApi.fetchBatches.mockResolvedValue([batchSummary]);
-  batchesApi.fetchBatch.mockResolvedValue(batchDetail);
+  batchesApi.fetchBatch.mockImplementation(async (id) => id === 'batch-2' ? secondBatchDetail : batchDetail);
   batchesApi.batchAction.mockResolvedValue({});
   batchesApi.createBatch.mockResolvedValue({});
 });
@@ -170,7 +192,7 @@ describe('batches page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Produção em Lotes' }));
     expect(await screen.findByText('Atualizando…')).toBeInTheDocument();
     resolveBatches([batchSummary]);
-    expect(await screen.findByText('Lote 01')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Lote 01/ })).toBeInTheDocument();
   });
 
   it('shows a friendly error state when batches fail to load', async () => {
@@ -181,9 +203,70 @@ describe('batches page', () => {
   });
 
   it('shows a placeholder inviting selection when batches exist but none is selected', async () => {
+    batchesApi.fetchBatches.mockResolvedValue([{ ...batchSummary, status: 'completed' }]);
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'Produção em Lotes' }));
     expect(await screen.findByText('Selecione um lote para ver os detalhes')).toBeInTheDocument();
+  });
+
+  it('restores the selected batch from localStorage after returning to the page', async () => {
+    window.localStorage.setItem('prime-studio:selected-batch-id', 'batch-1');
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Produção em Lotes' }));
+    expect(await screen.findByText('a.jpg')).toBeInTheDocument();
+    expect(batchesApi.fetchBatch).toHaveBeenCalledWith('batch-1');
+  });
+
+  it('drops a missing saved selection and safely falls back to the newest non-terminal batch', async () => {
+    window.localStorage.setItem('prime-studio:selected-batch-id', 'missing-batch');
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Produção em Lotes' }));
+    expect(await screen.findByText('a.jpg')).toBeInTheDocument();
+    expect(window.localStorage.getItem('prime-studio:selected-batch-id')).toBe('batch-1');
+  });
+
+  it('keeps the page functional when localStorage is unavailable', async () => {
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: { getItem: () => { throw new Error('storage unavailable'); }, setItem: () => { throw new Error('storage unavailable'); }, removeItem: () => { throw new Error('storage unavailable'); } },
+    });
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Produção em Lotes' }));
+    expect(await screen.findByText('a.jpg')).toBeInTheDocument();
+  });
+
+  it('ignores an obsolete refresh response after a newer manual selection', async () => {
+    batchesApi.fetchBatches.mockResolvedValue([batchSummary, secondBatchSummary]);
+    const { result } = renderHook(() => useBatches(true));
+    await waitFor(() => expect(result.current.selected?.id).toBe('batch-1'));
+
+    const stale = deferred();
+    batchesApi.fetchBatches.mockImplementationOnce(() => stale.promise);
+    let staleRefresh;
+    act(() => { staleRefresh = result.current.refresh(); });
+    await waitFor(() => expect(batchesApi.fetchBatches).toHaveBeenCalledTimes(2));
+
+    await act(async () => { await result.current.select(secondBatchSummary); });
+    expect(result.current.selected?.id).toBe('batch-2');
+    expect(window.localStorage.getItem('prime-studio:selected-batch-id')).toBe('batch-2');
+
+    await act(async () => { stale.resolve([batchSummary, secondBatchSummary]); await staleRefresh; });
+    expect(result.current.selected?.id).toBe('batch-2');
+    expect(window.localStorage.getItem('prime-studio:selected-batch-id')).toBe('batch-2');
+  });
+
+  it('invalidates a pending refresh on unmount without changing the saved visual selection', async () => {
+    const pending = deferred();
+    window.localStorage.setItem('prime-studio:selected-batch-id', 'saved-before-unmount');
+    batchesApi.fetchBatches.mockImplementationOnce(() => pending.promise);
+    const { unmount } = renderHook(() => useBatches(true));
+    await waitFor(() => expect(batchesApi.fetchBatches).toHaveBeenCalledTimes(1));
+
+    unmount();
+    await act(async () => { pending.resolve([batchSummary]); await Promise.resolve(); });
+
+    expect(batchesApi.fetchBatch).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem('prime-studio:selected-batch-id')).toBe('saved-before-unmount');
   });
 
   it('renders item thumbnails with object-contain and no crop, and shows the running indicator in the header', async () => {
@@ -220,6 +303,16 @@ describe('batches page', () => {
     expect(screen.getAllByText('—').length).toBeGreaterThan(0);
   });
 
+  it('explains that interrupted items are never regenerated automatically', async () => {
+    batchesApi.fetchBatch.mockResolvedValue({ ...batchDetail, status: 'interrupted', items: [{ ...batchDetail.items[1], status: 'interrupted' }, { ...batchDetail.items[2], status: 'queued' }] });
+    batchesApi.fetchBatches.mockResolvedValue([{ ...batchSummary, status: 'interrupted' }]);
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Produção em Lotes' }));
+    expect(await screen.findByText('1 item interrompido')).toBeInTheDocument();
+    expect(screen.getByText(/não serão gerados novamente automaticamente/)).toBeInTheDocument();
+    expect(screen.getByText(/Apenas itens ainda pendentes podem ser retomados manualmente/)).toBeInTheDocument();
+  });
+
   it('shows the exact progress tooltip text, accessible by keyboard focus', async () => {
     await openBatchesAndSelect();
     const trigger = screen.getByRole('button', { name: 'Como o progresso é calculado' });
@@ -248,7 +341,7 @@ describe('batches page', () => {
   it('wraps the table (header + rows) in a horizontally scrollable container, restricted to the table itself', async () => {
     const { container } = render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'Produção em Lotes' }));
-    fireEvent.click(await screen.findByText('Lote 01'));
+    fireEvent.click(await screen.findByRole('button', { name: /Lote 01/ }));
     await screen.findByText('a.jpg');
 
     const header = screen.getByText('Produto').closest('div');

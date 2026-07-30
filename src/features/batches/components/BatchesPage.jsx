@@ -276,6 +276,13 @@ function BatchDetail({ batch, action, onOpenResult }) {
         <BatchEta eta={eta} />
       </div>
 
+      {summary.interrupted > 0 && (
+        <div role="status" className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-semibold">{summary.interrupted} {summary.interrupted === 1 ? 'item interrompido' : 'itens interrompidos'}</p>
+          <p className="mt-1 text-xs leading-5">Itens interrompidos não serão gerados novamente automaticamente. Apenas itens ainda pendentes podem ser retomados manualmente.</p>
+        </div>
+      )}
+
       <div className="mt-6">
         <div className="mb-2 flex items-center justify-between text-xs text-slate-500">
           <span>{finished}/{batch.totalItems} finalizados</span>

@@ -68,8 +68,65 @@ export function createBatchService({ repository, templateService, config = gener
   async function executionInput(id, itemId) { const batch = await repository.get(id); const item = batch.items.find((candidate) => candidate.id === itemId); if (!item) throw new AppError('BATCH_ITEM_NOT_FOUND', 'O item do lote não foi encontrado.', { status: 404 }); const garment = await repository.readGarment(id, itemId); const templateSnapshot = await repository.readTemplate(id); return { templateSnapshot, additionalInstruction: batch.additionalInstruction ?? null, garmentFile: { buffer: garment.buffer, mimetype: garment.mimeType, originalname: garment.originalname, size: garment.size } }; }
   async function complete(id, itemId, result) { return repository.update(id, (next) => { const item = requireItem(next, itemId); item.status = 'completed'; item.resultId = result.generationId; item.costUsd = result.metrics.costUsd; item.durationMs = result.metrics.durationMs; item.providerRequestId = result.requestId || null; item.completedAt = iso(); item.updatedAt = iso(); finish(next, iso); return next; }); }
   async function fail(id, itemId, error) { return repository.update(id, (next) => { const item = requireItem(next, itemId); item.status = 'failed'; item.safeError = { code: error?.code || 'GENERATION_FAILED', message: error?.message || 'A geração deste item falhou.' }; item.completedAt = iso(); item.updatedAt = iso(); finish(next, iso); return next; }); }
-  return Object.freeze({ create, list, get, start, pause, resume, cancel, prepareNext, beginPrepared, executionInput, complete, fail, setQueue: (value) => { queue = value; } });
+  async function recoverInterruptedItems({ resultStorage } = {}) {
+    if (!resultStorage?.listEntries || !resultStorage?.readAsset) return { recovered: 0 };
+
+    const candidatesByItem = new Map();
+    for (const entry of await resultStorage.listEntries()) {
+      const metadata = entry?.metadata;
+      if (!isRecoveryCandidate(metadata)) continue;
+      const key = recoveryKey(metadata.batchId, metadata.batchItemId);
+      const candidates = candidatesByItem.get(key) || [];
+      candidates.push(metadata);
+      candidatesByItem.set(key, candidates);
+    }
+
+    let recovered = 0;
+    for (const batch of await repository.list()) {
+      const matches = [];
+      for (const item of batch.items || []) {
+        if (item.status !== 'interrupted') continue;
+        const candidates = candidatesByItem.get(recoveryKey(batch.id, item.id));
+        if (!candidates || candidates.length !== 1) continue;
+        const [metadata] = candidates;
+        try {
+          const asset = await resultStorage.readAsset(metadata.id, 'result');
+          if (!isValidRecoveryAsset(asset)) continue;
+          matches.push({ itemId: item.id, metadata });
+        } catch {
+          // Sem asset local válido, o item permanece interrupted e nunca é reenfileirado automaticamente.
+        }
+      }
+      if (!matches.length) continue;
+      await repository.update(batch.id, (next) => {
+        for (const { itemId, metadata } of matches) {
+          const item = next.items.find((candidate) => candidate.id === itemId);
+          if (!item || item.status !== 'interrupted') continue;
+          item.status = 'completed';
+          item.resultId = metadata.id;
+          item.costUsd = metadata.costUsd ?? null;
+          item.durationMs = metadata.durationMs ?? null;
+          item.providerRequestId = typeof metadata.providerRequestId === 'string' ? metadata.providerRequestId : null;
+          item.safeError = null;
+          item.completedAt = validIso(metadata.createdAt) ? metadata.createdAt : iso();
+          item.updatedAt = iso();
+          recovered += 1;
+        }
+        finish(next, iso);
+        return next;
+      });
+    }
+    return { recovered };
+  }
+  return Object.freeze({ create, list, get, start, pause, resume, cancel, prepareNext, beginPrepared, executionInput, complete, fail, recoverInterruptedItems, setQueue: (value) => { queue = value; } });
 }
+function recoveryKey(batchId, batchItemId) { return `${batchId}\u0000${batchItemId}`; }
+function isRecoveryCandidate(metadata) { return Boolean(metadata && metadata.status === 'success' && validIso(metadata.createdAt) && isSafeRecoveryId(metadata.id) && typeof metadata.batchId === 'string' && typeof metadata.batchItemId === 'string' && hasValidRecoveryNumbers(metadata)); }
+function isSafeRecoveryId(value) { return /^[a-zA-Z0-9-]+$/.test(value); }
+function isValidRecoveryAsset(asset) { return Boolean(asset?.buffer?.length && ['image/jpeg', 'image/png', 'image/webp'].includes(asset.mimeType)); }
+function hasValidRecoveryNumbers(metadata) { return isOptionalNonNegativeFinite(metadata.costUsd) && isOptionalNonNegativeFinite(metadata.durationMs); }
+function isOptionalNonNegativeFinite(value) { return value == null || (typeof value === 'number' && Number.isFinite(value) && value >= 0); }
+function validIso(value) { return typeof value === 'string' && Number.isFinite(Date.parse(value)); }
 function requireItem(batch, id) { const item = batch.items.find((candidate) => candidate.id === id); if (!item) throw new AppError('BATCH_ITEM_NOT_FOUND', 'O item do lote não foi encontrado.', { status: 404 }); return item; }
 function finishCancellation(batch, iso) { for (const item of batch.items) if (item.status === 'queued' || item.status === 'preparing') { item.status = 'cancelled'; item.completedAt = iso(); } if (!batch.items.some((item) => item.status === 'generating')) { batch.status = 'cancelled'; batch.completedAt = iso(); } summarize(batch); }
 function finish(batch, iso) { summarize(batch); if (batch.cancelRequested) return finishCancellation(batch, iso); if (batch.pauseRequested) { batch.status = 'paused'; return; } if (batch.items.some((item) => ['queued', 'preparing', 'generating'].includes(item.status))) return; batch.status = batch.failedItems || batch.cancelledItems || batch.interruptedItems ? 'completed_with_errors' : 'completed'; batch.completedAt = iso(); }

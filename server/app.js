@@ -96,7 +96,9 @@ export function createApp({
   const resolvedBatchRepository = batchRepository || createLocalBatchRepository();
   const resolvedBatchService = batchService || createBatchService({ repository: resolvedBatchRepository, templateService: resolvedTemplateService });
   const resolvedBatchQueue = batchQueue || createBatchQueue({ batchService: resolvedBatchService, executor: resolvedExecutor, coordinator: resolvedCoordinator });
-  resolvedBatchRepository.ensureInitialized().catch((error) => console.error('[batches]', error?.message || error));
+  resolvedBatchRepository.ensureInitialized()
+    .then(() => resolvedBatchService.recoverInterruptedItems?.({ resultStorage }))
+    .catch((error) => console.error('[batches]', error?.message || error));
   const resolvedResultService = resultService || createResultService({ storage: resultStorage, templateService: resolvedTemplateService, brandingService: resolvedBrandingService });
   const resolvedMarketingRepository = marketingRepository || createLocalMarketingRepository();
   const resolvedMarketingService = marketingService || createMarketingService({ repository: resolvedMarketingRepository, resultService: resolvedResultService, brandingService: resolvedBrandingService });

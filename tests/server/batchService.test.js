@@ -8,6 +8,10 @@ import { createBatchQueue } from '../../server/services/batchQueue.js';
 import { createGenerationCoordinator } from '../../server/services/generationCoordinator.js';
 
 const source = new URL('../../public/templates/model-01.jpeg', import.meta.url);
+const sourceTwo = new URL('../../public/templates/model-02.jpeg', import.meta.url);
+const sourceThree = new URL('../../public/templates/model-01-legacy-q70.jpeg', import.meta.url);
+const sourceFour = new URL('../../public/templates/model-02-legacy-q70.jpeg', import.meta.url);
+const sourceFive = new URL('../../public/templates/model-01%20-%20co%CC%81pia.png', import.meta.url);
 const directories = [];
 const COMPLETE_TEMPLATE = { id: 'model-01', label: 'Modelo 01', category: 'moda-masculina', prompt: 'Edite exclusivamente o item-alvo desta categoria.', negativePrompt: 'Não incluir estampas extras.', provider: 'openrouter', modelId: 'nano-banana-lite', generationAspectRatio: '1:1', resolution: '1K', promptVersion: 'template-00000001' };
 
@@ -96,5 +100,122 @@ describe('BatchService local', () => {
     await expect(legacyService.resume(legacyBatch.id)).rejects.toMatchObject({ code: 'BATCH_TEMPLATE_PROFILE_INCOMPLETE', status: 422 });
     expect(enqueueSpy).not.toHaveBeenCalled();
     expect((await legacyService.get(legacyBatch.id)).status).toBe('paused');
+  });
+
+  it('keeps completed, failed, cancelled and queued items intact while marking active work interrupted after restart', async () => {
+    const { buffer, service, repository, directory } = await fixture();
+    const [bufferTwo, bufferThree, bufferFour, bufferFive] = await Promise.all([sourceTwo, sourceThree, sourceFour, sourceFive].map((file) => readFile(file)));
+    const batch = await service.create({ name: 'Reinício seguro', templateId: 'model-01', files: [
+      { buffer, mimetype: 'image/jpeg', originalname: 'a.jpeg' },
+      { buffer: bufferTwo, mimetype: 'image/jpeg', originalname: 'b.jpeg' },
+      { buffer: bufferThree, mimetype: 'image/jpeg', originalname: 'c.jpeg' },
+      { buffer: bufferFour, mimetype: 'image/jpeg', originalname: 'd.jpeg' },
+      { buffer: bufferFive, mimetype: 'image/png', originalname: 'e.png' },
+    ] });
+    await repository.update(batch.id, (next) => {
+      next.status = 'running';
+      [next.items[0].status, next.items[1].status, next.items[2].status, next.items[3].status, next.items[4].status] = ['completed', 'failed', 'cancelled', 'queued', 'generating'];
+      return next;
+    });
+
+    const restarted = createBatchService({ repository: createLocalBatchRepository({ batchesDir: path.join(directory, 'batches') }), templateService: { getForGeneration: vi.fn() } });
+    const recovered = await restarted.get(batch.id);
+    expect(recovered.status).toBe('interrupted');
+    expect(recovered.items.map((item) => item.status)).toEqual(['completed', 'failed', 'cancelled', 'queued', 'interrupted']);
+  });
+
+  it('reconciles exactly one valid persisted result for an interrupted item and remains idempotent', async () => {
+    const { buffer, service, repository } = await fixture();
+    const batch = await service.create({ name: 'Resultado recuperável', templateId: 'model-01', files: [{ buffer, mimetype: 'image/jpeg', originalname: 'a.jpeg' }] });
+    await repository.update(batch.id, (next) => { next.status = 'interrupted'; next.items[0].status = 'interrupted'; return next; });
+    const metadata = { id: 'result-recovered', status: 'success', batchId: batch.id, batchItemId: batch.items[0].id, costUsd: 0.034, durationMs: 8_000, providerRequestId: 'request-recovered', createdAt: '2026-07-30T12:00:00.000Z' };
+    const resultStorage = { listEntries: vi.fn(async () => [{ metadata }]), readAsset: vi.fn(async () => ({ buffer: Buffer.from('valid-image'), mimeType: 'image/webp' })) };
+
+    expect(await service.recoverInterruptedItems({ resultStorage })).toEqual({ recovered: 1 });
+    expect((await service.get(batch.id)).items[0]).toMatchObject({ status: 'completed', resultId: 'result-recovered', costUsd: 0.034, durationMs: 8_000, providerRequestId: 'request-recovered' });
+    expect(await service.recoverInterruptedItems({ resultStorage })).toEqual({ recovered: 0 });
+    expect(resultStorage.readAsset).toHaveBeenCalledTimes(1);
+  });
+
+  it('never reconciles interrupted work from incomplete, mismatched, invalid or conflicting results', async () => {
+    const { buffer, service, repository } = await fixture();
+    const batch = await service.create({ name: 'Sem suposição', templateId: 'model-01', files: [{ buffer, mimetype: 'image/jpeg', originalname: 'a.jpeg' }] });
+    await repository.update(batch.id, (next) => { next.status = 'interrupted'; next.items[0].status = 'interrupted'; return next; });
+    const itemId = batch.items[0].id;
+    let candidateNumber = 0;
+    const candidate = (overrides = {}) => ({ metadata: { id: `result-${++candidateNumber}`, status: 'success', createdAt: '2026-07-30T12:00:00.000Z', batchId: batch.id, batchItemId: itemId, ...overrides } });
+    const cases = [
+      [candidate({ batchItemId: undefined })],
+      [candidate({ batchId: 'other-batch' })],
+      [candidate({ status: 'incomplete' })],
+      [candidate(), candidate()],
+      [candidate()],
+    ];
+    for (const entries of cases) {
+      const storage = { listEntries: vi.fn(async () => entries), readAsset: vi.fn(async () => { throw new Error('asset missing'); }) };
+      await expect(service.recoverInterruptedItems({ resultStorage: storage })).resolves.toEqual({ recovered: 0 });
+      expect((await service.get(batch.id)).items[0]).toMatchObject({ status: 'interrupted', resultId: null });
+    }
+  });
+
+  it('rejects malformed recovered numeric metadata without changing an interrupted item', async () => {
+    const { buffer, service, repository } = await fixture();
+    const batch = await service.create({ name: 'Números não confiáveis', templateId: 'model-01', files: [{ buffer, mimetype: 'image/jpeg', originalname: 'a.jpeg' }] });
+    await repository.update(batch.id, (next) => { next.status = 'interrupted'; next.items[0].status = 'interrupted'; return next; });
+    const itemId = batch.items[0].id;
+    const invalidValues = [
+      { costUsd: -0.01 }, { durationMs: -1 }, { costUsd: Number.NaN }, { durationMs: Infinity },
+      { costUsd: '0.034' }, { durationMs: '8000' }, { costUsd: {} }, { durationMs: [] }, { costUsd: false },
+    ];
+
+    for (const overrides of invalidValues) {
+      const resultStorage = {
+        listEntries: vi.fn(async () => [{ metadata: { id: 'result-invalid', status: 'success', createdAt: '2026-07-30T12:00:00.000Z', batchId: batch.id, batchItemId: itemId, ...overrides } }]),
+        readAsset: vi.fn(),
+      };
+      expect(await service.recoverInterruptedItems({ resultStorage })).toEqual({ recovered: 0 });
+      expect(resultStorage.readAsset).not.toHaveBeenCalled();
+      expect((await service.get(batch.id)).items[0]).toMatchObject({ status: 'interrupted', resultId: null });
+    }
+  });
+
+  it('accepts absent numeric metadata and zero values when recovering a valid result', async () => {
+    const { buffer, service, repository } = await fixture();
+    const batch = await service.create({ name: 'Números válidos', templateId: 'model-01', files: [{ buffer, mimetype: 'image/jpeg', originalname: 'a.jpeg' }] });
+    const itemId = batch.items[0].id;
+    const resultStorage = {
+      listEntries: vi.fn(async () => [{ metadata: { id: 'result-zero', status: 'success', createdAt: '2026-07-30T12:00:00.000Z', batchId: batch.id, batchItemId: itemId, costUsd: 0, durationMs: 0 } }]),
+      readAsset: vi.fn(async () => ({ buffer: Buffer.from('valid-image'), mimeType: 'image/webp' })),
+    };
+
+    await repository.update(batch.id, (next) => { next.status = 'interrupted'; next.items[0].status = 'interrupted'; return next; });
+    expect(await service.recoverInterruptedItems({ resultStorage })).toEqual({ recovered: 1 });
+    expect((await service.get(batch.id)).items[0]).toMatchObject({ status: 'completed', costUsd: 0, durationMs: 0 });
+
+    await repository.update(batch.id, (next) => {
+      next.status = 'interrupted';
+      next.items[0].status = 'interrupted';
+      next.items[0].resultId = null;
+      next.items[0].costUsd = null;
+      next.items[0].durationMs = null;
+      return next;
+    });
+    resultStorage.listEntries.mockResolvedValue([{ metadata: { id: 'result-absent', status: 'success', createdAt: '2026-07-30T12:00:00.000Z', batchId: batch.id, batchItemId: itemId } }]);
+    expect(await service.recoverInterruptedItems({ resultStorage })).toEqual({ recovered: 1 });
+    expect((await service.get(batch.id)).items[0]).toMatchObject({ status: 'completed', resultId: 'result-absent', costUsd: null, durationMs: null });
+  });
+
+  it('only enqueues queued items when an interrupted batch is resumed manually', async () => {
+    const { buffer, service, repository } = await fixture();
+    const bufferTwo = await readFile(sourceTwo);
+    const batch = await service.create({ name: 'Retomada manual', templateId: 'model-01', files: [
+      { buffer, mimetype: 'image/jpeg', originalname: 'a.jpeg' },
+      { buffer: bufferTwo, mimetype: 'image/jpeg', originalname: 'b.jpeg' },
+    ] });
+    await repository.update(batch.id, (next) => { next.status = 'interrupted'; next.items[0].status = 'interrupted'; next.items[1].status = 'queued'; return next; });
+    const enqueue = vi.fn(); service.setQueue({ enqueue });
+    await service.resume(batch.id);
+    expect(enqueue).toHaveBeenCalledWith(batch.id);
+    expect((await service.get(batch.id)).items.map((item) => item.status)).toEqual(['interrupted', 'queued']);
   });
 });
