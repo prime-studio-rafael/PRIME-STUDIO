@@ -55,73 +55,65 @@ export default function BrandingPage({ open, variant = 'panel' }) {
         <p className="mt-1 text-xs leading-5 text-slate-500">Envie um PNG com transparência real. Depois de aprovada, a logo pode ser aplicada automaticamente (canto inferior direito) sobre as imagens finais, sem uso de IA.</p>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
+      <div className="grid items-stretch gap-5 lg:grid-cols-2">
+      <section className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5">
         <div className="mb-4"><h3 className="text-base font-semibold text-slate-950">Logo principal</h3><p className="mt-1 text-xs text-slate-500">Logo colorida usada em fundos claros e como padrão da loja.</p></div>
       {!pending && !approved && (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-300 py-8 text-center">
+        <div className="flex min-h-[248px] flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 text-center">
           <ImageOff size={24} className="text-slate-400" />
           <p className="text-sm font-medium text-slate-700">Nenhuma logo enviada ainda</p>
         </div>
       )}
 
       {approved && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-emerald-800"><ShieldCheck size={16} /> Logo ativa (aprovada)</div>
-          <div className="mt-3 flex items-center gap-3">
-            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg border border-emerald-200 bg-white"><img src={`${BRANDING_APPROVED_LOGO_URL}&t=${encodeURIComponent(approved.approvedAt || '')}`} alt="Logo aprovada" className="h-full w-full object-contain" /></div>
-            <div className="text-xs text-emerald-800">
-              <p>{approved.dimensions?.width}×{approved.dimensions?.height} · {(approved.sizeBytes / 1024).toFixed(0)} KB</p>
-              <p className="mt-0.5">Aprovada em {formatDate(approved.approvedAt)}</p>
-            </div>
+        <div className="flex min-h-[248px] flex-1 flex-col rounded-xl border border-emerald-200 bg-emerald-50/70 p-4">
+          <div className="inline-flex items-center gap-2 self-start rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800"><ShieldCheck size={14} /> Aprovada<span className="sr-only">Logo ativa (aprovada)</span></div>
+          <div data-testid="primary-logo-preview" className="mt-3 flex min-h-[148px] flex-1 items-center justify-center overflow-hidden rounded-lg border border-emerald-100 bg-white px-6 py-5">
+            <img src={`${BRANDING_APPROVED_LOGO_URL}&t=${encodeURIComponent(approved.approvedAt || '')}`} alt="Logo aprovada" className="max-h-32 max-w-full object-contain" />
           </div>
-          <button type="button" disabled={branding.mutationPending} onClick={() => branding.remove().catch(() => {})} className="mt-3 inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700 disabled:opacity-50">
-            <Trash2 size={13} /> Remover logo
-          </button>
+          <div className="mt-3 text-center text-xs leading-5 text-emerald-800"><p>{formatLogoMetadata(approved)}</p><p>Aprovada em {formatDate(approved.approvedAt)}</p></div>
         </div>
       )}
 
       {pending && (
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div className="flex min-h-[248px] flex-1 flex-col rounded-xl border border-slate-200 bg-slate-50 p-4">
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm font-semibold text-slate-900">Logo enviada, aguardando aprovação</p>
             <span className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${QUALITY[pending.quality]?.[1] || 'bg-slate-100 text-slate-600'}`}>{QUALITY[pending.quality]?.[0] || pending.quality}</span>
           </div>
-          <div className="mt-3 flex items-center gap-3">
-            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50"><img src={`${BRANDING_PENDING_LOGO_URL}&t=${encodeURIComponent(pending.uploadedAt || '')}`} alt="Preview da logo enviada" className="h-full w-full object-contain" /></div>
-            <div className="text-xs text-slate-600">
-              <p>{pending.dimensions?.width}×{pending.dimensions?.height} · {(pending.sizeBytes / 1024).toFixed(0)} KB</p>
-              <p className="mt-0.5">Área útil da arte: {Math.round((pending.canvasOccupancyRatio || 0) * 100)}% do canvas</p>
-            </div>
+          <div data-testid="primary-logo-preview" className="mt-3 flex min-h-[148px] flex-1 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white px-6 py-5">
+            <img src={`${BRANDING_PENDING_LOGO_URL}&t=${encodeURIComponent(pending.uploadedAt || '')}`} alt="Preview da logo enviada" className="max-h-32 max-w-full object-contain" />
           </div>
+          <div className="mt-3 text-center text-xs leading-5 text-slate-600"><p>{formatLogoMetadata(pending)}</p><p>Área útil da arte: {Math.round((pending.canvasOccupancyRatio || 0) * 100)}% do canvas</p></div>
           {pending.errors?.length > 0 && (
             <ul className="mt-3 space-y-1">{pending.errors.map((issue) => <li key={issue.code} className="flex items-start gap-1.5 text-xs text-rose-700"><AlertCircle size={13} className="mt-0.5 shrink-0" />{issue.message}</li>)}</ul>
           )}
           {pending.warnings?.length > 0 && (
             <ul className="mt-2 space-y-1">{pending.warnings.map((issue) => <li key={issue.code} className="flex items-start gap-1.5 text-xs text-amber-700"><AlertCircle size={13} className="mt-0.5 shrink-0" />{issue.message}</li>)}</ul>
           )}
-          <button type="button" disabled={branding.mutationPending || pending.quality === 'inadequate'} title={pending.quality === 'inadequate' ? 'Esta logo é inadequada e não pode ser aprovada.' : undefined} onClick={() => branding.approve().catch(() => {})} className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">
+          <button type="button" disabled={branding.mutationPending || pending.quality === 'inadequate'} title={pending.quality === 'inadequate' ? 'Esta logo é inadequada e não pode ser aprovada.' : undefined} onClick={() => branding.approve().catch(() => {})} className="mt-3 inline-flex w-fit items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">
             {branding.mutationPending ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} Aprovar logo
           </button>
         </div>
       )}
 
-      <div>
+      <div className="mt-4 flex flex-wrap gap-2">
         <input ref={inputRef} type="file" accept="image/png" className="hidden" onChange={handleFileChange} />
         <button type="button" disabled={branding.mutationPending} onClick={() => inputRef.current?.click()} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 transition hover:border-slate-400 disabled:opacity-50">
           {branding.mutationPending ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />} {approved || pending ? 'Enviar outra logo (PNG)' : 'Enviar logo (PNG)'}
         </button>
-        {(fileError || branding.error) && <p className="mt-2 flex items-start gap-1.5 text-xs text-rose-700"><AlertCircle size={13} className="mt-0.5 shrink-0" />{fileError || branding.error}</p>}
+        {approved && <button type="button" aria-label="Remover logo" disabled={branding.mutationPending} onClick={() => branding.remove().catch(() => {})} className="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-rose-700 disabled:opacity-50"><Trash2 size={14} /> Remover</button>}
+        {(fileError || branding.error) && <p className="mt-2 flex w-full basis-full items-start gap-1.5 text-xs text-rose-700"><AlertCircle size={13} className="mt-0.5 shrink-0" />{fileError || branding.error}</p>}
       </div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
+      <section className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5">
         <div className="mb-4"><h3 className="text-base font-semibold text-slate-950">Logo branca</h3><p className="mt-1 text-xs text-slate-500">Logo para fundos escuros e layouts de maior contraste.</p></div>
-        {!whiteApproved && !whitePending && <div className="flex min-h-40 flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 text-center"><ImageOff size={24} className="text-slate-400"/><p className="mt-2 text-sm font-semibold text-slate-700">Ainda não cadastrada</p><p className="mt-1 text-xs text-slate-500">Envie uma logo branca transparente para habilitar essa variante.</p></div>}
-        {whiteApproved && <div className="rounded-xl border border-emerald-200 bg-slate-950 p-4 text-white"><p className="text-sm font-semibold text-emerald-300">Aprovada</p><img src={`${BRANDING_WHITE_LOGO_URL}&t=${encodeURIComponent(whiteApproved.approvedAt || '')}`} alt="Logo branca aprovada" className="mx-auto mt-4 h-24 w-full object-contain"/><button type="button" disabled={branding.mutationPending} onClick={() => branding.remove('white').catch(() => {})} className="mt-4 rounded-lg border border-white/30 px-3 py-2 text-xs font-semibold">Remover</button></div>}
-        {whitePending && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="text-sm font-semibold text-amber-800">Pendente de aprovação</p><img src="/api/branding/logo?variant=white-pending" alt="Preview da logo branca pendente" className="mx-auto mt-4 h-24 w-full object-contain"/><button type="button" disabled={branding.mutationPending || whitePending.quality === 'inadequate'} onClick={() => branding.approve('white').catch(() => {})} className="mt-4 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">Aprovar logo branca</button></div>}
+        {!whiteApproved && !whitePending && <div className="flex min-h-[248px] flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 text-center"><ImageOff size={24} className="text-slate-400"/><p className="mt-2 text-sm font-semibold text-slate-700">Ainda não cadastrada</p><p className="mt-1 text-xs text-slate-500">Envie uma logo branca transparente para habilitar essa variante.</p></div>}
+        {whiteApproved && <div className="flex min-h-[248px] flex-1 flex-col rounded-xl border border-slate-800 bg-slate-950 p-4 text-white"><div className="inline-flex items-center gap-2 self-start rounded-full bg-emerald-400/15 px-2.5 py-1 text-xs font-semibold text-emerald-300"><ShieldCheck size={14} /> Aprovada</div><div data-testid="white-logo-preview" className="mt-3 flex min-h-[148px] flex-1 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-slate-900 px-6 py-5"><img src={`${BRANDING_WHITE_LOGO_URL}&t=${encodeURIComponent(whiteApproved.approvedAt || '')}`} alt="Logo branca aprovada" className="max-h-28 max-w-full object-contain"/></div><div className="mt-3 text-center text-xs leading-5 text-slate-300"><p>{formatLogoMetadata(whiteApproved)}</p><p>Aprovada em {formatDate(whiteApproved.approvedAt)}</p></div></div>}
+        {whitePending && <div className="flex min-h-[248px] flex-1 flex-col rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="inline-flex self-start rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">Pendente de aprovação</p><div data-testid="white-logo-preview" className="mt-3 flex min-h-[148px] flex-1 items-center justify-center overflow-hidden rounded-lg border border-amber-100 bg-slate-950 px-6 py-5"><img src="/api/branding/logo?variant=white-pending" alt="Preview da logo branca pendente" className="max-h-28 max-w-full object-contain"/></div><div className="mt-3 text-center text-xs leading-5 text-amber-900"><p>{formatLogoMetadata(whitePending)}</p><p>Área útil da arte: {Math.round((whitePending.canvasOccupancyRatio || 0) * 100)}% do canvas</p></div><button type="button" disabled={branding.mutationPending || whitePending.quality === 'inadequate'} onClick={() => branding.approve('white').catch(() => {})} className="mt-3 inline-flex w-fit rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">Aprovar logo branca</button></div>}
         <input ref={whiteInputRef} type="file" accept="image/png" className="hidden" onChange={handleWhiteFileChange} />
-        <button type="button" disabled={branding.mutationPending} onClick={() => whiteInputRef.current?.click()} className="mt-4 inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs font-semibold text-slate-700"><Upload size={14} />{whiteApproved || whitePending ? 'Substituir logo branca' : 'Enviar logo branca'}</button>
+        <div className="mt-4 flex flex-wrap gap-2"><button type="button" disabled={branding.mutationPending} onClick={() => whiteInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3.5 py-2.5 text-xs font-semibold text-slate-700"><Upload size={14} />{whiteApproved || whitePending ? 'Substituir logo branca' : 'Enviar logo branca'}</button>{whiteApproved && <button type="button" aria-label="Remover logo branca" disabled={branding.mutationPending} onClick={() => branding.remove('white').catch(() => {})} className="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-rose-700 disabled:opacity-50"><Trash2 size={14} /> Remover</button>}</div>
       </section>
       </div>
 
@@ -171,4 +163,13 @@ export default function BrandingPage({ open, variant = 'panel' }) {
 function formatDate(value) {
   if (!value || Number.isNaN(Date.parse(value))) return 'data não informada';
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+}
+
+function formatLogoMetadata(logo) {
+  const width = logo?.dimensions?.width;
+  const height = logo?.dimensions?.height;
+  const sizeBytes = Number(logo?.sizeBytes);
+  const dimensions = Number.isFinite(width) && Number.isFinite(height) ? `${width}×${height}` : 'dimensões não informadas';
+  const size = Number.isFinite(sizeBytes) ? `${(sizeBytes / 1024).toFixed(0)} KB` : 'tamanho não informado';
+  return `${dimensions} · ${size}`;
 }
