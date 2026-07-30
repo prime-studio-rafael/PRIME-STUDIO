@@ -583,6 +583,35 @@ Estado: **concluída tecnicamente em 29 de julho de 2026; publicação remota de
 
 Detalhes e evidências: [FASE-08-3-IMPLEMENTACAO.md](./FASE-08-3-IMPLEMENTACAO.md).
 
+### Fase 8.4 — Operação Assistida de Lotes
+
+Estado: **concluída e publicada em 30 de julho de 2026** (`48ad2fd`).
+
+- controles operacionais e contagens dos lotes mantêm o pipeline único, concorrência global 1 e zero retry automático;
+- pausa, retomada, cancelamento, ETA e estados dos itens continuam explícitos e preservam resultados já concluídos.
+
+### Fase 8.5 — Recuperação e Continuidade de Lotes
+
+Estado: **concluída e publicada em 30 de julho de 2026** (`6a26406`).
+
+- no startup, somente itens `interrupted` podem ser reconciliados por `batchId` e `batchItemId` exatos, metadata válida e asset local válido;
+- nenhum item é reenfileirado ou gerado novamente automaticamente; a seleção visual no navegador guarda somente o ID do lote e é protegida contra respostas obsoletas.
+
+### Fase 8.6 — Observabilidade e Diagnóstico de Lotes
+
+Estado: **CONCLUÍDA E PUBLICADA em 30 de julho de 2026** (`031cc74 feat: add batch observability timeline`).
+
+- `batch.events` é o histórico canônico, aditivo e persistido atomicamente e localmente em `batch.json`; a timeline por item é derivada por `itemId`;
+- eventos cobrem criação, início, pausa, retomada, cancelamento, conclusão, transições de item, interrupção, recuperação e diagnósticos de metadata, asset, conflito ou associação inválida;
+- `item_requeued` registra `preparing` → `queued` quando a pausa ocorre antes da geração efetiva;
+- tipos e dados usam whitelist, com limite de 2.000 eventos e bloqueio de prompts, Base64, caminhos, tokens, headers, chaves e payloads externos;
+- timestamps aceitam exclusivamente ISO 8601 UTC canônico `YYYY-MM-DDTHH:mm:ss.sssZ`, validado por formato, data real e round-trip com `toISOString()`;
+- a listagem de lotes omite eventos; o detalhe exibe Timeline cronológica com filtros locais, última atividade, métricas de custo/duração, interrupções e recuperações;
+- lotes antigos sem eventos permanecem compatíveis, recuperação da Fase 8.5 continua idempotente, ETA não foi alterado e não há banco, endpoint, fila paralela ou chamada externa adicional;
+- validação: 67 testes em cinco arquivos, `git diff --check` e auditoria final aprovados; zero chamadas OpenRouter/DeepSeek, geração real ou créditos externos.
+
+Possibilidades futuras — fora da Fase 8.6: retry manual e controlado, exportação de diagnóstico, filtros adicionais, métricas agregadas e limpeza/arquivamento de eventos antigos.
+
 #### Próximas melhorias aprovadas, ainda não iniciadas
 
 - **download em massa das imagens finais**, ampliando o download em lote já validado na Fase 5 (Produção em Lotes).

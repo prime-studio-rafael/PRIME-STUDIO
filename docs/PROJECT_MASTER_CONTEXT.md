@@ -92,6 +92,9 @@ Ver [HISTORICO.md](./HISTORICO.md) para a linha do tempo completa com datas e co
 21. **Fase 8.1B — Dashboard Premium com Dados Reais** — Resultados e Lotes locais alimentam KPIs, custos, fila e timeline; dados ainda sem fonte real aparecem honestamente como demonstrativos, indisponíveis ou futuros.
 22. **Fase 8.2 — Operations Center Premium** — reorganização visual do Dashboard em Visão Executiva, Produção, Confiabilidade e Inteligência Operacional, sem mudar fontes, cálculos ou backend.
 23. **Fase 8.3 — Operations Center 100% Real** — últimos dados demonstrativos substituídos por Resultados, Stories, configurações e health local seguro; sem endpoint novo, persistência de agregados ou chamadas externas.
+24. **Fase 8.4 — Operação Assistida de Lotes** — ações operacionais e indicadores honestos sobre a fila local, sem alterar o pipeline único de geração.
+25. **Fase 8.5 — Recuperação e Continuidade de Lotes** — recuperação idempotente de itens interrompidos a partir de resultados locais, sem reenfileiramento ou nova geração no startup.
+26. **Fase 8.6 — Observabilidade e Diagnóstico de Lotes** — timeline canônica persistida por lote e item, diagnósticos compactos e filtros locais, sem alterar a lógica operacional.
 
 ## 5. Fluxo completo (geração individual)
 

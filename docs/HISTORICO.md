@@ -178,3 +178,21 @@ O Dashboard foi reorganizado visualmente como Operations Center em quatro áreas
 Estado: **concluída tecnicamente em 29 de julho de 2026; publicação remota depende de autorização explícita**.
 
 O Dashboard passou a usar Resultados locais únicos para a série de produção, modelos e taxa de aprovação, e Stories locais para Estilos Visuais e Tipografias. Não há mais valores demonstrativos: ausências são mostradas como estados vazios. Branding, DeepSeek e OpenRouter exibem somente configuração persistida; `GET /api/health` ganhou estados seguros de Storage e Renderer por leitura estrutural, verificação de Sharp e fontes locais, sem escrever, renderizar ou expor paths. Validação direcionada: 19 testes em 3 arquivos e `git diff --check` aprovados; zero chamadas externas e zero créditos. Detalhes: [FASE-08-3-IMPLEMENTACAO.md](./FASE-08-3-IMPLEMENTACAO.md).
+
+## Fase 8.4 — Operação Assistida de Lotes
+
+Estado: **concluída e publicada em 30 de julho de 2026** (`48ad2fd`).
+
+Melhorias operacionais assistidas para lotes, preservando pipeline único, zero retry automático e estados reais de pausa, retomada, cancelamento, ETA e conclusão.
+
+## Fase 8.5 — Recuperação e Continuidade de Lotes
+
+Estado: **concluída e publicada em 30 de julho de 2026** (`6a26406`).
+
+Recuperação idempotente de itens interrompidos a partir de resultados persistidos associados exatamente por `batchId` e `batchItemId`. Não há reenfileiramento nem nova geração automática após startup, recarregamento ou retorno à tela.
+
+## Fase 8.6 — Observabilidade e Diagnóstico de Lotes
+
+Estado: **CONCLUÍDA E PUBLICADA em 30 de julho de 2026** (`031cc74 feat: add batch observability timeline`).
+
+Cada lote passou a manter `events` como histórico canônico, seguro e compacto em `batch.json`, com timeline cronológica por lote e por item, filtros locais e métricas derivadas. A listagem não carrega eventos; somente o detalhe os recebe. Foram incluídos eventos de ciclo do lote, transições do item, recuperação e diagnósticos idempotentes. `item_requeued` cobre a pausa antes da geração efetiva. Timestamps são estritamente ISO UTC canônico com milissegundos, e eventos inválidos são descartados sem quebrar lotes legados ou a Timeline. Validação final: 67 testes em cinco arquivos e `git diff --check` aprovados; zero chamadas OpenRouter/DeepSeek, geração real ou créditos externos. Nenhuma pendência técnica conhecida.

@@ -62,6 +62,7 @@ Campos do lote (nível `batch`, não do item):
 | **`templateResolution`** | `snapshot.publicTemplate.resolution` | **Sim** |
 | **`templatePromptVersion`** | `snapshot.publicTemplate.promptVersion` | **Sim** |
 | **`additionalInstruction`** | Informada na criação do lote (nível do lote, não por item), normalizada por `server/utils/additionalInstruction.js` (máx. 500 caracteres) | **Sim** |
+| `events` | Histórico aditivo da observabilidade local, produzido por `server/utils/batchEvents.js` e pelas transições reais do lote | Não (acrescentado durante o ciclo de vida) |
 
 **Campos em negrito** = Fase 3 do Perfil Completo de Geração por Template. Nenhuma função de atualização do lote (`start`/`pause`/`cancel`/`prepareNext`/`complete`/`fail`) reescreve esses campos — o snapshot é imutável desde a criação, mesmo que o Template original seja editado depois.
 
@@ -70,6 +71,8 @@ Campos do lote (nível `batch`, não do item):
 - No **`start`/`resume`**: `batchService.start()` rejeita com o mesmo código se `templatePrompt` estiver ausente no `batch.json` já persistido (cobre lotes criados antes da Fase 3, sem os campos acima) — antes do lock global, sem consultar o Template atual, sem tentar completar o snapshot.
 
 **Item do lote** (dentro de `batch.items[]`): `id`, `originalFileName`, `garmentMime`, `garmentDimensions`, `sizeBytes`, `garmentStorageKey`, `status` (`queued`/`preparing`/`generating`/`completed`/`failed`/`cancelled`/`interrupted`), `resultId`, `costUsd`, `durationMs`, `providerRequestId`, `safeError`, `attempts`, `createdAt`/`updatedAt`/`startedAt`/`completedAt`. Sem alteração nesta iniciativa.
+
+**Eventos do lote** (`events[]`, Fase 8.6): histórico canônico e compacto persistido no próprio `batch.json` e backup. Cada evento contém `id`, `at` (ISO 8601 UTC canônico com milissegundos), `type`, `itemId` opcional, estados de origem/destino e `data` filtrado por whitelist. Eventos ausentes em lotes antigos normalizam para histórico vazio. São bloqueados prompts, Base64, caminhos, segredos, headers e payloads externos; o histórico é limitado a 2.000 eventos. A API de listagem omite `events`, enquanto o detalhe do lote os retorna.
 
 **Onde chega ao executor**: `server/services/batchService.js` (`executionInput()`) → `server/repositories/localBatchRepository.js` (`readTemplate()`, devolve `{ id, label, category, buffer, mimeType, prompt, negativePrompt, provider, modelId, generationAspectRatio, resolution, promptVersion }`, tudo lido do `batch.json` já carregado, sem I/O extra) → `generationExecutor.js` (`validateSnapshot()`).
 

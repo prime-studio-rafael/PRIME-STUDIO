@@ -4,11 +4,11 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 
 ## Estado atual
 
-- Versão: MVP local evoluído até a Fase 8.5 — Recuperação e Continuidade de Lotes, publicada no commit `6a26406`.
-- Fase atual: Fase 8.6 — Observabilidade e Diagnóstico de Lotes, em implementação e validação local (sem commit ou push).
-- Última fase concluída tecnicamente: Fase 8.5 — Recuperação e Continuidade de Lotes.
-- Último estado funcional publicado: commit `6a26406` (Fase 8.5), sincronizado com `origin/main`.
-- Próxima fase: encerramento da Fase 8.6 após auditoria e validação final aprovadas.
+- Versão: MVP local evoluído até a Fase 8.6 — Observabilidade e Diagnóstico de Lotes, publicada no commit `031cc74`.
+- Fase atual: nenhuma fase em implementação.
+- Última fase concluída tecnicamente: Fase 8.6 — Observabilidade e Diagnóstico de Lotes.
+- Último estado funcional publicado: commit `031cc74` (Fase 8.6), sincronizado com `origin/main`.
+- Próxima fase: a definir mediante aprovação explícita.
 
 ## Git
 
@@ -40,7 +40,7 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 - Dashboard: Resultados são deduplicados por ID e filtrados por período em `America/Sao_Paulo`; custos aceitam somente valores USD finitos não negativos e BRL é derivado por `USD × usdToBrlRate`, com arredondamento final. A taxa de aprovação usa apenas revisões `approved` e `rejected`. Não há endpoint novo, câmbio externo ou persistência de agregados.
 - Cotação do Dashboard: `usdToBrlRate` é uma preferência local em `storage/settings/ai-providers.json`; não altera custos USD, não integra câmbio e não sai do computador.
 - Recuperação de lotes: o filesystem/backend continua como única fonte operacional. No startup, resultados locais só reconciliam itens `interrupted` por `batchId` e `batchItemId` exatos, metadata válida (incluindo números finitos não negativos quando presentes) e asset de resultado válido, sem reenfileirar ou regenerar automaticamente. O navegador guarda somente o ID da seleção visual em `localStorage`; respostas obsoletas, inclusive após unmount, não podem sobrescrever uma seleção manual mais recente e nunca são persistidos itens, resultados, custos, imagens ou estados operacionais.
-- Observabilidade de lotes: cada lote mantém uma timeline aditiva e segura em `events` dentro de `batch.json`; o histórico é a única fonte de eventos, persiste pela escrita atômica já existente e é filtrado localmente por lote, item ou falha. A listagem de lotes omite a timeline; o detalhe selecionado inclui eventos compactos de transição, interrupção e recuperação, sem prompts, caminhos, Base64, segredos ou payloads externos. Uma pausa antes do início efetivo registra `item_requeued` (`preparing` → `queued`), e a Timeline aceita somente timestamps ISO 8601 UTC canônicos com milissegundos, descartando dados inválidos de forma segura. A observabilidade não controla fila, geração, pausa, retomada ou cancelamento.
+- Observabilidade de lotes: cada lote mantém uma timeline aditiva e segura em `events` dentro de `batch.json`; o histórico canônico persiste pela escrita atômica já existente e é filtrado localmente por lote, item ou falha. A listagem omite `events`; o detalhe selecionado inclui eventos compactos de lote, item e diagnóstico, sem prompts, caminhos, Base64, segredos ou payloads externos. Uma pausa antes do início efetivo registra `item_requeued` (`preparing` → `queued`). A Timeline aceita somente timestamps ISO 8601 UTC canônicos com milissegundos, descartando dados inválidos de forma segura. A observabilidade não controla fila, geração, pausa, retomada ou cancelamento.
 - Branding: logos `primary` e `white` são independentes; `offer` em modo automático prioriza a branca e faz fallback honesto para a principal quando ela não existe.
 - Sugestões textuais: `server/services/storySuggestionsService.js` e `POST /api/marketing/suggestions`.
 - Contratos existentes são aditivos e compatíveis com registros antigos.
@@ -74,6 +74,7 @@ React, Vite, Tailwind CSS, Node.js, Express, `sharp`, `multer`, Keychain do macO
 ## Pendências aprovadas
 
 - Backlog visual futuro do Marketing Studio: evoluir o layout Luxury para uma percepção de luxo mais marcante; evoluir Editorial para linguagem de revista; ampliar Estilos Visuais com novos presets somente após aprovação explícita, preservando edição manual posterior.
+- Possibilidades futuras de lotes: retry manual e controlado, exportação de diagnóstico, filtros adicionais, métricas agregadas e limpeza/arquivamento de eventos antigos. Esses itens não fazem parte da Fase 8.6.
 
 ## Fora do escopo
 
@@ -93,4 +94,4 @@ Publicação automática, Buffer, banco, Supabase, autenticação, nuvem, editor
 
 ## Última sincronização
 
-30 de julho de 2026. Fase 8.5 publicada no commit `6a26406`; Fase 8.6 em implementação e validação local. Atualizar este arquivo ao concluir fase, alterar arquitetura, contrato, módulo ativo ou pendência aprovada.
+30 de julho de 2026. Fase 8.5 publicada no commit `6a26406`; Fase 8.6 concluída e publicada no commit `031cc74`. Atualizar este arquivo ao concluir fase, alterar arquitetura, contrato, módulo ativo ou pendência aprovada.
