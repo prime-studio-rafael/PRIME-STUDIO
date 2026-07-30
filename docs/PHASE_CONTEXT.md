@@ -4,10 +4,10 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 
 ## Estado atual
 
-- Versão: MVP local evoluído até a Fase 8.3 — Operations Center 100% Real, publicada no commit `cbb90a8`.
-- Fase atual: Fase 8.4 — Operação Assistida de Lotes, em validação; ainda sem commit.
-- Última fase concluída tecnicamente: Fase 8.3 — Operations Center 100% Real.
-- Último estado funcional publicado: commit `cbb90a8` (Fase 8.3), sincronizado com `origin/main` antes da Fase 8.4.
+- Versão: MVP local evoluído até a Fase 8.4 — Operação Assistida de Lotes, publicada no commit `48ad2fd`.
+- Fase atual: nenhuma fase de produto em andamento.
+- Última fase concluída tecnicamente: Fase 8.4 — Operação Assistida de Lotes.
+- Último estado funcional publicado: commit `48ad2fd` (Fase 8.4), sincronizado com `origin/main`.
 - Próxima fase: não há fase de produto aprovada para início.
 
 ## Git
@@ -91,4 +91,4 @@ Publicação automática, Buffer, banco, Supabase, autenticação, nuvem, editor
 
 ## Última sincronização
 
-30 de julho de 2026. Fase 8.3 publicada; Fase 8.4 em validação, sem commit. Atualizar este arquivo ao concluir fase, alterar arquitetura, contrato, módulo ativo ou pendência aprovada.
+30 de julho de 2026. Fase 8.4 publicada; não há fase de produto em andamento. Atualizar este arquivo ao concluir fase, alterar arquitetura, contrato, módulo ativo ou pendência aprovada.
