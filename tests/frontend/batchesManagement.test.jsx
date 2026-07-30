@@ -58,8 +58,8 @@ describe('batches page', () => {
     expect(within(screen.getByTestId('summary-total')).getByText('4')).toBeInTheDocument();
     expect(within(screen.getByTestId('summary-completed')).getByText('1')).toBeInTheDocument();
     expect(within(screen.getByTestId('summary-processing')).getByText('1')).toBeInTheDocument();
-    expect(within(screen.getByTestId('summary-waiting')).getByText('1')).toBeInTheDocument();
-    expect(within(screen.getByTestId('summary-errors')).getByText('1')).toBeInTheDocument();
+    expect(within(screen.getByTestId('summary-pending')).getByText('1')).toBeInTheDocument();
+    expect(within(screen.getByTestId('summary-failed')).getByText('1')).toBeInTheDocument();
     expect(screen.getByText('2/4 finalizados')).toBeInTheDocument();
   });
 
@@ -72,7 +72,53 @@ describe('batches page', () => {
 
   it('shows the item error message safely for a failed item', async () => {
     await openBatchesAndSelect();
-    expect(screen.getByText('A geração deste item falhou.')).toBeInTheDocument();
+    expect(screen.getAllByText('A geração deste item falhou.')).toHaveLength(2);
+    expect(screen.getByText('1 item falhou')).toBeInTheDocument();
+    expect(screen.getByText(/O reprocessamento estará disponível em uma fase futura/)).toBeInTheDocument();
+  });
+
+  it('uses the safe fallback and attempt count for failed items without exposing technical details', async () => {
+    batchesApi.fetchBatch.mockResolvedValue({
+      ...batchDetail,
+      status: 'completed_with_errors',
+      items: [{ ...batchDetail.items[3], attempts: 2, safeError: null }],
+    });
+    batchesApi.fetchBatches.mockResolvedValue([{ ...batchSummary, status: 'completed_with_errors' }]);
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Produção em Lotes' }));
+    fireEvent.click(await screen.findByText('Lote 01'));
+    await screen.findByText('d.jpg');
+    expect(screen.getByText(/d.jpg · 2 tentativas/)).toBeInTheDocument();
+    expect(screen.getByText('Falha durante a geração. Consulte os registros locais para detalhes.')).toBeInTheDocument();
+  });
+
+  it('shows the current item, its batch position and an ETA from completed items only', async () => {
+    await openBatchesAndSelect();
+    expect(screen.getByText('Processando item 2 de 4')).toBeInTheDocument();
+    expect(screen.getByText(/b.jpg — Gerando imagem/)).toBeInTheDocument();
+    expect(screen.getByText('Tempo restante aproximado: menos de 1 min')).toBeInTheDocument();
+  });
+
+  it('does not hide an inconsistent batch with multiple active items', async () => {
+    batchesApi.fetchBatch.mockResolvedValue({
+      ...batchDetail,
+      items: [
+        { ...batchDetail.items[0], status: 'preparing', resultId: null },
+        { ...batchDetail.items[1], status: 'generating' },
+      ],
+    });
+    await openBatchesAndSelect();
+    expect(screen.getByText('Verificando processamento')).toBeInTheDocument();
+    expect(screen.getByText('Há 2 itens ativos neste lote. O estado será atualizado automaticamente.')).toBeInTheDocument();
+  });
+
+  it('uses honest pause and first-sample ETA copy', async () => {
+    batchesApi.fetchBatch.mockResolvedValue({ ...batchDetail, status: 'paused', items: [{ ...batchDetail.items[0], status: 'queued', resultId: null }] });
+    batchesApi.fetchBatches.mockResolvedValue([{ ...batchSummary, status: 'paused' }]);
+    await openBatchesAndSelect();
+    expect(screen.getByText('Estimativa suspensa enquanto o lote está pausado.')).toBeInTheDocument();
+    expect(screen.getByText(/impede o início do próximo item/)).toBeInTheDocument();
+    expect(screen.getByText(/itens que ainda estão pendentes/)).toBeInTheDocument();
   });
 
   it('opens the correct result and preserves the resultId when clicking "Abrir resultado"', async () => {

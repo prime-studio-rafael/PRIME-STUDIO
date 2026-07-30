@@ -4,10 +4,10 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 
 ## Estado atual
 
-- Versão: MVP local evoluído até a Fase 8.3 — Operations Center 100% Real.
-- Fase atual: Fase 8.3 — Operations Center 100% Real, encerrada tecnicamente; publicação remota depende de autorização explícita.
+- Versão: MVP local evoluído até a Fase 8.3 — Operations Center 100% Real, publicada no commit `cbb90a8`.
+- Fase atual: Fase 8.4 — Operação Assistida de Lotes, em validação; ainda sem commit.
 - Última fase concluída tecnicamente: Fase 8.3 — Operations Center 100% Real.
-- Último estado funcional publicado: commit `b7dcc33` (Fase 8.2).
+- Último estado funcional publicado: commit `cbb90a8` (Fase 8.3), sincronizado com `origin/main` antes da Fase 8.4.
 - Próxima fase: não há fase de produto aprovada para início.
 
 ## Git
@@ -16,7 +16,7 @@ Documento vivo e compacto do estado atual do projeto. Não substitui `AGENTS.md`
 - Branch principal: `main`.
 - Repositório esperado: `prime-studio-rafael/PRIME-STUDIO`.
 - Conta GitHub esperada: `prime-studio-rafael`.
-- Última sincronização conhecida: 28 de julho de 2026.
+- Última sincronização conhecida: 30 de julho de 2026.
 - Operações Git seguem o checklist de `AGENTS.md`; divergências bloqueiam commit e push.
 
 ## Módulos ativos
@@ -91,4 +91,4 @@ Publicação automática, Buffer, banco, Supabase, autenticação, nuvem, editor
 
 ## Última sincronização
 
-29 de julho de 2026. Fase 8.3 encerrada tecnicamente; atualizar este arquivo ao concluir fase, alterar arquitetura, contrato, módulo ativo ou pendência aprovada.
+30 de julho de 2026. Fase 8.3 publicada; Fase 8.4 em validação, sem commit. Atualizar este arquivo ao concluir fase, alterar arquitetura, contrato, módulo ativo ou pendência aprovada.

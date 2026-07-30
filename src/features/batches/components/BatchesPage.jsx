@@ -6,6 +6,7 @@ import BatchItemRow from './BatchItemRow.jsx';
 import useTemplateCategories from '../../templates/hooks/useTemplateCategories.js';
 import { DEFAULT_TEMPLATE_CATEGORY_ID } from '../../templates/hooks/useTemplateLibraryFilters.js';
 import { ADDITIONAL_INSTRUCTION_MAX_LENGTH } from '../../../../shared/additionalInstructionPolicy.js';
+import { formatApproximateDuration, getBatchEta, getBatchOperationalSummary, getCurrentBatchItem } from '../batchOperations.js';
 
 const money = (value) => Number.isFinite(value) ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value) : 'Não informado';
 const terminal = new Set(['completed', 'failed', 'cancelled', 'interrupted']);
@@ -224,6 +225,10 @@ function BatchDetail({ batch, action, onOpenResult }) {
   const finished = batch.items.filter((item) => terminal.has(item.status)).length;
   const canStart = ['ready', 'paused', 'interrupted'].includes(batch.status) && batch.items.some((item) => item.status === 'queued');
   const progress = batch.totalItems ? Math.round((finished / batch.totalItems) * 100) : 0;
+  const summary = getBatchOperationalSummary(batch.items);
+  const eta = getBatchEta(batch.items, batch.status);
+  const currentItem = getCurrentBatchItem(batch.items);
+  const failedItems = batch.items.filter((item) => item.status === 'failed');
 
   async function run(actionName, payload) {
     setPendingAction(actionName);
@@ -266,6 +271,11 @@ function BatchDetail({ batch, action, onOpenResult }) {
 
       <div className="mt-6"><BatchSummaryCards items={batch.items} /></div>
 
+      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        <BatchCurrentItem currentItem={currentItem} totalItems={summary.total} />
+        <BatchEta eta={eta} />
+      </div>
+
       <div className="mt-6">
         <div className="mb-2 flex items-center justify-between text-xs text-slate-500">
           <span>{finished}/{batch.totalItems} finalizados</span>
@@ -277,6 +287,14 @@ function BatchDetail({ batch, action, onOpenResult }) {
             style={{ width: `${progress}%` }}
           />
         </div>
+      </div>
+
+      {failedItems.length > 0 && <BatchFailures items={failedItems} />}
+
+      <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50/70 p-4 text-xs leading-5 text-slate-600">
+        <p><strong className="text-slate-800">Pausar:</strong> impede o início do próximo item, mas não interrompe uma geração já enviada ao serviço de geração.</p>
+        <p className="mt-1.5"><strong className="text-slate-800">Cancelar:</strong> cancela os itens ainda pendentes. Uma geração já iniciada pode continuar e gerar custo.</p>
+        <p className="mt-1.5"><strong className="text-slate-800">Retomar:</strong> continua somente com os itens que ainda estão pendentes; itens concluídos ou falhos não são refeitos automaticamente.</p>
       </div>
 
       {/* Em tablet, a tabela mantém as 7 colunas completas (nenhuma é escondida/removida) — o
@@ -296,6 +314,40 @@ function BatchDetail({ batch, action, onOpenResult }) {
         </ul>
       </div>
     </SectionCard>
+  );
+}
+
+function BatchCurrentItem({ currentItem, totalItems }) {
+  if (currentItem.state === 'none') return null;
+  if (currentItem.state === 'multiple') {
+    return <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><p className="font-semibold">Verificando processamento</p><p className="mt-1 text-xs leading-5">Há {currentItem.activeItems.length} itens ativos neste lote. O estado será atualizado automaticamente.</p></div>;
+  }
+  const { item, position, elapsedMs } = currentItem;
+  const status = item.status === 'generating' ? 'Gerando imagem' : 'Preparando geração';
+  return (
+    <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-4 text-sm text-blue-950">
+      <p className="font-semibold">Processando item {position} de {totalItems}</p>
+      <p className="mt-1 truncate text-xs text-blue-800">{item.originalFileName || 'Roupa sem identificação'} — {status}</p>
+      {Number.isFinite(elapsedMs) && <p className="mt-1 text-xs text-blue-700">Em andamento há {formatApproximateDuration(elapsedMs)}.</p>}
+    </div>
+  );
+}
+
+function BatchEta({ eta }) {
+  if (eta.state === 'unavailable') return null;
+  if (eta.state === 'paused') return <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><p className="font-semibold">Estimativa suspensa</p><p className="mt-1 text-xs">Estimativa suspensa enquanto o lote está pausado.</p></div>;
+  if (eta.state === 'awaiting-sample') return <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-800"><p className="font-semibold">Tempo restante</p><p className="mt-1 text-xs text-slate-600">Estimativa disponível após a primeira conclusão.</p></div>;
+  return <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-800"><p className="font-semibold">Tempo restante aproximado: {formatApproximateDuration(eta.etaMs)}</p><p className="mt-1 text-xs text-slate-600">Baseado na média real dos itens concluídos deste lote.</p></div>;
+}
+
+function BatchFailures({ items }) {
+  return (
+    <section className="mt-5 rounded-xl border border-rose-200 bg-rose-50/60 p-4" aria-labelledby="batch-failures-title">
+      <div className="flex flex-wrap items-baseline justify-between gap-2"><h3 id="batch-failures-title" className="text-sm font-semibold text-rose-900">{items.length} {items.length === 1 ? 'item falhou' : 'itens falharam'}</h3><span className="text-xs text-rose-700">O reprocessamento estará disponível em uma fase futura.</span></div>
+      <ul className="mt-3 space-y-2">
+        {items.map((item) => <li key={item.id} className="rounded-lg border border-rose-100 bg-white/80 px-3 py-2 text-xs text-rose-900"><p className="font-semibold">{item.originalFileName || 'Roupa sem identificação'}{item.attempts > 0 ? ` · ${item.attempts} tentativa${item.attempts === 1 ? '' : 's'}` : ''}</p><p className="mt-1 leading-5 text-rose-800">{item.safeError?.message || 'Falha durante a geração. Consulte os registros locais para detalhes.'}</p></li>)}
+      </ul>
+    </section>
   );
 }
 
